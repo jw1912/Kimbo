@@ -1,0 +1,13 @@
+[package]
+name = "kimbo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+kimbo_state = { git = "https://github.com/JacquesRW/kimbo_state" }
+
+[profile.release.build-override]
+opt-level = 3
+codegen-units = 1
