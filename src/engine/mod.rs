@@ -1,6 +1,7 @@
 mod eval;
 mod qsearch;
 mod search;
+#[rustfmt::skip]
 mod pst;
 
 use kimbo_state::*;
@@ -19,6 +20,12 @@ pub struct EnginePosition {
     pub pst_eg: [i16; 2]
 }
 
+impl Default for EnginePosition {
+    fn default() -> Self {
+        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    }
+}
+
 impl EnginePosition {
     /// Initialise a new position from a fen string
     pub fn from_fen(s: &str) -> Self {
@@ -26,15 +33,8 @@ impl EnginePosition {
         let material_scores = calculate_material_scores(&board);
         let pst_mg = calculate_pst_mg_scores(&board);
         let pst_eg = calculate_pst_eg_scores(&board);
-        println!("{pst_mg:?}");
-        println!("{material_scores:?}");
-        Self { board, material_scores, pst_mg, pst_eg}
-    }
-
-    /// Initialises the starting position
-    pub fn new() -> Self {
-        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-    }  
+        Self { board, material_scores, pst_mg, pst_eg }
+    } 
 
     // TODO: Refactor to match the move flag
 

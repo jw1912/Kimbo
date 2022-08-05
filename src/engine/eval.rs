@@ -8,11 +8,10 @@ const SIDE_FACTOR: [i16; 2] = [1, -1];
 /// Calculating material scores from scratch
 pub fn calculate_material_scores(pos: &Position) -> [i16; 2] {
     let mut scores = [0; 2];
-    for i in 0..2 {
+    for (i, side) in pos.pieces.iter().enumerate() {
         let mut score = 0;
-        for j in 0..6 {
-            let mut piece = pos.pieces[i][j];
-            let piece_val = PIECE_VALS[j];
+        for (j, piece_val) in PIECE_VALS.iter().enumerate() {
+            let mut piece = side[j];
             while piece > 0 {
                 score += piece_val;
                 piece &= piece - 1
@@ -25,10 +24,10 @@ pub fn calculate_material_scores(pos: &Position) -> [i16; 2] {
 /// Calculate midgame piece-square tables from scratch
 pub fn calculate_pst_mg_scores(pos: &Position) -> [i16; 2] {
     let mut scores = [0; 2];
-    for i in 0..2 {
+    for (i, side) in pos.pieces.iter().enumerate() {
         let mut score = 0;
-        for j in 0..6 {
-            let mut piece = pos.pieces[i][j];
+        for (j, &pc) in side.iter().enumerate() {
+            let mut piece = pc;
             while piece > 0 {
                 let idx = ls1b_scan(piece) as usize;
                 score += get_mg_weight(idx, i, j);
@@ -43,10 +42,10 @@ pub fn calculate_pst_mg_scores(pos: &Position) -> [i16; 2] {
 /// Calculate endgame piece-square tables from scratch
 pub fn calculate_pst_eg_scores(pos: &Position) -> [i16; 2] {
     let mut scores = [0; 2];
-    for i in 0..2 {
+    for (i, side) in pos.pieces.iter().enumerate() {
         let mut score = 0;
-        for j in 0..6 {
-            let mut piece = pos.pieces[i][j];
+        for (j, &pc) in side.iter().enumerate() {
+            let mut piece = pc;
             while piece > 0 {
                 let idx = ls1b_scan(piece) as usize;
                 score += get_eg_weight(idx, i, j);

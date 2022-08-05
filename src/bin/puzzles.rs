@@ -8,17 +8,18 @@ pub const _PUZZLES: [&str; 7] = ["8/2krR3/1pp3bp/42p1/PPNp4/3P1PKP/8/8 w - - 0 1
                                 "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -"]; 
 
 use std::time::Instant;
-use kimbo::engine::EnginePosition;
+use kimbo::{engine::EnginePosition, io::outputs::u16_to_uci};
 use kimbo_state::*;
 
 fn main() {
     // initialise board with fen string
-    let mut game = EnginePosition::from_fen(_PUZZLES[3]);
+    let mut game = EnginePosition::from_fen(_PUZZLES[1]);
     // display initial board config
     // move counter
     let now = Instant::now();
     for _ in 0..50 {
         let m = game.analyse(5);
+        println!("playing {}", u16_to_uci(&m));
         game.make_move(m);
         // check if game has ended
         let legal_moves = game.board.gen_moves::<{MoveType::ALL}>();

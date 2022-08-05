@@ -11,21 +11,12 @@ impl EnginePosition {
     /// Quiescence search
     pub fn quiesce(&mut self, mut alpha: i16, beta: i16, max_depth: u8) -> i16 {
         let stand_pat = self.static_eval();
-        let mut captures = self.board.gen_moves::<{MoveType::CAPTURES}>();
         if max_depth == 0 {
             count_qs_plus();
             return stand_pat   
         }
-        // beta pruning
-        // there is an argument for returning stand pat instead of beta
-        if stand_pat >= beta { 
-            count_qs_plus();
-            return beta 
-        }
-        // improving alpha bound
-        if alpha < stand_pat {
-            alpha = stand_pat;
-        }
+        let mut captures = self.board.gen_moves::<{MoveType::CAPTURES}>();
+        // checking for mate
         if captures.is_empty() {
             count_qs_plus();
             let quiets = self.board.gen_moves::<{MoveType::QUIETS}>();
@@ -39,7 +30,23 @@ impl EnginePosition {
                 // stalemate
                 return 0
             }
+            return stand_pat
+        }
+        // beta pruning
+        // there is an argument for returning stand pat instead of beta
+        if stand_pat >= beta { 
+            count_qs_plus();
+            return beta 
+        }
+        // delta pruning
+        // queen worth
+        if stand_pat < alpha - 900 {
+            count_qs_plus();
             return alpha
+        }
+        // improving alpha bound
+        if alpha < stand_pat {
+            alpha = stand_pat;
         }
         captures.sort_unstable_by_key(|m| self.mvv_lva(m));
         // going through captures

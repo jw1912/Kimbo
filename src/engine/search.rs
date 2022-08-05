@@ -1,4 +1,4 @@
-//use crate::io::outputs::u16_to_uci;
+use crate::io::outputs::u16_to_uci;
 
 use super::{*,eval::MAX, qsearch::{QS_CALLS, count_qs_plus}};
 use std::sync::atomic::Ordering;
@@ -70,16 +70,12 @@ impl EnginePosition {
         for d in 1..(depth+1) {
             let old_list = move_list.clone();
             move_list = self.negamax_root(old_list, -MAX, MAX, d);
-            //for m in &move_list {
-            //    println!("{}: {}", u16_to_uci(&m.0), &m.1);
-            //}
             // if a forced checkmate is found the search ends obviously
-            println!("Score at depth {d}: {}", move_list[0].1);
             if move_list[0].1 == MAX || move_list[0].1 == -MAX  {
                 break;
             }
         }
-        println!("{} leaf nodes searched.", QS_CALLS.load(Ordering::SeqCst));
+        println!("Best move: {}, Eval: {}, Nodes: {}", u16_to_uci(&move_list[0].0), move_list[0].1, QS_CALLS.load(Ordering::SeqCst));
         QS_CALLS.store(0, Ordering::SeqCst);
         move_list[0].0
     }
