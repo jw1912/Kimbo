@@ -1,6 +1,6 @@
 use super::*;
 
-// atomic count of quiescence calls
+// atomic count of quiescence returns
 use std::sync::atomic::{AtomicUsize, Ordering};
 pub static QS_CALLS: AtomicUsize = AtomicUsize::new(0);
 pub fn count_qs_plus() {
@@ -51,7 +51,7 @@ impl EnginePosition {
         if alpha < stand_pat {
             alpha = stand_pat;
         }
-        captures.sort_unstable_by_key(|m| self.mvv_lva(m));
+        captures.sort_by_key(|m| self.mvv_lva(m));
         // going through captures
         let mut ctx: EngineMoveContext;
         let mut score: i16;

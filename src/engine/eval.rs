@@ -76,7 +76,7 @@ const MVV_LVA: [[i8; 8]; 8] = [
     [55, 54, 53, 52, 51, 50, 0, 0], // victim QUEEN
     [0, 0, 0, 0, 0, 0, 0, 0],       // victim KING (should not be referenced)
     [0, 0, 0, 0, 0, 0, 0, 0],       // oops artifact of 7 != 6
-    [0, 0, 0, 0, 0, 0, 0, 0],       // empty
+    [5, 0, 0, 0, 0, -1, 0, 0],       // empty
 ];
 
 impl EnginePosition {
@@ -86,7 +86,7 @@ impl EnginePosition {
         let to_idx = (m >> 6) & 0b111111;
         let moved_pc = self.board.squares[from_idx as usize] as usize;
         let captured_pc = self.board.squares[to_idx as usize] as usize;
-        -MVV_LVA[moved_pc][captured_pc]
+        -MVV_LVA[captured_pc][moved_pc]
     }
 
     /// static evaluation of position

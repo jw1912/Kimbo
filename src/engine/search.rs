@@ -6,17 +6,24 @@ use super::{
     *,
 };
 
-// atomic count of quiescence calls
+// atomic count of normal a-b returns
 use std::sync::atomic::{AtomicUsize, Ordering};
 pub static NS_CALLS: AtomicUsize = AtomicUsize::new(0);
 pub fn count_ns_plus() {
     NS_CALLS.fetch_add(1, Ordering::SeqCst);
 }
+// count of times quiesce() is called
+pub static CALLS: AtomicUsize = AtomicUsize::new(0);
+pub fn count_plus() {
+    CALLS.fetch_add(1, Ordering::SeqCst);
+}
+
 impl EnginePosition {
     /// returns the evaluation of a position to a given depth
     pub fn negamax(&mut self, mut alpha: i16, beta: i16, depth: u8) -> i16 {
         if depth == 0 {
             count_ns_plus();
+            count_plus();
             return self.quiesce(alpha, beta, 4);
         }
         let mut moves = self.board.gen_moves::<{ MoveType::ALL }>();
@@ -38,7 +45,7 @@ impl EnginePosition {
         }
         let mut ctx: EngineMoveContext;
         let mut score: i16;
-        moves.sort_unstable_by_key(|m| self.mvv_lva(m));
+        moves.sort_by_key(|m| self.mvv_lva(m));
         for m in moves {
             ctx = self.make_move(m);
             score = -self.negamax(-beta, -alpha, depth - 1);
@@ -102,14 +109,16 @@ impl EnginePosition {
             move_list = self.negamax_root(move_list, -MAX, MAX, d);
             // if a forced checkmate is found the search ends obviously
             println!(
-                "Best move: {}, Eval: {}, Total Nodes: {}, Non-Quiescent Nodes: {}",
+                "Move: {}, Eval: {}, Leaf Nodes: {}, Non-Q Nodes: {}, quiesce(): {}",
                 u16_to_uci(&move_list[0].0),
                 move_list[0].1,
                 QS_CALLS.load(Ordering::SeqCst),
                 NS_CALLS.load(Ordering::SeqCst),
+                CALLS.load(Ordering::SeqCst)
             );
             QS_CALLS.store(0, Ordering::SeqCst);
             NS_CALLS.store(0, Ordering::SeqCst);
+            CALLS.store(0, Ordering::SeqCst);
             if move_list[0].1 == MAX || move_list[0].1 == -MAX {
                 break;
             }
@@ -119,6 +128,9 @@ impl EnginePosition {
             self.mat_mg, self.pst_mg, self.pst_eg, self.phase
         );
         println!("Zobrist Key: {:064b}", self.zobrist);
+        // for m in &move_list {
+            // println!("{:016b} / {}: {}", m.0, u16_to_uci(&m.0), m.1);
+        // }
         QS_CALLS.store(0, Ordering::SeqCst);
         NS_CALLS.store(0, Ordering::SeqCst);
         move_list[0].0
