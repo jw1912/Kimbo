@@ -88,8 +88,9 @@ impl EnginePosition {
     pub fn analyse(&mut self, depth: u8) -> u16 {
         println!(
             "Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}",
-            self.material_scores, self.pst_mg, self.pst_eg, self.phase
+            self.mat_mg, self.pst_mg, self.pst_eg, self.phase
         );
+        println!("Zobrist Key: {:064b}", self.zobrist);
         let moves = self.board.gen_moves::<{ MoveType::ALL }>();
         // creating the initial scored move list with all scores set to 0
         let mut move_list: Vec<(u16, i16)> = Vec::new();
@@ -115,8 +116,9 @@ impl EnginePosition {
         }
         println!(
             "Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}",
-            self.material_scores, self.pst_mg, self.pst_eg, self.phase
+            self.mat_mg, self.pst_mg, self.pst_eg, self.phase
         );
+        println!("Zobrist Key: {:064b}", self.zobrist);
         QS_CALLS.store(0, Ordering::SeqCst);
         NS_CALLS.store(0, Ordering::SeqCst);
         move_list[0].0

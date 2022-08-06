@@ -17,7 +17,7 @@ pub fn calculate_phase(pos: &Position) -> i16 {
 }
 
 /// Calculating material scores from scratch
-pub fn calculate_material_scores(pos: &Position) -> [i16; 2] {
+pub fn calculate_mat_mg(pos: &Position) -> [i16; 2] {
     let mut scores = [0; 2];
     for (i, side) in pos.pieces.iter().enumerate() {
         let mut score = 0;
@@ -91,11 +91,12 @@ impl EnginePosition {
 
     /// static evaluation of position
     pub fn static_eval(&self) -> i16 {
-        let mat_eval = self.material_scores[0] - self.material_scores[1];
+        let mat_eval = self.mat_mg[0] - self.mat_mg[1];
         let pst_mg = self.pst_mg[0] - self.pst_mg[1];
         let pst_eg = self.pst_eg[0] - self.pst_eg[1];
-        let phase = ((TOTALPHASE - self.phase) * 256 + (TOTALPHASE / 2)) / TOTALPHASE;
+        let mut phase = self.phase;
+        if self.phase > TOTALPHASE { phase = TOTALPHASE };
         SIDE_FACTOR[self.board.side_to_move]
-            * (mat_eval + ((256 - phase) * pst_mg + phase * pst_eg) / 256)
+            * (mat_eval + (phase * pst_mg + (TOTALPHASE-phase) * pst_eg) / TOTALPHASE)
     }
 }

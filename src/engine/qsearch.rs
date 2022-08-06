@@ -43,7 +43,7 @@ impl EnginePosition {
         }
         // delta pruning
         // queen worth
-        if stand_pat < alpha - 900 {
+        if stand_pat < alpha - 850 {
             count_qs_plus();
             return alpha;
         }
