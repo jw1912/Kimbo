@@ -1,5 +1,5 @@
-use kimbo_state::{ls1b_scan, Position};
 use fastrand;
+use kimbo_state::{ls1b_scan, Position};
 
 pub struct ZobristVals {
     pieces: [[[u64; 64]; 6]; 2],
@@ -14,7 +14,7 @@ impl ZobristVals {
     }
     pub fn castle_hash(&self, current: u8, update: u8) -> u64 {
         if current & update == 0 {
-            return 0
+            return 0;
         }
         self.castle[ls1b_scan(update as u64) as usize]
     }

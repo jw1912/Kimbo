@@ -76,7 +76,7 @@ const MVV_LVA: [[i8; 8]; 8] = [
     [55, 54, 53, 52, 51, 50, 0, 0], // victim QUEEN
     [0, 0, 0, 0, 0, 0, 0, 0],       // victim KING (should not be referenced)
     [0, 0, 0, 0, 0, 0, 0, 0],       // oops artifact of 7 != 6
-    [5, 0, 0, 0, 0, -1, 0, 0],       // empty
+    [5, 0, 0, 0, 0, -1, 0, 0],      // empty
 ];
 
 impl EnginePosition {
@@ -95,8 +95,10 @@ impl EnginePosition {
         let pst_mg = self.pst_mg[0] - self.pst_mg[1];
         let pst_eg = self.pst_eg[0] - self.pst_eg[1];
         let mut phase = self.phase;
-        if self.phase > TOTALPHASE { phase = TOTALPHASE };
+        if self.phase > TOTALPHASE {
+            phase = TOTALPHASE
+        };
         SIDE_FACTOR[self.board.side_to_move]
-            * (mat_eval + (phase * pst_mg + (TOTALPHASE-phase) * pst_eg) / TOTALPHASE)
+            * (mat_eval + (phase * pst_mg + (TOTALPHASE - phase) * pst_eg) / TOTALPHASE)
     }
 }

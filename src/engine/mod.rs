@@ -9,7 +9,7 @@ use eval::*;
 use kimbo_state::*;
 use pst::*;
 
-use self::zobrist::{ZobristVals, init_zobrist};
+use self::zobrist::{init_zobrist, ZobristVals};
 
 /// The extended position used by the engine.
 pub struct EnginePosition {
@@ -62,7 +62,7 @@ impl EnginePosition {
             pst_eg,
             phase,
             zobrist,
-            zobrist_vals
+            zobrist_vals,
         }
     }
 
@@ -72,7 +72,7 @@ impl EnginePosition {
         let ext_ctx = EngineMoveContext {
             ctx,
             mat_mg: self.mat_mg,
-            pst_mg: self.pst_mg, 
+            pst_mg: self.pst_mg,
             pst_eg: self.pst_eg,
             phase: self.phase,
             zobrist: self.zobrist,
@@ -91,7 +91,9 @@ impl EnginePosition {
         self.zobrist ^= self.zobrist_vals.side_hash();
         self.zobrist ^= self.zobrist_vals.piece_hash(from_idx, side, moved_pc);
         if ctx.en_passant_sq > 0 {
-            self.zobrist ^= self.zobrist_vals.en_passant_hash((ctx.en_passant_sq & 7) as usize);
+            self.zobrist ^= self
+                .zobrist_vals
+                .en_passant_hash((ctx.en_passant_sq & 7) as usize);
         }
         match flag {
             MoveFlags::QUIET => {

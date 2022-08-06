@@ -128,9 +128,6 @@ impl EnginePosition {
             self.mat_mg, self.pst_mg, self.pst_eg, self.phase
         );
         println!("Zobrist Key: {:064b}", self.zobrist);
-        // for m in &move_list {
-            // println!("{:016b} / {}: {}", m.0, u16_to_uci(&m.0), m.1);
-        // }
         QS_CALLS.store(0, Ordering::SeqCst);
         NS_CALLS.store(0, Ordering::SeqCst);
         move_list[0].0
