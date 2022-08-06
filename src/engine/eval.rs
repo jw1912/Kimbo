@@ -95,6 +95,7 @@ impl EnginePosition {
         let pst_mg = self.pst_mg[0] - self.pst_mg[1];
         let pst_eg = self.pst_eg[0] - self.pst_eg[1];
         let phase = ((TOTALPHASE - self.phase) * 256 + (TOTALPHASE / 2)) / TOTALPHASE;
-        SIDE_FACTOR[self.board.side_to_move] * (mat_eval + ((256 - phase) * pst_mg + phase * pst_eg) / 256)
+        SIDE_FACTOR[self.board.side_to_move]
+            * (mat_eval + ((256 - phase) * pst_mg + phase * pst_eg) / 256)
     }
 }

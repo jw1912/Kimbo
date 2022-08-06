@@ -47,7 +47,7 @@ impl EnginePosition {
             if score >= beta {
                 count_ns_plus();
                 count_qs_plus();
-                return beta
+                return beta;
             }
             // improve alpha bound
             if score > alpha {
@@ -86,7 +86,10 @@ impl EnginePosition {
 
     /// iterative deepening search
     pub fn analyse(&mut self, depth: u8) -> u16 {
-        println!("Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}", self.material_scores, self.pst_mg, self.pst_eg, self.phase);
+        println!(
+            "Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}",
+            self.material_scores, self.pst_mg, self.pst_eg, self.phase
+        );
         let moves = self.board.gen_moves::<{ MoveType::ALL }>();
         // creating the initial scored move list with all scores set to 0
         let mut move_list: Vec<(u16, i16)> = Vec::new();
@@ -110,7 +113,10 @@ impl EnginePosition {
                 break;
             }
         }
-        println!("Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}", self.material_scores, self.pst_mg, self.pst_eg, self.phase);
+        println!(
+            "Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}",
+            self.material_scores, self.pst_mg, self.pst_eg, self.phase
+        );
         QS_CALLS.store(0, Ordering::SeqCst);
         NS_CALLS.store(0, Ordering::SeqCst);
         move_list[0].0

@@ -6,7 +6,7 @@ pub const _PUZZLES: [&str; 8] = [
     "8/1k6/1pp5/7K/8/8/8/8 w - - 0 2",
     "8/8/8/rrk1K3/8/8/8/8 b - - 0 2",
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -",
-    "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+    "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
 ];
 use kimbo::engine::EnginePosition;
 use std::time::Instant;

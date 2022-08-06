@@ -30,7 +30,7 @@ impl Default for EnginePosition {
 /// Extended move context for incrementally updated eval fields
 pub struct EngineMoveContext {
     ctx: MoveContext,
-    scores: [[i16; 2];3],
+    scores: [[i16; 2]; 3],
     phase: i16,
 }
 
@@ -54,7 +54,11 @@ impl EnginePosition {
     /// Making move, updates engine's scores as well
     pub fn make_move(&mut self, m: u16) -> EngineMoveContext {
         let ctx = self.board.make_move(m);
-        let ext_ctx = EngineMoveContext { ctx, scores: [self.material_scores, self.pst_mg, self.pst_eg], phase: self.phase };
+        let ext_ctx = EngineMoveContext {
+            ctx,
+            scores: [self.material_scores, self.pst_mg, self.pst_eg],
+            phase: self.phase,
+        };
         let from_idx = (ctx.m & 63) as usize;
         let to_idx = ((ctx.m >> 6) & 63) as usize;
         let flag = ctx.m & MoveFlags::ALL;
@@ -102,12 +106,8 @@ impl EnginePosition {
                 self.pst_mg[side] += get_mg_weight(to_idx, side, moved_pc);
                 self.pst_eg[side] += get_eg_weight(to_idx, side, moved_pc);
                 let (idx1, idx2) = match side {
-                    Side::WHITE => {
-                        (0,3)
-                    },
-                    Side::BLACK => {
-                        (56,59)
-                    },
+                    Side::WHITE => (0, 3),
+                    Side::BLACK => (56, 59),
                     _ => panic!("Invalid side!"),
                 };
                 self.pst_mg[side] -= get_mg_weight(idx1, side, 3);
@@ -119,12 +119,8 @@ impl EnginePosition {
                 self.pst_mg[side] += get_mg_weight(to_idx, side, moved_pc);
                 self.pst_eg[side] += get_eg_weight(to_idx, side, moved_pc);
                 let (idx1, idx2) = match side {
-                    Side::WHITE => {
-                        (7,5)
-                    },
-                    Side::BLACK => {
-                        (63,61)
-                    },
+                    Side::WHITE => (7, 5),
+                    Side::BLACK => (63, 61),
                     _ => panic!("Invalid side!"),
                 };
                 self.pst_mg[side] -= get_mg_weight(idx1, side, 3);
@@ -144,8 +140,7 @@ impl EnginePosition {
                     self.pst_mg[side] += get_mg_weight(to_idx, side, promo_pc);
                     self.pst_eg[side] += get_eg_weight(to_idx, side, promo_pc);
                     self.phase += PHASE_VALS[promo_pc];
-                }
-                else {
+                } else {
                     let promo_pc: usize = match flag {
                         MoveFlags::KNIGHT_PROMO_CAPTURE => 1,
                         MoveFlags::BISHOP_PROMO_CAPTURE => 2,
