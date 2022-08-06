@@ -20,11 +20,11 @@ pub fn count_plus() {
 
 impl EnginePosition {
     /// returns the evaluation of a position to a given depth
-    pub fn negamax(&mut self, mut alpha: i16, beta: i16, depth: u8) -> i16 {
+    pub fn negamax(&mut self, mut alpha: i16, beta: i16, depth: u8, qdepth: u8) -> i16 {
         if depth == 0 {
             count_ns_plus();
             count_plus();
-            return self.quiesce(alpha, beta, 4);
+            return self.quiesce(alpha, beta, qdepth);
         }
         let mut moves = self.board.gen_moves::<{ MoveType::ALL }>();
         // game over
@@ -48,7 +48,7 @@ impl EnginePosition {
         moves.sort_by_key(|m| self.mvv_lva(m));
         for m in moves {
             ctx = self.make_move(m);
-            score = -self.negamax(-beta, -alpha, depth - 1);
+            score = -self.negamax(-beta, -alpha, depth - 1, qdepth);
             self.unmake_move(ctx);
             // beta pruning
             if score >= beta {
@@ -73,13 +73,14 @@ impl EnginePosition {
         mut alpha: i16,
         beta: i16,
         depth: u8,
+        qdepth: u8,
     ) -> Vec<(u16, i16)> {
         let mut new_move_list = Vec::new();
         let mut ctx: EngineMoveContext;
         let mut score: i16;
         for m in move_list {
             ctx = self.make_move(m.0);
-            score = -self.negamax(-beta, -alpha, depth - 1);
+            score = -self.negamax(-beta, -alpha, depth - 1, qdepth);
             self.unmake_move(ctx);
             // improve alpha bound
             if score > alpha {
@@ -92,12 +93,7 @@ impl EnginePosition {
     }
 
     /// iterative deepening search
-    pub fn analyse(&mut self, depth: u8) -> u16 {
-        println!(
-            "Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}",
-            self.mat_mg, self.pst_mg, self.pst_eg, self.phase
-        );
-        println!("Zobrist Key: {:064b}", self.zobrist);
+    pub fn analyse(&mut self, depth: u8, qdepth: u8) -> u16 {
         let moves = self.board.gen_moves::<{ MoveType::ALL }>();
         // creating the initial scored move list with all scores set to 0
         let mut move_list: Vec<(u16, i16)> = Vec::new();
@@ -106,7 +102,7 @@ impl EnginePosition {
         }
         // loop of iterative deepening, up to preset max depth
         for d in 1..(depth + 1) {
-            move_list = self.negamax_root(move_list, -MAX, MAX, d);
+            move_list = self.negamax_root(move_list, -MAX, MAX, d, qdepth);
             // if a forced checkmate is found the search ends obviously
             println!(
                 "Move: {}, Eval: {}, Leaf Nodes: {}, Non-Q Nodes: {}, quiesce(): {}",
@@ -123,11 +119,6 @@ impl EnginePosition {
                 break;
             }
         }
-        println!(
-            "Material score: {:?}, MG: {:?}, EG: {:?}, Phase: {}",
-            self.mat_mg, self.pst_mg, self.pst_eg, self.phase
-        );
-        println!("Zobrist Key: {:064b}", self.zobrist);
         QS_CALLS.store(0, Ordering::SeqCst);
         NS_CALLS.store(0, Ordering::SeqCst);
         move_list[0].0

@@ -20,7 +20,7 @@ fn main() {
     // move counter
     let now = Instant::now();
     for _ in 0..50 {
-        let m = game.analyse(5);
+        let m = game.analyse(6, 4);
         println!("playing {}", u16_to_uci(&m));
         game.make_move(m);
         // check if game has ended
