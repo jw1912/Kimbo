@@ -75,7 +75,7 @@ impl EnginePosition {
         depth: u8,
         qdepth: u8,
     ) -> Vec<(u16, i16)> {
-        let mut new_move_list = Vec::new();
+        let mut new_move_list = Vec::with_capacity(64);
         let mut ctx: EngineMoveContext;
         let mut score: i16;
         for m in move_list {
@@ -96,7 +96,7 @@ impl EnginePosition {
     pub fn analyse(&mut self, depth: u8, qdepth: u8) -> u16 {
         let moves = self.board.gen_moves::<{ MoveType::ALL }>();
         // creating the initial scored move list with all scores set to 0
-        let mut move_list: Vec<(u16, i16)> = Vec::new();
+        let mut move_list: Vec<(u16, i16)> = Vec::with_capacity(64);
         for m in moves {
             move_list.push((m, 0));
         }
