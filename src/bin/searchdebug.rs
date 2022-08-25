@@ -12,7 +12,7 @@ use kimbo::engine::EnginePosition;
 use std::time::Instant;
 fn main() {
     let now = Instant::now();
-    let mut pos = EnginePosition::from_fen(_PUZZLES[1]);
-    pos.analyse(5, 4);
+    let mut pos = EnginePosition::default();
+    pos.analyse(6, 4);
     println!("took {}ms", now.elapsed().as_millis())
 }
