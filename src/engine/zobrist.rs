@@ -54,7 +54,7 @@ impl Default for ZobristVals {
     }
 }
 
-pub fn init_zobrist(pos: &Position, zvals: &ZobristVals) -> u64 {
+pub fn initialise_zobrist(pos: &Position, zvals: &ZobristVals) -> u64 {
     let mut zobrist = 0;
     for (i, side) in pos.pieces.iter().enumerate() {
         for (j, &pc) in side.iter().enumerate() {

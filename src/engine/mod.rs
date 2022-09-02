@@ -9,7 +9,7 @@ use eval::*;
 use kimbo_state::*;
 use pst::*;
 
-use self::zobrist::{init_zobrist, ZobristVals};
+use self::zobrist::{initialise_zobrist, ZobristVals};
 
 /// The extended position used by the engine.
 pub struct EnginePosition {
@@ -54,7 +54,7 @@ impl EnginePosition {
         let pst_eg = calculate_pst_eg_scores(&board);
         let phase = calculate_phase(&board);
         let zobrist_vals = ZobristVals::default();
-        let zobrist = init_zobrist(&board, &zobrist_vals);
+        let zobrist = initialise_zobrist(&board, &zobrist_vals);
         Self {
             board,
             mat_mg,

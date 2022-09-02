@@ -13,6 +13,6 @@ use std::time::Instant;
 fn main() {
     let now = Instant::now();
     let mut pos = EnginePosition::default();
-    pos.analyse(6, 4);
+    pos.go_depth(6);
     println!("took {}ms", now.elapsed().as_millis())
 }

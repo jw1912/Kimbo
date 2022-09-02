@@ -9,12 +9,8 @@ pub fn count_qs_plus() {
 
 impl EnginePosition {
     /// Quiescence search
-    pub fn quiesce(&mut self, mut alpha: i16, beta: i16, max_depth: u8) -> i16 {
+    pub fn quiesce(&mut self, mut alpha: i16, beta: i16) -> i16 {
         let stand_pat = self.static_eval();
-        if max_depth == 0 {
-            count_qs_plus();
-            return stand_pat;
-        }
         let mut captures = self.board.gen_moves::<{ MoveType::CAPTURES }>();
         // checking for mate
         if captures.is_empty() {
@@ -57,7 +53,7 @@ impl EnginePosition {
         let mut score: i16;
         for m in captures {
             ctx = self.make_move(m);
-            score = -self.quiesce(-beta, -alpha, max_depth - 1);
+            score = -self.quiesce(-beta, -alpha);
             self.unmake_move(ctx);
             // beta pruning
             if score >= beta {
