@@ -1,5 +1,6 @@
 use std::io;
 use std::process;
+use kimbo::io::uci::uci_run;
 
 fn main() {
     println!("Kimbo, created by Jamie Whiting");
@@ -8,7 +9,7 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
         match commands[0] {
-            "uci" => println!("Trying uci"),
+            "uci" => uci_run(),
             "quit" => process::exit(0),
             _ => println!("Unknown command!"),
         }

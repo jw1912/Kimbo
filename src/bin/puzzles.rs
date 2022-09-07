@@ -9,29 +9,31 @@ pub const _PUZZLES: [&str; 7] = [
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -",
 ];
 
-use kimbo::{engine::EnginePosition, io::outputs::u16_to_uci};
+use kimbo::{engine::EnginePosition, io::outputs::{u16_to_uci, display_board}, search::Search};
 use kimbo_state::*;
-use std::time::Instant;
+use std::{time::Instant, sync::{Arc, atomic::AtomicBool}};
 
 fn main() {
     // initialise board with fen string
-    let mut game = EnginePosition::from_fen(_PUZZLES[1]);
+    let game = EnginePosition::from_fen(_PUZZLES[1]);
+    let mut search: Search = Search::new(game, Arc::new(AtomicBool::new(false)), u64::MAX, 6, u64::MAX);
     // display initial board config
     // move counter
     let now = Instant::now();
     for _ in 0..50 {
-        let m = game.go_depth(6);
+        let m = search.go();
         println!("playing {}", u16_to_uci(&m));
-        game.make_move(m);
+        search.position.make_move(m);
+        display_board::<true>(&search.position.board);
         // check if game has ended
-        let legal_moves = game.board.gen_moves::<{ MoveType::ALL }>();
+        let legal_moves = search.position.board.gen_moves::<{ MoveType::ALL }>();
         if legal_moves.is_empty() {
-            let side = game.board.side_to_move;
-            let idx = ls1b_scan(game.board.pieces[side][5]) as usize;
+            let side = search.position.board.side_to_move;
+            let idx = ls1b_scan(search.position.board.pieces[side][5]) as usize;
             // checkmate
-            if game
+            if search.position
                 .board
-                .is_square_attacked(idx, side, game.board.occupied)
+                .is_square_attacked(idx, side, search.position.board.occupied)
             {
                 println!("Checkmate!");
                 break;

@@ -1,28 +1,24 @@
 use super::*;
+use crate::engine::EngineMoveContext;
+use kimbo_state::{MoveType, ls1b_scan};
 
-// atomic count of quiescence returns
-use std::sync::atomic::{AtomicUsize, Ordering};
-pub static QS_CALLS: AtomicUsize = AtomicUsize::new(0);
-pub fn count_qs_plus() {
-    QS_CALLS.fetch_add(1, Ordering::SeqCst);
-}
-
-impl EnginePosition {
+impl Search {
     /// Quiescence search
     pub fn quiesce(&mut self, mut alpha: i16, beta: i16) -> i16 {
-        let stand_pat = self.static_eval();
-        let mut captures = self.board.gen_moves::<{ MoveType::CAPTURES }>();
+        let stand_pat = self.position.static_eval();
+        let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>();
         // checking for mate
         if captures.is_empty() {
-            count_qs_plus();
-            let quiets = self.board.gen_moves::<{ MoveType::QUIETS }>();
+            self.node_count += 1;
+            let quiets = self.position.board.gen_moves::<{ MoveType::QUIETS }>();
             if quiets.is_empty() {
-                let side = self.board.side_to_move;
-                let idx = ls1b_scan(self.board.pieces[side][5]) as usize;
+                let side = self.position.board.side_to_move;
+                let idx = ls1b_scan(self.position.board.pieces[side][5]) as usize;
                 // checkmate
                 if self
+                    .position
                     .board
-                    .is_square_attacked(idx, side, self.board.occupied)
+                    .is_square_attacked(idx, side, self.position.board.occupied)
                 {
                     return -MAX;
                 }
@@ -34,30 +30,30 @@ impl EnginePosition {
         // beta pruning
         // there is an argument for returning stand pat instead of beta
         if stand_pat >= beta {
-            count_qs_plus();
+            self.node_count += 1;
             return beta;
         }
         // delta pruning
         // queen worth
         if stand_pat < alpha - 850 {
-            count_qs_plus();
+            self.node_count += 1;
             return alpha;
         }
         // improving alpha bound
         if alpha < stand_pat {
             alpha = stand_pat;
         }
-        captures.sort_by_key(|m| self.mvv_lva(m));
+        captures.sort_by_key(|m| self.position.mvv_lva(m));
         // going through captures
         let mut ctx: EngineMoveContext;
         let mut score: i16;
         for m in captures {
-            ctx = self.make_move(m);
+            ctx = self.position.make_move(m);
             score = -self.quiesce(-beta, -alpha);
-            self.unmake_move(ctx);
+            self.position.unmake_move(ctx);
             // beta pruning
             if score >= beta {
-                count_qs_plus();
+                self.node_count += 1;
                 return beta;
             }
             // improve alpha bound
@@ -65,7 +61,7 @@ impl EnginePosition {
                 alpha = score
             }
         }
-        count_qs_plus();
+        self.node_count += 1;
         alpha
     }
 }

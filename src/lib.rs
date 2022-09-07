@@ -5,3 +5,5 @@
 pub mod engine;
 /// Inputs and Outputs
 pub mod io;
+/// Controlling the search
+pub mod search;

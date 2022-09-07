@@ -1,7 +1,6 @@
 use super::pst::*;
 use super::*;
 
-pub const MAX: i16 = 30000;
 pub const PIECE_VALS: [i16; 6] = [100, 320, 330, 500, 900, 0];
 pub const PHASE_VALS: [i16; 8] = [0, 1, 1, 2, 4, 0, 0, 0];
 pub const TOTALPHASE: i16 = 24;

@@ -9,10 +9,13 @@ pub const _PUZZLES: [&str; 8] = [
     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
 ];
 use kimbo::engine::EnginePosition;
-use std::time::Instant;
+use std::{time::Instant, sync::atomic::AtomicBool};
+use kimbo::search::Search;
+use std::sync::Arc;
+
 fn main() {
     let now = Instant::now();
-    let mut pos = EnginePosition::default();
-    pos.go_depth(6);
+    let mut search: Search = Search::new(EnginePosition::default(), Arc::new(AtomicBool::new(false)), u64::MAX, 7, u64::MAX);
+    search.go();
     println!("took {}ms", now.elapsed().as_millis())
 }
