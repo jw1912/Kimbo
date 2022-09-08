@@ -1,5 +1,4 @@
 //! Kimbo, a work-in-progress chess engine.
-#![deny(missing_docs)]
 
 /// Evaluation of positions.
 pub mod engine;

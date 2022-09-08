@@ -3,6 +3,7 @@ use std::process;
 use std::thread;
 use std::thread::JoinHandle;
 use crate::engine::EnginePosition;
+use crate::engine::transposition::TT;
 use crate::io::outputs::display_board;
 use crate::io::outputs::u16_to_uci;
 use crate::search::Times;
@@ -15,6 +16,9 @@ struct State {
     pos: EnginePosition,
     search_handle: Option<JoinHandle<()>>,
     stop: Arc<AtomicBool>,
+    ttable_size: usize,
+    ttable: Arc<TT>,
+    age: u8,
 }
 
 impl Default for State {
@@ -23,6 +27,9 @@ impl Default for State {
             pos: EnginePosition::default(), 
             search_handle: None, 
             stop: Arc::new(AtomicBool::new(false)),
+            ttable_size: 1,
+            ttable: Arc::new(TT::new(1024 * 1024)),
+            age: 0,
         }
     }
 }
@@ -31,6 +38,9 @@ impl Default for State {
 pub fn uci_run() {
     println!("id name Kimbo");
     println!("id author Jamie Whiting");
+    println!(" ");
+    println!("option name Hash type spin default 16 min 1 max 33554432");
+    println!("option name Clear Hash type button");
     println!("uciok");
     let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::default()));
     
@@ -44,7 +54,7 @@ pub fn uci_run() {
             "isready" => isready(),
             "position" => position(state.clone(), commands),
             "ucinewgame" => ucinewgame(state.clone()),
-            "setoption" => println!("do i need this?"),
+            "setoption" => setoption(state.clone(), commands),
             "stop" => stop(state.clone()),
             "quit" => quit(),
             // custom commands
@@ -71,20 +81,33 @@ fn ucinewgame(state: Arc<Mutex<State>>) {
 }
 
 fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) {
+    enum Tokens {
+        None,
+        Fancy,
+        Hash
+    }
+    let mut token: Tokens = Tokens::None;
     for command in commands {
         match command {
             "display" => (),
-            "fancy" => {
-                display_board::<true>(&state.lock().unwrap().pos.board);
-                return;
-            },
+            "fancy" => token = Tokens::Fancy,
+            "hash" => token = Tokens::Hash,
             _ => {
                 println!("unknown command!");
                 return;
             }
         }
     }
-    display_board::<false>(&state.lock().unwrap().pos.board);
+    match token {
+        Tokens::None => display_board::<false>(&state.lock().unwrap().pos.board),
+        Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos.board),
+        Tokens::Hash => {
+            let state_lock = state.lock().unwrap();
+            println!("total entries: {}", state_lock.ttable.num_entries);
+            println!("total buckets: {}", state_lock.ttable.num_buckets);
+            drop(state_lock);
+        }
+    }
 }
 
 fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) {
@@ -200,11 +223,58 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         let state_lock = state_2.lock().unwrap();
         let position = state_lock.pos.clone();
         let abort_signal = state_lock.stop.clone();
+        let tt = state_lock.ttable.clone();
+        let age = state_lock.age;
         drop(state_lock);
-        let mut search = Search::new(position, abort_signal, max_move_time, max_depth, max_nodes);
+        let mut search = Search::new(position, abort_signal, max_move_time, max_depth, max_nodes, tt, age);
         let best_move = search.go();
         println!("bestmove {}", u16_to_uci(&best_move));
     });
     // join handle provided to master thread
     state.lock().unwrap().search_handle = Some(search_thread);
+}
+
+fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
+    let mut reading_name = false;
+    let mut reading_value = false;
+    let mut name_token = Vec::new();
+    let mut value_token = Vec::new();
+
+    for parameter in commands {
+        match parameter {
+            "setoption" => (),
+            "name" => {
+                reading_name = true;
+                reading_value = false;
+            }
+            "value" => {
+                reading_name = false;
+                reading_value = true;
+            }
+            _ => {
+                if reading_name {
+                    name_token.push(parameter);
+                } else if reading_value {
+                    value_token.push(parameter);
+                }
+            }
+        }
+    }
+    match name_token.join(" ").as_str() {
+        "Hash" => {
+            let size = value_token[0].parse::<usize>();
+            let mut state_lock = state.lock().unwrap();
+            state_lock.ttable_size = size.unwrap_or(1);
+            state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
+            state_lock.age = 0;
+            drop(state_lock)
+        },
+        "Clear Hash" => {
+            let mut state_lock = state.lock().unwrap();
+            state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
+            state_lock.age = 0;
+            drop(state_lock)
+        },
+        _ => println!("Unknown option!")
+    }
 }

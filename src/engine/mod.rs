@@ -3,6 +3,8 @@ mod eval;
 mod pst;
 mod zobrist;
 mod moves;
+/// transposition table stuff
+pub mod transposition;
 
 use eval::*;
 use std::sync::Arc;

@@ -1,6 +1,6 @@
 use super::*;
 use crate::engine::EngineMoveContext;
-use kimbo_state::{MoveType, ls1b_scan};
+use kimbo_state::MoveType;
 
 impl Search {
     /// Quiescence search
@@ -9,22 +9,8 @@ impl Search {
         let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>();
         // checking for mate
         if captures.is_empty() {
+            // COULD test for checkmate here, but probably not worth it
             self.node_count += 1;
-            let quiets = self.position.board.gen_moves::<{ MoveType::QUIETS }>();
-            if quiets.is_empty() {
-                let side = self.position.board.side_to_move;
-                let idx = ls1b_scan(self.position.board.pieces[side][5]) as usize;
-                // checkmate
-                if self
-                    .position
-                    .board
-                    .is_square_attacked(idx, side, self.position.board.occupied)
-                {
-                    return -MAX;
-                }
-                // stalemate
-                return 0;
-            }
             return stand_pat;
         }
         // beta pruning

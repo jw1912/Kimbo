@@ -1,4 +1,6 @@
 use std::{sync::{atomic::AtomicBool, Arc}, time::Instant};
+use crate::engine::transposition::TT;
+
 use super::engine::EnginePosition;
 mod nsearch;
 mod qsearch;
@@ -44,11 +46,17 @@ pub struct Search {
     pub max_depth: u8,
     /// Forced nodes
     pub max_nodes: u64,
+    /// Transposition table
+    pub ttable: Arc<TT>,
+    /// number of searches run, for overwriting the tt
+    pub age: u8,
+    pub tt_hits: (u64, u64),
+    pub mates: u32,
 }
 
 impl Search {
     /// Makes a new search instance
-    pub fn new(position: EnginePosition, stop: Arc<AtomicBool>, max_move_time: u64, max_depth: u8, max_nodes: u64) -> Self {
+    pub fn new(position: EnginePosition, stop: Arc<AtomicBool>, max_move_time: u64, max_depth: u8, max_nodes: u64, ttable: Arc<TT>, age: u8) -> Self {
         Search { 
             position, 
             stop, 
@@ -59,7 +67,11 @@ impl Search {
             best_move: 0, 
             max_move_time, 
             max_depth, 
-            max_nodes 
+            max_nodes,
+            ttable,
+            age,
+            tt_hits: (0, 0),
+            mates: 0,
         }
     }
 }

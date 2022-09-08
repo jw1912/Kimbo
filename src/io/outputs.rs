@@ -29,10 +29,11 @@ pub fn u16_to_uci(m: &u16) -> String {
 }
 
 /// returns info on the search
-pub fn uci_info(depth: u8, nodes: u64, time: u64, pv: Vec<u16>, eval: i16) {
+pub fn uci_info(depth: u8, nodes: u64, time: u64, pv: Vec<u16>, eval: i16, filled: u64, hash_size: u64) {
     let pv_str: String = pv.iter().map(u16_to_uci).collect();
+    let hashfull = filled * 1000 / hash_size;
     // need to add mate score possibility
-    println!("info depth {} score cp {} time {} nodes {} nps {} pv {}", depth, eval, time, nodes, ((nodes as f64) / ( (time as f64) / 1000.0 )) as u32, pv_str);
+    println!("info depth {} score cp {} time {} nodes {} nps {} hashfull {} pv {}", depth, eval, time, nodes, ((nodes as f64) / ( (time as f64) / 1000.0 )) as u32, hashfull, pv_str);
 }
 
 const PIECE_SYMBOLS: [&str; 13] = [" ", "P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"];

@@ -1,4 +1,4 @@
-pub const _PUZZLES: [&str; 8] = [
+pub const _POSITIONS: [&str; 10] = [
     "8/2krR3/1pp3bp/42p1/PPNp4/3P1PKP/8/8 w - - 0 1",
     "rn5r/pp3kpp/2p1R3/5p2/3P4/2B2N2/PPP3PP/2K4n w - - 1 17",
     "4r1rk/pp4pp/2n5/8/6Q1/7R/1qPK1P1P/3R4 w - - 0 28",
@@ -7,15 +7,19 @@ pub const _PUZZLES: [&str; 8] = [
     "8/8/8/rrk1K3/8/8/8/8 b - - 0 2",
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -",
     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1"
 ];
-use kimbo::engine::EnginePosition;
+use kimbo::engine::{EnginePosition, transposition::TT};
 use std::{time::Instant, sync::atomic::AtomicBool};
 use kimbo::search::Search;
 use std::sync::Arc;
 
 fn main() {
+    let num = 8;
     let now = Instant::now();
-    let mut search: Search = Search::new(EnginePosition::default(), Arc::new(AtomicBool::new(false)), u64::MAX, 7, u64::MAX);
+    let tt = Arc::new(TT::new(32 * 1024 * 1024));
+    let mut search: Search = Search::new(EnginePosition::from_fen(_POSITIONS[num]), Arc::new(AtomicBool::new(false)), 10000, u8::MAX, u64::MAX, tt, 0);
     search.go();
     println!("took {}ms", now.elapsed().as_millis())
 }
