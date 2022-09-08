@@ -142,8 +142,8 @@ impl TTEntry {
         let data = self.data.load(Ordering::Relaxed);
         TTResult { 
             key: data as u16, 
-            best_move: (data >> 16) as u16,
-            score: (data >> 32) as i16, 
+            best_move: (data >> 32) as u16,
+            score: (data >> 16) as i16, 
             depth: (data >> 48) as u8, 
             age: (data >> 58) as u8, 
             cutoff_type: ((data >> 56) & 3) as u8

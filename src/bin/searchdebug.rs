@@ -16,10 +16,13 @@ use kimbo::search::Search;
 use std::sync::Arc;
 
 fn main() {
+    // params
     let num = 8;
+    let time = 1000;
+
     let now = Instant::now();
     let tt = Arc::new(TT::new(32 * 1024 * 1024));
-    let mut search: Search = Search::new(EnginePosition::from_fen(_POSITIONS[num]), Arc::new(AtomicBool::new(false)), 10000, u8::MAX, u64::MAX, tt, 0);
-    search.go();
+    let mut search: Search = Search::new(EnginePosition::from_fen(_POSITIONS[num]), Arc::new(AtomicBool::new(false)), time, 7, u64::MAX, tt, 0);
+    search.go::<true>();
     println!("took {}ms", now.elapsed().as_millis())
 }

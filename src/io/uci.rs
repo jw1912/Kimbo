@@ -19,6 +19,7 @@ struct State {
     ttable_size: usize,
     ttable: Arc<TT>,
     age: u8,
+    move_overhead: u64
 }
 
 impl Default for State {
@@ -30,6 +31,7 @@ impl Default for State {
             ttable_size: 1,
             ttable: Arc::new(TT::new(1024 * 1024)),
             age: 0,
+            move_overhead: 10
         }
     }
 }
@@ -39,8 +41,10 @@ pub fn uci_run() {
     println!("id name Kimbo");
     println!("id author Jamie Whiting");
     println!(" ");
-    println!("option name Hash type spin default 16 min 1 max 33554432");
+    println!("option name Hash type spin default 1 min 1 max 256");
     println!("option name Clear Hash type button");
+    println!("option name Move Overhead type spin default 10 min 0 max 5000");
+    println!("option name Threads type spin default 2 min 2 max 2");
     println!("uciok");
     let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::default()));
     
@@ -225,9 +229,10 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         let abort_signal = state_lock.stop.clone();
         let tt = state_lock.ttable.clone();
         let age = state_lock.age;
+        let move_overhead = state_lock.move_overhead;
         drop(state_lock);
-        let mut search = Search::new(position, abort_signal, max_move_time, max_depth, max_nodes, tt, age);
-        let best_move = search.go();
+        let mut search = Search::new(position, abort_signal, max_move_time - move_overhead, max_depth, max_nodes, tt, age);
+        let best_move = search.go::<false>();
         println!("bestmove {}", u16_to_uci(&best_move));
     });
     // join handle provided to master thread
@@ -275,6 +280,11 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             state_lock.age = 0;
             drop(state_lock)
         },
+        "Move Overhead" => {
+            let mut state_lock = state.lock().unwrap();
+            state_lock.move_overhead = value_token[0].parse::<u64>().unwrap_or(10);
+            drop(state_lock)
+        }
         _ => println!("Unknown option!")
     }
 }

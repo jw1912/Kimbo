@@ -64,3 +64,11 @@ pub fn display_board<const FANCY: bool>(pos: &Position) {
         println!("+---+---+---+---+---+---+---+---+");
     }
 }
+
+pub fn move_list_out(move_list: &Vec<u16>) -> String {
+    let mut out = String::from("");
+    for m in move_list {
+        out.push_str(&u16_to_uci(m));
+    }
+    out
+}
