@@ -1,14 +1,11 @@
 use super::inputs::uci_to_u16;
-use crate::engine::transposition::TT;
-use crate::engine::EnginePosition;
-use crate::io::outputs::display_board;
-use crate::io::outputs::u16_to_uci;
-use crate::search::Search;
-use crate::search::Times;
+use crate::engine::{transposition::TT, EnginePosition};
+use crate::io::outputs::{display_board, u16_to_uci};
+use crate::search::{Search, Times};
+use crate::perft::{PerftSearch, transposition::PerftTT};
 use std::io;
 use std::process;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
@@ -107,8 +104,7 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos.board),
         Tokens::Hash => {
             let state_lock = state.lock().unwrap();
-            println!("total entries: {}", state_lock.ttable.num_entries);
-            println!("total buckets: {}", state_lock.ttable.num_buckets);
+            println!("{} / {} entries filled", state_lock.ttable.filled.load(Ordering::Relaxed), state_lock.ttable.num_entries);
             drop(state_lock);
         }
     }
@@ -174,6 +170,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         WInc,
         BInc,
         MovesToGo,
+        Perft
     }
 
     let state_lock = state.lock().unwrap();
@@ -186,6 +183,8 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
     let mut max_move_time: u64 = u64::MAX;
     let mut max_nodes: u64 = u64::MAX;
     let mut times: Times = Times::default();
+    let mut perft = false;
+    let mut perft_depth = 0;
 
     for command in commands {
         match command {
@@ -199,6 +198,10 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             "winc" => token = Tokens::WInc,
             "binc" => token = Tokens::BInc,
             "movestogo" => token = Tokens::MovesToGo,
+            "perft" => token = {
+                perft = true;
+                Tokens::Perft
+            },
             _ => match token {
                 Tokens::Ponder => (),
                 Tokens::Depth => max_depth = command.parse::<u8>().unwrap_or(u8::MAX),
@@ -210,7 +213,8 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
                 Tokens::BInc => times.binc = command.parse::<u64>().unwrap_or(u64::MAX),
                 Tokens::MovesToGo => {
                     times.moves_to_go = Some(command.parse::<u8>().unwrap_or(u8::MAX))
-                }
+                },
+                Tokens::Perft => perft_depth = command.parse::<u8>().unwrap_or(0),
             },
         }
     }
@@ -219,6 +223,24 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         let state_lock = state.lock().unwrap();
         max_move_time = times.to_movetime(state_lock.pos.board.side_to_move);
         drop(state_lock);
+    }
+
+    if perft {
+        let state_2 = state.clone();
+        let search_thread = thread::spawn(move || {
+            let state_lock = state_2.lock().unwrap();
+            let position = state_lock.pos.clone();
+            let tt = Arc::new(PerftTT::new(state_lock.ttable_size * 1024 * 1024));
+            drop(state_lock);
+            let mut search = PerftSearch::new(
+                position,
+                tt
+            );
+            let count = search.go(perft_depth);
+            println!("Move count: {count}");
+        });
+        state.lock().unwrap().search_handle = Some(search_thread);
+        return;
     }
 
     // SEARCHING ON SECOND THREAD
@@ -277,7 +299,7 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         "Hash" => {
             let size = value_token[0].parse::<usize>();
             let mut state_lock = state.lock().unwrap();
-            state_lock.ttable_size = size.unwrap_or(1);
+            state_lock.ttable_size = size.unwrap_or(32);
             state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)

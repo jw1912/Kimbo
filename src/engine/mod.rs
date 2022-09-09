@@ -1,10 +1,10 @@
-mod eval;
+pub mod eval;
 #[rustfmt::skip]
 mod pst;
 mod moves;
 /// transposition table stuff
 pub mod transposition;
-mod zobrist;
+pub mod zobrist;
 
 use eval::*;
 use kimbo_state::*;

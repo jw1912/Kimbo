@@ -5,7 +5,7 @@ use std::cmp::max;
 pub const PIECE_VALS: [i16; 6] = [100, 320, 330, 500, 900, 0];
 pub const PHASE_VALS: [i16; 8] = [0, 1, 1, 2, 4, 0, 0, 0];
 pub const TOTALPHASE: i16 = 24;
-const SIDE_FACTOR: [i16; 2] = [1, -1];
+const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
 
 /// Calculating phase
 pub fn calculate_phase(pos: &Position) -> i16 {
@@ -120,7 +120,7 @@ impl EnginePosition {
         };
         SIDE_FACTOR[self.board.side_to_move]
             * (mat_eval
-                + (phase * pst_mg + (TOTALPHASE - phase) * (pst_eg + self.kings_endgame(side)))
+                + (phase * pst_mg + (TOTALPHASE - phase) * (pst_eg + SIDE_FACTOR[side as usize] * self.kings_endgame(side)))
                     / TOTALPHASE)
     }
 }

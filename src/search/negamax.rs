@@ -1,7 +1,5 @@
-use super::Search;
 use super::*;
-use crate::engine::transposition::CuttoffType;
-use crate::engine::EngineMoveContext;
+use crate::engine::{transposition::CuttoffType, EngineMoveContext};
 use kimbo_state::{ls1b_scan, MoveType};
 use std::sync::atomic::Ordering;
 
@@ -10,7 +8,7 @@ impl Search {
     pub fn negamax(
         &mut self,
         mut alpha: i16,
-        mut beta: i16,
+        beta: i16,
         depth: u8,
         ply: u8,
         pv: &mut Vec<u16>,
@@ -26,8 +24,12 @@ impl Search {
             return 0;
         }
 
+        if ply > self.stats.seldepth {
+            self.stats.seldepth = ply;
+        }
+
         if depth == 0 {
-            return self.quiesce(alpha, beta);
+            return self.quiesce(alpha, beta, ply + 1);
         }
 
         // probing transposition table
@@ -37,25 +39,12 @@ impl Search {
         let mut entry_found = false;
         let tt_result = self.ttable.get(zobrist, &mut collision);
         if let Some(res) = tt_result {
-            self.stats.tt_hits.0 += 1;
+            self.stats.tt_hits += 1;
             hash_move = res.best_move;
             entry_found = true;
-            if res.depth >= depth {
-                self.stats.tt_hits.1 += 1;
-                match res.cutoff_type {
-                    CuttoffType::ALPHA => {
-                        if res.score < beta {
-                            beta = res.score;
-                        }
-                    }
-                    CuttoffType::BETA => {
-                        if res.score > alpha {
-                            alpha = res.score;
-                        }
-                    }
-                    CuttoffType::EXACT => return res.score,
-                    _ => (),
-                }
+            if res.depth >= depth && res.cutoff_type == CuttoffType::BETA && res.score > alpha {
+                self.stats.cutoff_hits += 1;
+                alpha = res.score;
             }
         }
         if collision {
@@ -92,7 +81,7 @@ impl Search {
             }
         });
         if move_hit {
-            self.stats.tt_hits.2 += 1;
+            self.stats.tt_move_hits += 1;
         }
 
         // tracking best score and move, and if alpha changes for ttable
@@ -110,6 +99,7 @@ impl Search {
             ctx = self.position.make_move(m);
             score = -self.negamax(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
+
             // updating best move and score
             if score > best_score {
                 best_score = score;
@@ -126,12 +116,11 @@ impl Search {
 
             // beta pruning
             if score >= beta {
-                //self.ttable.push(zobrist, beta, m, depth, self.age, CuttoffType::BETA);
-                //return beta;
                 break;
             }
         }
         self.stats.node_count += 1;
+        // writing to tt
         if !entry_found || alpha != orig_alpha {
             let cutoff_type = if alpha <= orig_alpha {
                 CuttoffType::ALPHA

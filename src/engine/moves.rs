@@ -117,6 +117,8 @@ impl EnginePosition {
                     self.pst_eg[side] += get_eg_weight(to_idx, side, promo_pc);
                     self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, side, promo_pc);
                     self.phase += PHASE_VALS[promo_pc];
+                    self.mat_mg[side] += PIECE_VALS[promo_pc];
+                    self.mat_mg[side] -= PIECE_VALS[0];
                 } else {
                     let promo_pc: usize = match flag {
                         MoveFlags::KNIGHT_PROMO_CAPTURE => 1,
@@ -128,6 +130,8 @@ impl EnginePosition {
                     self.pst_mg[side] += get_mg_weight(to_idx, side, promo_pc);
                     self.pst_eg[side] += get_eg_weight(to_idx, side, promo_pc);
                     let cap_pc = ctx.captured_pc as usize;
+                    self.mat_mg[side] += PIECE_VALS[promo_pc];
+                    self.mat_mg[side] -= PIECE_VALS[0];
                     self.mat_mg[opp] -= PIECE_VALS[cap_pc];
                     self.pst_mg[opp] -= get_mg_weight(to_idx, opp, cap_pc);
                     self.pst_eg[opp] -= get_eg_weight(to_idx, opp, cap_pc);

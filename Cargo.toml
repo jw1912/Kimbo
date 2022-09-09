@@ -17,3 +17,6 @@ panic = "abort"
 lto = true
 strip = true
 debug = false
+
+[profile.dev]
+opt-level = 3

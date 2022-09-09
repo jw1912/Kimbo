@@ -54,33 +54,45 @@ pub struct Search {
 pub struct Stats {
     /// Total nodes searched
     pub node_count: u64,
-    /// Node count at previous depth (to get count at each depth)
-    pub old_count: u64,
+    /// Total quiescent node count
+    pub qnode_count: u64,
     /// Time at start
     pub start_time: Instant,
-    /// Elapsed time at previous depth
-    pub old_time: u64,
-    pub tt_hits: (u64, u64, u64),
+    pub tt_hits: u64,
+    pub tt_move_hits: u64,
+    pub cutoff_hits: u64,
     pub collisions: u64,
+    /// Max depth reached
+    pub seldepth: u8,
 }
-impl Stats {
-    fn reset(&mut self) {
-        *self = Stats {
+impl Default for Stats {
+    fn default() -> Self {
+        Self {
             node_count: 0,
-            old_count: 0,
+            qnode_count: 0,
             start_time: Instant::now(),
-            old_time: 0,
-            tt_hits: (0, 0, 0),
+            tt_hits: 0,
+            tt_move_hits: 0,
+            cutoff_hits: 0,
             collisions: 0,
-        };
+            seldepth: 0,
+        } 
     }
-    fn report(&self) {
+}
+
+impl Stats {
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+    pub fn report(&self) {
         let time = self.start_time.elapsed().as_millis();
-        println!("total nodes: {}", self.node_count);
-        println!("total time: {}ms", time);
-        println!("total nps: {}", self.node_count * 1000 / time as u64);
-        println!("total tt hits: {}", self.tt_hits.0);
-        println!("total collisions: {}", self.collisions);
+        println!("total nodes: {} ({}% quiescent)", self.node_count, self.qnode_count * 100 / self.node_count);
+        println!("time: {}ms", time);
+        println!("nps: {}", self.node_count * 1000 / (time + 1) as u64);
+        println!("tt hits: {}", self.tt_hits);
+        println!("tt move hits: {}", self.tt_move_hits);
+        println!("beta cuttoff hits: {}", self.cutoff_hits);
+        println!("collisions: {}", self.collisions);
     }
 }
 
@@ -95,18 +107,10 @@ impl Search {
         ttable: Arc<TT>,
         age: u8,
     ) -> Self {
-        let stats = Stats {
-            node_count: 0,
-            old_count: 0,
-            start_time: Instant::now(),
-            old_time: 0,
-            tt_hits: (0, 0, 0),
-            collisions: 0,
-        };
+        let stats = Stats::default();
         Search {
             position,
             stop,
-
             best_move: 0,
             max_move_time,
             max_depth,

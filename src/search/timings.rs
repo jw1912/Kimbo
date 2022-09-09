@@ -16,6 +16,6 @@ impl Times {
         if self.moves_to_go.is_some() {
             return available / self.moves_to_go.unwrap() as u64;
         }
-        available / 32
+        available / 40
     }
 }
