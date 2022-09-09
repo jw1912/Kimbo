@@ -59,6 +59,7 @@ pub struct Stats {
     pub old_time: u64,
     pub tt_hits: (u64, u64, u64),
     pub mates: u32,
+    pub collisions: u64,
 }
 impl Stats {
     fn reset(&mut self) {
@@ -69,6 +70,7 @@ impl Stats {
             old_time: 0,
             tt_hits: (0, 0, 0),
             mates: 0,
+            collisions: 0,
         };
     }
 }
@@ -83,6 +85,7 @@ impl Search {
             old_time: 0,
             tt_hits: (0, 0, 0),
             mates: 0,
+            collisions: 0,
         };
         Search { 
             position, 

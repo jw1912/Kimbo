@@ -7,7 +7,7 @@ use super::*;
 
 impl Search {
     /// returns the evaluation of a position to a given depth
-    pub fn negamax(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8) -> i16 {
+    pub fn negamax(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8, pv: &mut Vec<u16>) -> i16 {
         if self.stop.load(Ordering::Relaxed) {
             return 0 // immediately bow out of search
         }
@@ -50,6 +50,9 @@ impl Search {
                     _ => ()
                 }
             }
+        }
+        if collision {
+            self.stats.collisions += 1;
         }
 
         // generating move
@@ -94,14 +97,24 @@ impl Search {
         let mut ctx: EngineMoveContext;
         let mut score: i16;
         for m in moves {
+            // new vector
+            let mut sub_pv = Vec::new();
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
-            score = -self.negamax(-beta, -alpha, depth - 1, ply + 1);
+            score = -self.negamax(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
             // updating best move and score
             if score > best_score {
                 best_score = score;
                 best_move = m;
+                pv.clear();
+                pv.push(m);
+                pv.append(&mut sub_pv);
+            }
+
+            // improve alpha bound
+            if score > alpha {
+                alpha = score;
             }
 
             // beta pruning
@@ -111,10 +124,6 @@ impl Search {
                 break;
             }
 
-            // improve alpha bound
-            if score > alpha {
-                alpha = score
-            }
         }
         self.stats.node_count += 1;
         if !entry_found || alpha != orig_alpha {

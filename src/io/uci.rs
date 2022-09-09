@@ -29,7 +29,7 @@ impl Default for State {
             search_handle: None, 
             stop: Arc::new(AtomicBool::new(false)),
             ttable_size: 1,
-            ttable: Arc::new(TT::new(1024 * 1024)),
+            ttable: Arc::new(TT::new(32 * 1024 * 1024)),
             age: 0,
             move_overhead: 10
         }

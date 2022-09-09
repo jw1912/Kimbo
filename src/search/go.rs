@@ -21,18 +21,17 @@ impl Search {
             {
                 break;
             }
-            
-            let score = self.negamax(-MAX, MAX, d + 1, 0);
-            self.best_move = self.ttable.get(self.position.zobrist, &mut false).unwrap().best_move;
+            let mut pv = Vec::new();
+            let score = self.negamax(-MAX, MAX, d + 1, 0, &mut pv);
             
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
             }
-
+            self.best_move = pv[0];
             let elapsed = self.stats.start_time.elapsed().as_millis() as u64;
-            uci_info(d + 1, self.stats.node_count - self.stats.old_count, elapsed - self.stats.old_time, vec![self.best_move], score, self.ttable.filled.load(Ordering::Relaxed), self.ttable.num_entries as u64);
+            uci_info(d + 1, self.stats.node_count - self.stats.old_count, elapsed - self.stats.old_time, pv, score, self.ttable.filled.load(Ordering::Relaxed), self.ttable.num_entries as u64);
             if TEST {
-                println!("entries: {} hits: {}, cutoff hits: {}, move hits: {}", self.ttable.filled.load(Ordering::Relaxed),self.stats.tt_hits.0, self.stats.tt_hits.1, self.stats.tt_hits.2);
+                println!("entries: {} hits: {}, cutoff hits: {}, move hits: {}, collisions: {}", self.ttable.filled.load(Ordering::Relaxed),self.stats.tt_hits.0, self.stats.tt_hits.1, self.stats.tt_hits.2, self.stats.collisions);
             }
             self.stats.old_time = elapsed;
             self.stats.old_count = self.stats.node_count;
