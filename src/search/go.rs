@@ -30,9 +30,6 @@ impl Search {
             self.best_move = pv[0];
             let elapsed = self.stats.start_time.elapsed().as_millis() as u64;
             uci_info(d + 1, self.stats.node_count - self.stats.old_count, elapsed - self.stats.old_time, pv, score, self.ttable.filled.load(Ordering::Relaxed), self.ttable.num_entries as u64);
-            if TEST {
-                println!("entries: {} hits: {}, cutoff hits: {}, move hits: {}, collisions: {}", self.ttable.filled.load(Ordering::Relaxed),self.stats.tt_hits.0, self.stats.tt_hits.1, self.stats.tt_hits.2, self.stats.collisions);
-            }
             self.stats.old_time = elapsed;
             self.stats.old_count = self.stats.node_count;
 
@@ -41,7 +38,7 @@ impl Search {
             }
         }
         if TEST {
-            println!("total nodes: {}, mates: {}", self.stats.node_count, self.stats.mates);
+            self.stats.report();
         }
         // resetting counts
         self.stats.reset();

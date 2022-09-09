@@ -68,7 +68,6 @@ impl Search {
                 .board
                 .is_square_attacked(idx, side, self.position.board.occupied)
             {   
-                self.stats.mates += 1;
                 return -MAX;
             }
             // stalemate

@@ -58,7 +58,6 @@ pub struct Stats {
     /// Elapsed time at previous depth
     pub old_time: u64,
     pub tt_hits: (u64, u64, u64),
-    pub mates: u32,
     pub collisions: u64,
 }
 impl Stats {
@@ -69,9 +68,16 @@ impl Stats {
             start_time: Instant::now(),
             old_time: 0,
             tt_hits: (0, 0, 0),
-            mates: 0,
             collisions: 0,
         };
+    }
+    fn report(&self) {
+        let time = self.start_time.elapsed().as_millis();
+        println!("total nodes: {}", self.node_count);
+        println!("total time: {}ms", time);
+        println!("total nps: {}", self.node_count * 1000 / time as u64);
+        println!("total tt hits: {}", self.tt_hits.0);
+        println!("total collisions: {}", self.collisions);
     }
 }
 
@@ -84,7 +90,6 @@ impl Search {
             start_time: Instant::now(),
             old_time: 0,
             tt_hits: (0, 0, 0),
-            mates: 0,
             collisions: 0,
         };
         Search { 
