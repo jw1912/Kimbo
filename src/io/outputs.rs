@@ -64,13 +64,13 @@ const PIECE_SYMBOLS_FANCY: [&str; 13] = [
 ];
 
 fn symbol_at_idx<const FANCY: bool>(idx: usize, pos: &Position) -> &str {
-    let idx = match pos.squares[idx] {
+    let indx = match pos.squares[idx] {
         7 => 0,
         _ => ((pos.squares[idx] + 1) as u64 + 6 * ((pos.sides[1] >> idx) & 1)) as usize,
     };
     match FANCY {
-        true => PIECE_SYMBOLS_FANCY[idx],
-        false => PIECE_SYMBOLS[idx],
+        true => PIECE_SYMBOLS_FANCY[indx],
+        false => PIECE_SYMBOLS[indx],
     }
 }
 

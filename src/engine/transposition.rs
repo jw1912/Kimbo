@@ -90,13 +90,13 @@ impl TT {
 
         for (entry_index, entry) in bucket.entries.iter().enumerate() {
             let entry_data = entry.get_data();
-            if entry_data.best_move == 0 {
+            if entry_data.depth == 0 {
                 self.filled.fetch_add(1, Ordering::Relaxed);
                 desired_index = entry_index;
                 break;
             }
 
-            if entry_data.key == key {
+            if entry_data.key == key && depth > entry_data.depth {
                 desired_index = entry_index;
                 break;
             }
@@ -143,64 +143,6 @@ impl TT {
         }
         None
     }
-
-    pub fn push_perft(&self, zobrist: u64, count: u64, depth: u8, age: u8) {
-        let key = (zobrist >> 48) as u16;
-        let index = (zobrist as usize) % self.num_buckets;
-        let bucket = &self.table[index];
-        let mut desired_index = usize::MAX;
-        let mut found_old_entry = false;
-
-        for (entry_index, entry) in bucket.entries.iter().enumerate() {
-            let entry_data = entry.get_perft_data();
-            if entry_data.depth == 0 {
-                self.filled.fetch_add(1, Ordering::Relaxed);
-                desired_index = entry_index;
-                break;
-            }
-
-            if entry_data.key == key && entry_data.depth != depth {
-                desired_index = entry_index;
-                break;
-            }
-            if entry_data.age != age {
-                if !found_old_entry {
-                    desired_index = entry_index;
-                    found_old_entry = true;
-                }
-
-                continue;
-            }
-
-            if !found_old_entry {
-                desired_index = entry_index;
-                continue;
-            }
-        }
-        bucket.entries[desired_index].set_perft_data(key, count, depth, age);
-    }
-
-    pub fn get_perft(&self, zobrist: u64, depth: u8, collision: &mut bool) -> Option<TTPerft> {
-        let key = (zobrist >> 48) as u16;
-        let index = (zobrist as usize) % self.num_buckets;
-        let bucket = &self.table[index];
-        let mut entry_with_key_present = false;
-
-        for entry in &bucket.entries {
-            let entry_data = entry.get_perft_data();
-            if entry_data.key == key  {
-                if entry_data.depth == depth {
-                    return Some(entry_data)
-                }
-            } else if entry_data.key != 0 {
-                entry_with_key_present = true;
-            }
-        }
-        if entry_with_key_present {
-            *collision = true;
-        }
-        None
-    }
 }
 
 impl TTEntry {
@@ -233,23 +175,5 @@ impl TTEntry {
             age: (data >> 58) as u8,
             cutoff_type: ((data >> 56) & 3) as u8,
         }
-    }
-
-    pub fn set_perft_data(&self, key: u16, count: u64, depth: u8, age: u8) {
-        let data = (key as u64)
-        | ((depth as u64) << 20)
-        | ((age as u64) << 16)
-        | (count << 28);
-        self.data.store(data, Ordering::Relaxed)
-    }
-
-    pub fn get_perft_data(&self) -> TTPerft {
-        let data = self.data.load(Ordering::Relaxed);
-        TTPerft {
-            key: data as u16,
-            count: data >> 28,
-            depth: (data >> 20) as u8,
-            age: ((data >> 16) & 0b1111) as u8
-        } 
     }
 }
