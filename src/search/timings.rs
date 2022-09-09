@@ -10,11 +10,11 @@ impl Times {
         let available = match side {
             0 => self.wtime,
             1 => self.btime,
-            _ => panic!("Invalid side!")
+            _ => panic!("Invalid side!"),
         };
 
         if self.moves_to_go.is_some() {
-            return available / self.moves_to_go.unwrap() as u64
+            return available / self.moves_to_go.unwrap() as u64;
         }
         available / 32
     }

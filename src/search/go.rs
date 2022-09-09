@@ -1,8 +1,8 @@
 use super::*;
+use crate::io::outputs::uci_info;
 use kimbo_state::MoveType;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
-use crate::io::outputs::uci_info;
 
 impl Search {
     /// iterative deepening search
@@ -16,20 +16,29 @@ impl Search {
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
         for d in 0..self.max_depth {
-            if (self.stats.start_time.elapsed().as_millis() as f64) / (self.max_move_time as f64) >= 0.5 
-            || (self.stats.node_count as f64) / (self.max_nodes as f64) >= 0.5 
+            if (self.stats.start_time.elapsed().as_millis() as f64) / (self.max_move_time as f64)
+                >= 0.5
+                || (self.stats.node_count as f64) / (self.max_nodes as f64) >= 0.5
             {
                 break;
             }
             let mut pv = Vec::new();
             let score = self.negamax(-MAX, MAX, d + 1, 0, &mut pv);
-            
+
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
             }
             self.best_move = pv[0];
             let elapsed = self.stats.start_time.elapsed().as_millis() as u64;
-            uci_info(d + 1, self.stats.node_count - self.stats.old_count, elapsed - self.stats.old_time, pv, score, self.ttable.filled.load(Ordering::Relaxed), self.ttable.num_entries as u64);
+            uci_info(
+                d + 1,
+                self.stats.node_count - self.stats.old_count,
+                elapsed - self.stats.old_time,
+                pv,
+                score,
+                self.ttable.filled.load(Ordering::Relaxed),
+                self.ttable.num_entries as u64,
+            );
             self.stats.old_time = elapsed;
             self.stats.old_count = self.stats.node_count;
 

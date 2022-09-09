@@ -1,14 +1,14 @@
 mod eval;
 #[rustfmt::skip]
 mod pst;
-mod zobrist;
 mod moves;
 /// transposition table stuff
 pub mod transposition;
+mod zobrist;
 
 use eval::*;
-use std::sync::Arc;
 use kimbo_state::*;
+use std::sync::Arc;
 
 use self::zobrist::{initialise_zobrist, ZobristVals};
 

@@ -4,18 +4,20 @@ const ENTRIES_PER_BUCKET: usize = 8;
 
 #[derive(Default)]
 pub struct TTEntry {
-    pub data: AtomicU64
+    pub data: AtomicU64,
 }
 impl Clone for TTEntry {
     fn clone(&self) -> Self {
-        Self { data: AtomicU64::new(self.data.load(Ordering::Relaxed)) }
+        Self {
+            data: AtomicU64::new(self.data.load(Ordering::Relaxed)),
+        }
     }
 }
 
 #[derive(Clone, Default)]
 #[repr(align(64))]
 pub struct TTBucket {
-    pub entries: [TTEntry; ENTRIES_PER_BUCKET]
+    pub entries: [TTEntry; ENTRIES_PER_BUCKET],
 }
 
 pub struct TT {
@@ -43,7 +45,6 @@ impl CuttoffType {
     pub const BETA: u8 = 3;
 }
 
-
 impl TT {
     pub fn new(size: usize) -> Self {
         let bucket_size = std::mem::size_of::<TTBucket>();
@@ -56,12 +57,22 @@ impl TT {
             filled: AtomicU64::new(0),
         };
         if size != 0 {
-            table.table.resize(table.table.capacity(), Default::default())
+            table
+                .table
+                .resize(table.table.capacity(), Default::default())
         }
         table
     }
 
-    pub fn push(&self, zobrist: u64, score: i16, best_move: u16, depth: u8, age: u8, cutoff_type: u8) {
+    pub fn push(
+        &self,
+        zobrist: u64,
+        score: i16,
+        best_move: u16,
+        depth: u8,
+        age: u8,
+        cutoff_type: u8,
+    ) {
         let key = (zobrist >> 48) as u16;
         let index = (zobrist as usize) % self.table.len();
         let bucket = &self.table[index];
@@ -127,31 +138,34 @@ impl TT {
 }
 
 impl TTEntry {
-    pub fn set_data(&self, key: u16, score: i16, best_move: u16, depth: u8, age: u8, cutoff_type: u8) {
+    pub fn set_data(
+        &self,
+        key: u16,
+        score: i16,
+        best_move: u16,
+        depth: u8,
+        age: u8,
+        cutoff_type: u8,
+    ) {
         let data = (key as u64)
-        | ((score as u16) as u64) << 16
-        | ((best_move as u64) << 32)
-        | ((depth as u64) << 48)
-        | ((cutoff_type as u64) << 56)
-        | ((age as u64) << 58);
+            | ((score as u16) as u64) << 16
+            | ((best_move as u64) << 32)
+            | ((depth as u64) << 48)
+            | ((cutoff_type as u64) << 56)
+            | ((age as u64) << 58);
 
         self.data.store(data, Ordering::Relaxed);
     }
 
     pub fn get_data(&self) -> TTResult {
         let data = self.data.load(Ordering::Relaxed);
-        TTResult { 
-            key: data as u16, 
+        TTResult {
+            key: data as u16,
             best_move: (data >> 32) as u16,
-            score: (data >> 16) as i16, 
-            depth: (data >> 48) as u8, 
-            age: (data >> 58) as u8, 
-            cutoff_type: ((data >> 56) & 3) as u8
+            score: (data >> 16) as i16,
+            depth: (data >> 48) as u8,
+            age: (data >> 58) as u8,
+            cutoff_type: ((data >> 56) & 3) as u8,
         }
     }
 }
-
-
-
-
-

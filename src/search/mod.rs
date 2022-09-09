@@ -1,11 +1,14 @@
-use std::{sync::{atomic::AtomicBool, Arc}, time::Instant};
 use crate::engine::transposition::TT;
+use std::{
+    sync::{atomic::AtomicBool, Arc},
+    time::Instant,
+};
 
 use super::engine::EnginePosition;
+mod go;
 mod negamax;
 mod qsearch;
 mod timings;
-mod go;
 
 /// maximal score (for mate)
 pub const MAX: i16 = 30000;
@@ -22,7 +25,7 @@ pub struct Times {
     /// Black time increment
     pub binc: u64,
     /// Moves until next time control
-    pub moves_to_go: Option<u8>
+    pub moves_to_go: Option<u8>,
 }
 
 /// Search info
@@ -83,7 +86,15 @@ impl Stats {
 
 impl Search {
     /// Makes a new search instance
-    pub fn new(position: EnginePosition, stop: Arc<AtomicBool>, max_move_time: u64, max_depth: u8, max_nodes: u64, ttable: Arc<TT>, age: u8) -> Self {
+    pub fn new(
+        position: EnginePosition,
+        stop: Arc<AtomicBool>,
+        max_move_time: u64,
+        max_depth: u8,
+        max_nodes: u64,
+        ttable: Arc<TT>,
+        age: u8,
+    ) -> Self {
         let stats = Stats {
             node_count: 0,
             old_count: 0,
@@ -92,17 +103,17 @@ impl Search {
             tt_hits: (0, 0, 0),
             collisions: 0,
         };
-        Search { 
-            position, 
-            stop, 
+        Search {
+            position,
+            stop,
 
-            best_move: 0, 
-            max_move_time, 
-            max_depth, 
+            best_move: 0,
+            max_move_time,
+            max_depth,
             max_nodes,
             ttable,
             age,
-            stats
+            stats,
         }
     }
 }

@@ -6,7 +6,7 @@ impl Search {
     /// Quiescence search
     pub fn quiesce(&mut self, mut alpha: i16, beta: i16) -> i16 {
         let stand_pat = self.position.static_eval();
-        
+
         // beta pruning
         // there is an argument for returning stand pat instead of beta
         if stand_pat >= beta {
@@ -27,7 +27,7 @@ impl Search {
         // generating and sorting captures
         let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>();
         captures.sort_by_key(|m| self.position.mvv_lva(m));
-        
+
         // going through captures
         let mut ctx: EngineMoveContext;
         let mut score: i16;

@@ -1,7 +1,7 @@
-use kimbo::engine::{EnginePosition, transposition::TT};
+use kimbo::engine::{transposition::TT, EnginePosition};
 use kimbo::io::outputs::{display_board, u16_to_uci};
-use std::sync::atomic::AtomicBool;
 use kimbo::search::Search;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 pub const _POSITIONS: [&str; 11] = [
@@ -13,7 +13,7 @@ pub const _POSITIONS: [&str; 11] = [
     "8/8/8/rrk1K3/8/8/8/8 b - - 0 2",
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -",
     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", // Kiwipete Position
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Start Position
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",             // Start Position
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1", // Lasker-Reichhelm Position
     "3rkb1r/pp3pp1/4pq1p/2p1n3/8/2P3Q1/PPb1BPPP/R1B2RK1 w k - 0 17 ",
 ];
@@ -24,9 +24,16 @@ fn main() {
     let time = 5000;
     let position = _POSITIONS[num];
 
-
     let tt = Arc::new(TT::new(32 * 1024 * 1024));
-    let mut search: Search = Search::new(EnginePosition::from_fen(position), Arc::new(AtomicBool::new(false)), time, u8::MAX, u64::MAX, tt, 0);
+    let mut search: Search = Search::new(
+        EnginePosition::from_fen(position),
+        Arc::new(AtomicBool::new(false)),
+        time,
+        u8::MAX,
+        u64::MAX,
+        tt,
+        0,
+    );
     display_board::<true>(&search.position.board);
     search.go::<true>();
     println!("best move {}", u16_to_uci(&search.best_move));

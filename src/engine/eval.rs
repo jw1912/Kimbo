@@ -1,6 +1,6 @@
 use super::pst::*;
-use std::cmp::max;
 use super::*;
+use std::cmp::max;
 
 pub const PIECE_VALS: [i16; 6] = [100, 320, 330, 500, 900, 0];
 pub const PHASE_VALS: [i16; 8] = [0, 1, 1, 2, 4, 0, 0, 0];
@@ -92,9 +92,15 @@ impl EnginePosition {
     fn kings_endgame(&self, side: u8) -> i16 {
         let white = ls1b_scan(self.board.pieces[0][5]) as usize;
         let black = ls1b_scan(self.board.pieces[0][5]) as usize;
-        let k_dst = ((white & 7) as i16 - (black & 7) as i16).abs() + ((white >> 3) as i16 - (black >> 3) as i16).abs();
-        let opponent = match side {0 => white, 1 => black, _ => return 0};
-        let opp_ctr_dst = max(3-((opponent & 7) as i16),((opponent & 7) as i16) - 4) + max(3-((opponent >> 3) as i16), ((opponent >> 3) as i16) - 4);
+        let k_dst = ((white & 7) as i16 - (black & 7) as i16).abs()
+            + ((white >> 3) as i16 - (black >> 3) as i16).abs();
+        let opponent = match side {
+            0 => white,
+            1 => black,
+            _ => return 0,
+        };
+        let opp_ctr_dst = max(3 - ((opponent & 7) as i16), ((opponent & 7) as i16) - 4)
+            + max(3 - ((opponent >> 3) as i16), ((opponent >> 3) as i16) - 4);
         14 + opp_ctr_dst - k_dst
     }
 
@@ -104,7 +110,7 @@ impl EnginePosition {
         let side = match mat_eval {
             1.. => 0,
             0 => 2,
-            _ => 1
+            _ => 1,
         };
         let pst_mg = self.pst_mg[0] - self.pst_mg[1];
         let pst_eg = self.pst_eg[0] - self.pst_eg[1];
@@ -113,6 +119,8 @@ impl EnginePosition {
             phase = TOTALPHASE
         };
         SIDE_FACTOR[self.board.side_to_move]
-            * (mat_eval + (phase * pst_mg + (TOTALPHASE - phase) * (pst_eg + self.kings_endgame(side))) / TOTALPHASE)
+            * (mat_eval
+                + (phase * pst_mg + (TOTALPHASE - phase) * (pst_eg + self.kings_endgame(side)))
+                    / TOTALPHASE)
     }
 }

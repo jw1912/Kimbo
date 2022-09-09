@@ -1,20 +1,29 @@
 use super::Search;
-use crate::engine::transposition::CuttoffType;
-use std::sync::atomic::Ordering;
-use crate::engine::EngineMoveContext;
-use kimbo_state::{MoveType, ls1b_scan};
 use super::*;
+use crate::engine::transposition::CuttoffType;
+use crate::engine::EngineMoveContext;
+use kimbo_state::{ls1b_scan, MoveType};
+use std::sync::atomic::Ordering;
 
 impl Search {
     /// returns the evaluation of a position to a given depth
-    pub fn negamax(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8, pv: &mut Vec<u16>) -> i16 {
+    pub fn negamax(
+        &mut self,
+        mut alpha: i16,
+        mut beta: i16,
+        depth: u8,
+        ply: u8,
+        pv: &mut Vec<u16>,
+    ) -> i16 {
         if self.stop.load(Ordering::Relaxed) {
-            return 0 // immediately bow out of search
+            return 0; // immediately bow out of search
         }
 
-        if self.stats.node_count > self.max_nodes || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time {
+        if self.stats.node_count > self.max_nodes
+            || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time
+        {
             self.stop.store(true, Ordering::Relaxed);
-            return 0
+            return 0;
         }
 
         if depth == 0 {
@@ -44,10 +53,8 @@ impl Search {
                             alpha = res.score;
                         }
                     }
-                    CuttoffType::EXACT => {
-                        return res.score
-                    }
-                    _ => ()
+                    CuttoffType::EXACT => return res.score,
+                    _ => (),
                 }
             }
         }
@@ -67,7 +74,7 @@ impl Search {
                 .position
                 .board
                 .is_square_attacked(idx, side, self.position.board.occupied)
-            {   
+            {
                 return -MAX;
             }
             // stalemate
@@ -76,13 +83,14 @@ impl Search {
 
         // move sorting
         let mut move_hit: bool = false;
-        moves.sort_by_key(|m| 
+        moves.sort_by_key(|m| {
             if *m == hash_move {
                 move_hit = true;
                 -100
+            } else {
+                self.position.mvv_lva(m)
             }
-            else {self.position.mvv_lva(m)}
-        );
+        });
         if move_hit {
             self.stats.tt_hits.2 += 1;
         }
@@ -122,7 +130,6 @@ impl Search {
                 //return beta;
                 break;
             }
-
         }
         self.stats.node_count += 1;
         if !entry_found || alpha != orig_alpha {
@@ -133,9 +140,10 @@ impl Search {
             } else {
                 CuttoffType::EXACT
             };
-            self.ttable.push(zobrist, best_score, best_move, depth, self.age, cutoff_type);
+            self.ttable
+                .push(zobrist, best_score, best_move, depth, self.age, cutoff_type);
         }
-        
+
         best_score
     }
 }

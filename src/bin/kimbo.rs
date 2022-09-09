@@ -1,6 +1,6 @@
+use kimbo::io::uci::uci_run;
 use std::io;
 use std::process;
-use kimbo::io::uci::uci_run;
 
 fn main() {
     println!("Kimbo, created by Jamie Whiting");

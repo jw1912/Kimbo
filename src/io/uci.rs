@@ -1,16 +1,16 @@
-use std::io;
-use std::process;
-use std::thread;
-use std::thread::JoinHandle;
-use crate::engine::EnginePosition;
+use super::inputs::uci_to_u16;
 use crate::engine::transposition::TT;
+use crate::engine::EnginePosition;
 use crate::io::outputs::display_board;
 use crate::io::outputs::u16_to_uci;
-use crate::search::Times;
-use std::sync::atomic::{Ordering, AtomicBool};
-use std::sync::{Arc, Mutex};
-use super::inputs::uci_to_u16;
 use crate::search::Search;
+use crate::search::Times;
+use std::io;
+use std::process;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::JoinHandle;
 
 struct State {
     pos: EnginePosition,
@@ -19,19 +19,19 @@ struct State {
     ttable_size: usize,
     ttable: Arc<TT>,
     age: u8,
-    move_overhead: u64
+    move_overhead: u64,
 }
 
 impl Default for State {
     fn default() -> Self {
-        State { 
-            pos: EnginePosition::default(), 
-            search_handle: None, 
+        State {
+            pos: EnginePosition::default(),
+            search_handle: None,
             stop: Arc::new(AtomicBool::new(false)),
             ttable_size: 1,
             ttable: Arc::new(TT::new(32 * 1024 * 1024)),
             age: 0,
-            move_overhead: 10
+            move_overhead: 10,
         }
     }
 }
@@ -47,7 +47,7 @@ pub fn uci_run() {
     println!("option name Threads type spin default 2 min 2 max 2");
     println!("uciok");
     let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::default()));
-    
+
     loop {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
@@ -88,7 +88,7 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) {
     enum Tokens {
         None,
         Fancy,
-        Hash
+        Hash,
     }
     let mut token: Tokens = Tokens::None;
     for command in commands {
@@ -134,23 +134,21 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             "startpos" => {
                 skip_fen = true;
                 state_lock.pos = EnginePosition::default();
-            },
+            }
             "fen" => {
-                if !skip_fen { 
+                if !skip_fen {
                     token = Tokens::Fen
                 }
-            },
+            }
             "moves" => token = Tokens::Moves,
             _ => match token {
                 Tokens::Nothing => (),
                 Tokens::Fen => {
                     fen.push_str(command);
                     fen.push(' ');
-                },
-                Tokens::Moves => {
-                    moves.push(command.to_string())
                 }
-            }
+                Tokens::Moves => moves.push(command.to_string()),
+            },
         }
     }
 
@@ -210,8 +208,10 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
                 Tokens::BTime => times.btime = command.parse::<u64>().unwrap_or(u64::MAX),
                 Tokens::WInc => times.winc = command.parse::<u64>().unwrap_or(u64::MAX),
                 Tokens::BInc => times.binc = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::MovesToGo => times.moves_to_go = Some(command.parse::<u8>().unwrap_or(u8::MAX)),
-            }
+                Tokens::MovesToGo => {
+                    times.moves_to_go = Some(command.parse::<u8>().unwrap_or(u8::MAX))
+                }
+            },
         }
     }
 
@@ -231,7 +231,15 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
         drop(state_lock);
-        let mut search = Search::new(position, abort_signal, max_move_time - move_overhead, max_depth, max_nodes, tt, age);
+        let mut search = Search::new(
+            position,
+            abort_signal,
+            max_move_time - move_overhead,
+            max_depth,
+            max_nodes,
+            tt,
+            age,
+        );
         let best_move = search.go::<false>();
         println!("bestmove {}", u16_to_uci(&best_move));
     });
@@ -273,18 +281,18 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)
-        },
+        }
         "Clear Hash" => {
             let mut state_lock = state.lock().unwrap();
             state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)
-        },
+        }
         "Move Overhead" => {
             let mut state_lock = state.lock().unwrap();
             state_lock.move_overhead = value_token[0].parse::<u64>().unwrap_or(10);
             drop(state_lock)
         }
-        _ => println!("Unknown option!")
+        _ => println!("Unknown option!"),
     }
 }

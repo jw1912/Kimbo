@@ -1,6 +1,6 @@
-use super::{EngineMoveContext, EnginePosition};
-use super::pst::*;
 use super::eval::*;
+use super::pst::*;
+use super::{EngineMoveContext, EnginePosition};
 use kimbo_state::{MoveFlags, Side};
 
 impl EnginePosition {
