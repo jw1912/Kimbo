@@ -32,7 +32,6 @@ pub fn u16_to_uci(m: &u16) -> String {
 #[allow(clippy::too_many_arguments)]
 pub fn uci_info(
     depth: u8,
-    seldepth: u8,
     nodes: u64,
     time: u128,
     pv: Vec<u16>,
@@ -44,9 +43,8 @@ pub fn uci_info(
     let hashfull = filled * 1000 / hash_size;
     // need to add mate score possibility
     println!(
-        "info depth {} seldepth {} score cp {} time {} nodes {} nps {} hashfull {} pv {}",
+        "info depth {} score cp {} time {} nodes {} nps {} hashfull {} pv {}",
         depth,
-        seldepth,
         eval,
         time,
         nodes,

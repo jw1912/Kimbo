@@ -68,27 +68,7 @@ pub fn calculate_pst_eg_scores(pos: &Position) -> [i16; 2] {
     scores
 }
 
-const MVV_LVA: [[i8; 8]; 8] = [
-    [15, 14, 13, 12, 11, 10, 0, 0], // victim PAWN
-    [25, 24, 23, 22, 21, 20, 0, 0], // victim KNIGHT
-    [35, 34, 33, 32, 31, 30, 0, 0], // victim BISHOP
-    [45, 44, 43, 42, 41, 40, 0, 0], // victim ROOK
-    [55, 54, 53, 52, 51, 50, 0, 0], // victim QUEEN
-    [0, 0, 0, 0, 0, 0, 0, 0],       // victim KING (should not be referenced)
-    [0, 0, 0, 0, 0, 0, 0, 0],       // oops artifact of 7 != 6
-    [5, 0, 0, 0, 0, -1, 0, 0],      // empty
-];
-
 impl EnginePosition {
-    /// Calculates MVV-LVA score for a move
-    pub fn mvv_lva(&self, m: &u16) -> i8 {
-        let from_idx = m & 0b111111;
-        let to_idx = (m >> 6) & 0b111111;
-        let moved_pc = self.board.squares[from_idx as usize] as usize;
-        let captured_pc = self.board.squares[to_idx as usize] as usize;
-        -MVV_LVA[captured_pc][moved_pc]
-    }
-
     fn kings_endgame(&self, side: u8) -> i16 {
         let white = ls1b_scan(self.board.pieces[0][5]) as usize;
         let black = ls1b_scan(self.board.pieces[0][5]) as usize;
@@ -121,6 +101,21 @@ impl EnginePosition {
         SIDE_FACTOR[self.board.side_to_move]
             * (mat_eval
                 + (phase * pst_mg + (TOTALPHASE - phase) * (pst_eg + SIDE_FACTOR[side as usize] * self.kings_endgame(side)))
+                    / TOTALPHASE)
+    }
+
+    /// lazy eval of position
+    pub fn lazy_eval(&self) -> i16 {
+        let mat_eval = self.mat_mg[0] - self.mat_mg[1];
+        let pst_mg = self.pst_mg[0] - self.pst_mg[1];
+        let pst_eg = self.pst_eg[0] - self.pst_eg[1];
+        let mut phase = self.phase;
+        if self.phase > TOTALPHASE {
+            phase = TOTALPHASE
+        };
+        SIDE_FACTOR[self.board.side_to_move]
+            * (mat_eval
+                + (phase * pst_mg + (TOTALPHASE - phase) * pst_eg )
                     / TOTALPHASE)
     }
 }

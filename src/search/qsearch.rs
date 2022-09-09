@@ -7,10 +7,6 @@ impl Search {
     pub fn quiesce(&mut self, mut alpha: i16, beta: i16, ply: u8) -> i16 {
         let stand_pat = self.position.static_eval();
 
-        if ply > self.stats.seldepth {
-            self.stats.seldepth = ply;
-        }
-
         // beta pruning
         // there is an argument for returning stand pat instead of beta
         if stand_pat >= beta {
@@ -31,7 +27,7 @@ impl Search {
         }
 
         // generating and sorting captures
-        let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>();
+        let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut kimbo_state::Check::None);
         captures.sort_by_key(|m| self.position.mvv_lva(m));
 
         // going through captures

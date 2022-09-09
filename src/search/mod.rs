@@ -1,4 +1,4 @@
-use crate::engine::transposition::TT;
+use crate::hash::search::TT;
 use std::{
     sync::{atomic::AtomicBool, Arc},
     time::Instant,
@@ -32,6 +32,8 @@ pub struct Times {
 pub struct Search {
     /// Position to be searched
     pub position: EnginePosition,
+    /// Side searching for a move
+    pub searching_side: usize,
     /// Token to say if search needs to be stopped
     pub stop: Arc<AtomicBool>,
     /// Best move found
@@ -62,8 +64,6 @@ pub struct Stats {
     pub tt_move_hits: u64,
     pub cutoff_hits: u64,
     pub collisions: u64,
-    /// Max depth reached
-    pub seldepth: u8,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -75,7 +75,6 @@ impl Default for Stats {
             tt_move_hits: 0,
             cutoff_hits: 0,
             collisions: 0,
-            seldepth: 0,
         } 
     }
 }
@@ -108,8 +107,10 @@ impl Search {
         age: u8,
     ) -> Self {
         let stats = Stats::default();
+        let searching_side = position.board.side_to_move;
         Search {
             position,
+            searching_side,
             stop,
             best_move: 0,
             max_move_time,

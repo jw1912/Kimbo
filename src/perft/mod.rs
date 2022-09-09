@@ -1,8 +1,7 @@
-pub mod transposition;
 pub mod go;
 
 use crate::engine::EnginePosition;
-use transposition::PerftTT;
+use crate::hash::perft::PerftTT;
 use std::sync::Arc;
 
 /// Search info

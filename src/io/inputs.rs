@@ -36,7 +36,7 @@ pub fn uci_to_u16(pos: &EnginePosition, m: &str) -> u16 {
             _ => panic!("Invalid promotion piece!"),
         }
     }
-    let possible_moves = pos.board.gen_moves::<{ MoveType::ALL }>();
+    let possible_moves = pos.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None);
     for um in possible_moves {
         if no_flags & TWELVE == um & TWELVE {
             if l < 5 {

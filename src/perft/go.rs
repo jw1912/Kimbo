@@ -17,7 +17,7 @@ impl PerftSearch {
         }
 
         // bulk counting on depth 1
-        let moves = self.position.board.gen_moves::<{ MoveType::ALL }>();
+        let moves = self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None);
         if depth_left == 1 {
             return moves.len() as u64;
         }
@@ -45,7 +45,7 @@ impl PerftSearch {
             return 1;
         }
         let mut new_move_list: Vec<(u16, u64)> = Vec::new();
-        let move_list = self.position.board.gen_moves::<{ MoveType::ALL }>();
+        let move_list = self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None);
         let mut ctx: EngineMoveContext;
         let mut score: u64;
         for mo in move_list {

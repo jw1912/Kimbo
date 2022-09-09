@@ -1,5 +1,6 @@
 use kimbo::engine::EnginePosition;
-use kimbo::perft::{PerftSearch, transposition::PerftTT};
+use kimbo::perft::PerftSearch;
+use kimbo::hash::perft::PerftTT;
 use std::sync::Arc;
 use std::time::Instant;
 

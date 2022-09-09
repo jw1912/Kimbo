@@ -1,8 +1,9 @@
 use super::inputs::uci_to_u16;
-use crate::engine::{transposition::TT, EnginePosition};
+use crate::engine::EnginePosition;
 use crate::io::outputs::{display_board, u16_to_uci};
 use crate::search::{Search, Times};
-use crate::perft::{PerftSearch, transposition::PerftTT};
+use crate::perft::PerftSearch;
+use crate::hash::{perft::PerftTT, search::TT};
 use std::io;
 use std::process;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
