@@ -21,15 +21,15 @@ fn _search_all() {
     let max_time = 1000;
     let max_depth = u8::MAX;
     let now = Instant::now();
-    let tt = Arc::new(TT::new(32 * 1024 * 1024));
     for (i, position ) in _POSITIONS.iter().enumerate() {
+        let tt = Arc::new(TT::new(32 * 1024 * 1024));
         let mut search: Search = Search::new(
             EnginePosition::from_fen(position),
             Arc::new(AtomicBool::new(false)),
             max_time,
             max_depth,
             u64::MAX,
-            tt.clone(),
+            tt,
             i as u8,
         );
         display_board::<true>(&search.position.board);
@@ -41,7 +41,7 @@ fn _search_all() {
 
 fn _search_one(pos: usize) {
     // params
-    let max_time = 10000;
+    let max_time = 1000;
     let max_depth = u8::MAX;
     let tt = Arc::new(TT::new(32 * 1024 * 1024));
     let mut search: Search = Search::new(

@@ -11,8 +11,9 @@ impl Search {
         self.stats.start_time = Instant::now();
         self.searching_side = self.position.board.side_to_move;
         for d in 0..self.max_depth {
+            self.stats.seldepth = 0;
             let mut pv = Vec::new();
-            let score = self.negamax::<true>( -MAX, MAX, d + 1, 1, &mut pv);
+            let score = self.negamax::<true, true>( -MAX, MAX, d + 1, 1, &mut pv);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
@@ -20,6 +21,7 @@ impl Search {
             self.best_move = pv[0];
             uci_info(
                 d + 1,
+                self.stats.seldepth,
                 self.stats.node_count,
                 self.stats.start_time.elapsed().as_millis(),
                 pv,

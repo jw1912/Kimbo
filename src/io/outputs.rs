@@ -23,10 +23,21 @@ fn index_to_square(idx: u16) -> String {
 
 /// u16 move format to uci move format
 pub fn u16_to_uci(m: &u16) -> String {
+    let mut promo = "";
+    if m & 0b1000_0000_0000_0000 > 0 {
+        promo = match (m >> 12) & 0b11 {
+            0b00 => "n",
+            0b01 => "b",
+            0b10 => "r",
+            0b11 => "q",
+            _ => panic!("maths not mathsing"),
+        }
+    }
     format!(
-        "{}{} ",
+        "{}{}{} ",
         index_to_square(m & 0b111111),
-        index_to_square((m >> 6) & 0b111111)
+        index_to_square((m >> 6) & 0b111111),
+        promo
     )
 }
 
@@ -34,6 +45,7 @@ pub fn u16_to_uci(m: &u16) -> String {
 #[allow(clippy::too_many_arguments)]
 pub fn uci_info(
     depth: u8,
+    seldepth: u8,
     nodes: u64,
     time: u128,
     pv: Vec<u16>,
@@ -55,8 +67,9 @@ pub fn uci_info(
     }
     // need to add mate score possibility
     println!(
-        "info depth {} score {} {} time {} nodes {} nps {} hashfull {} pv {}",
+        "info depth {} seldepth {} score {} {} time {} nodes {} nps {} hashfull {} pv {}",
         depth,
+        seldepth,
         score_type,
         score,
         time,

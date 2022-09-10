@@ -1,4 +1,5 @@
 use std::sync::atomic::{AtomicU64, Ordering};
+use crate::engine::sorting::is_score_near_mate;
 
 const ENTRIES_PER_BUCKET: usize = 8;
 
@@ -19,6 +20,7 @@ impl Clone for TTEntry {
 pub struct TTBucket {
     pub entries: [TTEntry; ENTRIES_PER_BUCKET],
 }
+const BUCKET_SIZE: usize = std::mem::size_of::<TTBucket>();
 
 pub struct TT {
     pub table: Vec<TTBucket>,
@@ -45,8 +47,8 @@ pub struct TTPerft {
     pub age: u8,
 }
 
-pub struct CuttoffType;
-impl CuttoffType {
+pub struct CutoffType;
+impl CutoffType {
     pub const INVALID: u8 = 0;
     pub const EXACT: u8 = 1;
     pub const ALPHA: u8 = 2;
@@ -55,8 +57,7 @@ impl CuttoffType {
 
 impl TT {
     pub fn new(size: usize) -> Self {
-        let bucket_size = std::mem::size_of::<TTBucket>();
-        let num_buckets = size / bucket_size;
+        let num_buckets = size / BUCKET_SIZE;
         let num_entries = num_buckets * ENTRIES_PER_BUCKET;
         let mut table = Self {
             table: Vec::with_capacity(num_buckets),
@@ -71,22 +72,24 @@ impl TT {
         }
         table
     }
-
+    #[allow(clippy::too_many_arguments)]
     pub fn push(
         &self,
         zobrist: u64,
-        score: i16,
+        orig_score: i16,
         best_move: u16,
         depth: u8,
+        ply: u8,
         age: u8,
         cutoff_type: u8,
     ) {
         let key = (zobrist >> 48) as u16;
-        let index = (zobrist as usize) % self.table.len();
+        let index = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[index];
         let mut smallest_depth = u8::MAX;
         let mut desired_index = usize::MAX;
         let mut found_old_entry = false;
+        let mut score = orig_score;
 
         for (entry_index, entry) in bucket.entries.iter().enumerate() {
             let entry_data = entry.get_data();
@@ -121,25 +124,35 @@ impl TT {
                 continue;
             }
         }
+        if is_score_near_mate(score) {
+            if score > 0 {
+                score += ply as i16 - 1;
+            } else {
+                score -= ply as i16 + 1;
+            }
+        }
+
         bucket.entries[desired_index].set_data(key, score, best_move, depth, age, cutoff_type);
     }
 
-    pub fn get(&self, zobrist: u64, collision: &mut bool) -> Option<TTResult> {
+    pub fn get(&self, zobrist: u64, ply: u8) -> Option<TTResult> {
         let key = (zobrist >> 48) as u16;
-        let index = (zobrist as usize) % self.table.len();
+        let index = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[index];
-        let mut entry_with_key_present = false;
 
         for entry in &bucket.entries {
-            let entry_data = entry.get_data();
-            if entry_data.key == key {
+            let entry_key = entry.get_key();
+            if entry_key == key {
+                let mut entry_data = entry.get_data();
+                if is_score_near_mate(entry_data.score) {
+                    if entry_data.score > 0 {
+                        entry_data.score -= ply as i16 + 1
+                    } else {
+                        entry_data.score += ply as i16 - 1
+                    }
+                }
                 return Some(entry_data);
-            } else if entry_data.key != 0 {
-                entry_with_key_present = true;
-            }
-        }
-        if entry_with_key_present {
-            *collision = true;
+            } 
         }
         None
     }
@@ -163,6 +176,11 @@ impl TTEntry {
             | ((age as u64) << 58);
 
         self.data.store(data, Ordering::Relaxed);
+    }
+
+    pub fn get_key(&self) -> u16 {
+        let data = self.data.load(Ordering::Relaxed);
+        data as u16
     }
 
     pub fn get_data(&self) -> TTResult {

@@ -1,6 +1,6 @@
 use super::*;
 use crate::engine::EngineMoveContext;
-use kimbo_state::MoveType;
+use kimbo_state::{MoveType, Check};
 
 impl Search {
     /// Quiescence search
@@ -27,7 +27,13 @@ impl Search {
         }
 
         // generating and sorting captures
-        let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut kimbo_state::Check::None);
+        let mut _king_checked = Check::None;
+        let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut _king_checked);
+        //let king_in_check = _king_checked != Check::None;
+        //if king_in_check {
+        //    captures.append(&mut self.position.board.gen_moves::<{ MoveType::QUIETS }>(&mut _king_checked))
+        //}
+
         captures.sort_by_key(|m| self.position.mvv_lva(m));
 
         // going through captures
@@ -36,6 +42,11 @@ impl Search {
         for m in captures {
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
+            //if king_in_check {
+            //    score = -self.negamax::<false, false>(-beta, -alpha, 1, ply + 1, &mut Vec::new())
+            //} else {
+            //    score = -self.quiesce(-beta, -alpha, ply + 1);
+            //}
             score = -self.quiesce(-beta, -alpha, ply + 1);
             self.position.unmake_move(ctx);
 

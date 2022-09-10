@@ -1,6 +1,6 @@
 use super::*;
 use crate::engine::{EngineMoveContext, sorting::is_score_near_mate};
-use crate::hash::search::CuttoffType;
+use crate::hash::search::CutoffType;
 use kimbo_state::{ls1b_scan, MoveType, Check};
 use std::sync::atomic::Ordering;
 use std::cmp::min;
@@ -29,10 +29,10 @@ const _LMR_PVS_MIN_IDX: usize = 2;
 
 impl Search {
     /// returns the evaluation of a position to a given depth
-    pub fn negamax<const PVS: bool>(
+    pub fn negamax<const PV: bool, const ROOT: bool>(
         &mut self,
         mut alpha: i16,
-        beta: i16,
+        mut beta: i16,
         depth: u8,
         ply: u8,
         pv: &mut Vec<u16>,
@@ -48,35 +48,60 @@ impl Search {
             return 0;
         }
 
+        if ply - 1 > self.stats.seldepth {
+            self.stats.seldepth = ply - 1;
+        }
+
         if depth == 0 {
             return self.quiesce(alpha, beta, ply + 1);
         }
 
         // probing transposition table
+        let orig_alpha = alpha;
         let zobrist = self.position.zobrist;
-        let mut collision = false;
         let mut hash_move = 0;
         let mut entry_found = false;
-        let tt_result = self.ttable.get(zobrist, &mut collision);
+        let tt_result = self.ttable.get(zobrist, ply);
         if let Some(res) = tt_result {
             self.stats.tt_hits += 1;
             hash_move = res.best_move;
             entry_found = true;
-            if res.depth >= depth && res.cutoff_type == CuttoffType::BETA && res.score > alpha {
-                self.stats.cutoff_hits += 1;
-                alpha = res.score;
+            if !ROOT && res.depth >= depth {
+                match res.cutoff_type {
+                    CutoffType::ALPHA => {
+                        if res.score > alpha {                           
+                            self.stats.tt_cutoffs.0 += 1;
+                            alpha = res.score;
+                        }
+                        
+                    }
+                    CutoffType::BETA => {
+                        if res.score < beta {
+                            self.stats.tt_cutoffs.1 += 1;
+                            beta = res.score;
+                        }
+                    }
+                    CutoffType::EXACT => {
+                        if !PV {
+                            self.stats.tt_cutoffs.2 += 1;
+                            return res.score;
+                        }
+                    }
+                    _ => ()
+                }
+                if alpha >= beta {
+                    self.stats.tt_beta_prunes += 1;
+                    return res.score;
+                }
             }
-        }
-        if collision {
-            self.stats.collisions += 1;
         }
 
         // generating move
         let mut _king_checked = Check::None;
         let mut moves = self.position.board.gen_moves::<{ MoveType::ALL }>(&mut _king_checked);
         let king_in_check = _king_checked != Check::None;
-        let is_searcher_turn = self.searching_side == self.position.board.side_to_move;
-        let friendly_in_check = king_in_check & is_searcher_turn;
+        //let is_searcher_turn = self.searching_side == self.position.board.side_to_move;
+        //let friendly_in_check = king_in_check & is_searcher_turn;
         // checking if game is over
         if moves.is_empty() {
             self.stats.node_count += 1;
@@ -97,23 +122,23 @@ impl Search {
         // UNCOMMENT when adding other things that require lazy eval
         //let mut lazy_eval = None;
 
-        if _can_razor(depth, alpha, friendly_in_check) {
-            let margin = _razoring_get_margin(depth);
-            //let lazy_eval_value = match lazy_eval {
-            //    Some(value) => value,
-            //    None => self.position.lazy_eval(),
-            //};
-            let lazy_eval_value = self.position.lazy_eval();
-
-            if lazy_eval_value + margin <= alpha {
-                let score = self.quiesce(alpha, beta, ply);
-                if score <= alpha {
-                    return score;
-                }
-            }
-    
-            //lazy_eval = Some(lazy_eval_value);
-        }
+        //if !PV && _can_razor(depth, alpha, friendly_in_check) {
+        //    let margin = _razoring_get_margin(depth);
+        //    //let lazy_eval_value = match lazy_eval {
+        //    //    Some(value) => value,
+        //    //    None => self.position.lazy_eval(),
+        //    //};
+        //    let lazy_eval_value = self.position.lazy_eval();
+//
+        //    if lazy_eval_value + margin <= alpha {
+        //        let score = self.quiesce(alpha, beta, ply);
+        //        if score <= alpha {
+        //            return score;
+        //        }
+        //    }
+    //
+        //    //lazy_eval = Some(lazy_eval_value);
+        //}
 
         // move sorting
         let mut move_hit: bool = false;
@@ -123,65 +148,69 @@ impl Search {
         }
 
         // tracking best score and move, and if alpha changes for ttable
-        let orig_alpha = alpha;
         let mut best_move = 0;
         let mut best_score = -MAX;
+        let mut best_d = 0;
 
         // going through legal moves
         let mut ctx: EngineMoveContext;
         let mut score: i16;
-        for (m_idx, &m) in moves.iter().enumerate() {
-            // LATE MOVE PRUNING
-            if !PVS && self._can_lmp(depth, m_idx, &m, friendly_in_check, hash_move) {
-                break;
-            } 
-
-            // LATE MOVE REDUCTIONS
-            let r = if self._can_lmr(depth, m_idx, &m, king_in_check, hash_move) {
-                min(_get_lmr_depth::<PVS>(m_idx), depth - 1)
+        //for (m_idx, &m) in moves.iter().enumerate() {
+        for m in moves {
+            // CHECK EXTENSIONS
+            let d = if king_in_check {
+                1
             } else {
                 0
             };
+            // LATE MOVE REDUCTIONS
+            //let r = if self._can_lmr(depth, m_idx, &m, king_in_check, hash_move) {
+            //    min(_get_lmr_depth::<PV>(m_idx), depth - 1)
+            //} else {
+            //    0
+            //};
 
             // new vector
             let mut sub_pv = Vec::new();
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
             // PVS scoring
-            score = if PVS {
-                if m_idx == 0 {
-                    -self.negamax::<true>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv)
-                }
-                else {
-                    let zero_score = -self.negamax::<false>(-alpha - 1, -alpha, depth - r - 1, ply + 1, &mut sub_pv);
-                    if zero_score > alpha && zero_score < beta {
-                        -self.negamax::<true>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv)
-                    } else {
-                        zero_score
-                    }
-                }
-            } else {
-                let zero_score = -self.negamax::<false>(-beta, -alpha, depth - r - 1, ply + 1, &mut sub_pv);
-                if zero_score > alpha && zero_score < beta && r > 0 {
-                    -self.negamax::<false>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv)
-                } else {
-                    zero_score
-                }
-            };
+            //score = if PV {
+            //    if m_idx == 0 {
+            //        -self.negamax::<true, false>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv)
+            //    }
+            //    else {
+            //        let zero_score = -self.negamax::<false, false>(-alpha - 1, -alpha, depth - r - 1 + d, ply + 1, &mut sub_pv);
+            //        if zero_score > alpha && (alpha != beta - 1 || r > 0) {
+            //            -self.negamax::<true, false>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv)
+            //        } else {
+            //            zero_score
+            //        }
+            //    }
+            //} else {
+            //    let zero_score = -self.negamax::<false, false>(-beta, -alpha, depth - r - 1 + d, ply + 1, &mut sub_pv);
+            //    if zero_score > alpha && r > 0 {
+            //        -self.negamax::<false, false>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv)
+            //    } else {
+            //        zero_score
+            //    }
+            //};
+            score = -self.negamax::<false, false>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
 
             // updating best move and score
             if score > best_score {
                 best_score = score;
                 best_move = m;
-                pv.clear();
-                pv.push(m);
-                pv.append(&mut sub_pv);
+                best_d = d;
             }
 
             // improve alpha
             if score > alpha {
                 alpha = score;
+                pv.clear();
+                pv.push(m);
+                pv.append(&mut sub_pv); 
             }
 
             // beta pruning
@@ -193,24 +222,19 @@ impl Search {
         // writing to tt
         if !entry_found || alpha != orig_alpha {
             let cutoff_type = if alpha <= orig_alpha {
-                CuttoffType::ALPHA
-            } else if alpha >= beta {
-                CuttoffType::BETA
+                self.stats.tt_additions.0 += 1;
+                CutoffType::ALPHA
+            } else if alpha <= beta {
+                self.stats.tt_additions.1 += 1;
+                CutoffType::BETA
             } else {
-                CuttoffType::EXACT
+                self.stats.tt_additions.2 += 1;
+                CutoffType::EXACT
             };
             self.ttable
-                .push(zobrist, best_score, best_move, depth, self.age, cutoff_type);
+                .push(zobrist, best_score, best_move, depth + 1 + best_d, ply, self.age, cutoff_type);
         }
-
         best_score
-    }
-
-    fn _can_lmp(&self, depth: u8, m_idx: usize, m: &u16, king_checked: bool, hash_move: u16) -> bool {
-        (_LMP_MIN_DEPTH..=_LMP_MAX_DEPTH).contains(&depth)
-            && m_idx >= _LMP_IDX_BASE + (depth as usize - 1) * _LMP_IDX_MULTIPLIER
-            && !king_checked
-            && self.position.score_move(m, hash_move, &mut false) >= _LMP_MIN_SCORE
     }
 
     fn _can_lmr(

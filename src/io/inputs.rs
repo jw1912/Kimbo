@@ -29,7 +29,7 @@ pub fn uci_to_u16(pos: &EnginePosition, m: &str) -> u16 {
     let mut no_flags = from | (to << 6);
     if l == 5 {
         no_flags |= match m.chars().nth(4).unwrap_or('k') {
-            'k' => 0b1000_0000_0000_0000,
+            'n' => 0b1000_0000_0000_0000,
             'b' => 0b1001_0000_0000_0000,
             'r' => 0b1010_0000_0000_0000,
             'q' => 0b1011_0000_0000_0000,
