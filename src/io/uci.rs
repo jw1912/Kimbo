@@ -38,11 +38,9 @@ impl Default for State {
 pub fn uci_run() {
     println!("id name Kimbo");
     println!("id author Jamie Whiting");
-    println!(" ");
-    println!("option name Hash type spin default 1 min 1 max 256");
+    println!("option name Hash type spin default 32 min 1 max 256");
     println!("option name Clear Hash type button");
-    println!("option name Move Overhead type spin default 10 min 0 max 5000");
-    println!("option name Threads type spin default 2 min 2 max 2");
+    println!("option name Move Overhead type spin default 0 min 0 max 500");
     println!("uciok");
     let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::default()));
 
