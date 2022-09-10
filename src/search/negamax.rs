@@ -29,7 +29,11 @@ const _LMR_PVS_MIN_IDX: usize = 2;
 
 impl Search {
     /// returns the evaluation of a position to a given depth
-    pub fn negamax<const PV: bool, const ROOT: bool>(
+    /// CONSTANT PARAMTERS:
+    /// PV - is the node a PV node?
+    /// ROOT - is this the entry point for the search? (don't want to prune root nodes)
+    /// STATS - get debug stats?
+    pub fn negamax<const PV: bool, const ROOT: bool, const STATS: bool>(
         &mut self,
         mut alpha: i16,
         mut beta: i16,
@@ -53,7 +57,7 @@ impl Search {
         }
 
         if depth == 0 {
-            return self.quiesce(alpha, beta, ply + 1);
+            return self.quiesce::<STATS>(alpha, beta, ply + 1);
         }
 
         // probing transposition table
@@ -63,34 +67,41 @@ impl Search {
         let mut entry_found = false;
         let tt_result = self.ttable.get(zobrist, ply);
         if let Some(res) = tt_result {
-            self.stats.tt_hits += 1;
+            if STATS { self.stats.tt_hits += 1; }
             hash_move = res.best_move;
             entry_found = true;
             if !ROOT && res.depth >= depth {
                 match res.cutoff_type {
                     CutoffType::ALPHA => {
                         if res.score > alpha {                           
-                            self.stats.tt_cutoffs.0 += 1;
+                            if STATS { self.stats.tt_cutoffs.0 += 1; }
                             alpha = res.score;
                         }
-                        
                     }
                     CutoffType::BETA => {
                         if res.score < beta {
-                            self.stats.tt_cutoffs.1 += 1;
+                            if STATS { self.stats.tt_cutoffs.1 += 1; }
                             beta = res.score;
                         }
                     }
                     CutoffType::EXACT => {
                         if !PV {
-                            self.stats.tt_cutoffs.2 += 1;
+                            if STATS { 
+                                self.stats.tt_cutoffs.2 += 1;
+                                self.stats.tt_hits_returned += 1; 
+                            }
+                            self.stats.node_count += 1;
                             return res.score;
                         }
                     }
                     _ => ()
                 }
                 if alpha >= beta {
-                    self.stats.tt_beta_prunes += 1;
+                    if STATS { 
+                        self.stats.tt_beta_prunes += 1;
+                        self.stats.tt_hits_returned += 1;
+                    }
+                    self.stats.node_count += 1;
                     return res.score;
                 }
             }
@@ -112,7 +123,7 @@ impl Search {
                 .position
                 .board
                 .is_square_attacked(idx, side, self.position.board.occupied)
-            {
+            {   
                 return -MAX + ply as i16 - 1;
             }
             // stalemate
@@ -143,7 +154,7 @@ impl Search {
         // move sorting
         let mut move_hit: bool = false;
         moves.sort_by_key(|m| self.position.score_move(m, hash_move, &mut move_hit));
-        if move_hit {
+        if STATS && move_hit {
             self.stats.tt_move_hits += 1;
         }
 
@@ -195,7 +206,7 @@ impl Search {
             //        zero_score
             //    }
             //};
-            score = -self.negamax::<false, false>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv);
+            score = -self.negamax::<false, false, STATS>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
 
             // updating best move and score
@@ -218,22 +229,22 @@ impl Search {
                 break;
             }
         }
-        self.stats.node_count += 1;
         // writing to tt
         if !entry_found || alpha != orig_alpha {
             let cutoff_type = if alpha <= orig_alpha {
-                self.stats.tt_additions.0 += 1;
+                if STATS { self.stats.tt_additions.0 += 1; }
                 CutoffType::ALPHA
             } else if alpha <= beta {
-                self.stats.tt_additions.1 += 1;
+                if STATS { self.stats.tt_additions.1 += 1; }
                 CutoffType::BETA
             } else {
-                self.stats.tt_additions.2 += 1;
+                if STATS { self.stats.tt_additions.2 += 1; }
                 CutoffType::EXACT
             };
             self.ttable
                 .push(zobrist, best_score, best_move, depth + 1 + best_d, ply, self.age, cutoff_type);
         }
+        self.stats.node_count += 1;
         best_score
     }
 

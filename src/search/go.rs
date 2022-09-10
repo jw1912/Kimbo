@@ -6,14 +6,14 @@ use std::time::Instant;
 
 impl Search {
     /// iterative deepening search
-    pub fn go<const TEST: bool>(&mut self) -> u16 {
+    pub fn go<const STATS: bool>(&mut self) -> u16 {
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
         self.searching_side = self.position.board.side_to_move;
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
-            let score = self.negamax::<true, true>( -MAX, MAX, d + 1, 1, &mut pv);
+            let score = self.negamax::<true, true, STATS>( -MAX, MAX, d + 1, 1, &mut pv);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
@@ -34,7 +34,7 @@ impl Search {
                 break;
             }
         }
-        if TEST {
+        if STATS {
             println!("{} / {} hash entries filled", self.ttable.filled.load(Ordering::Relaxed), self.ttable.num_entries);
             self.stats.report();
         }

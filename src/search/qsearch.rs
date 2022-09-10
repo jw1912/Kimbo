@@ -4,21 +4,21 @@ use kimbo_state::{MoveType, Check};
 
 impl Search {
     /// Quiescence search
-    pub fn quiesce(&mut self, mut alpha: i16, beta: i16, ply: u8) -> i16 {
+    pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16, ply: u8) -> i16 {
         let stand_pat = self.position.static_eval();
 
         // beta pruning
         // there is an argument for returning stand pat instead of beta
         if stand_pat >= beta {
             self.stats.node_count += 1;
-            self.stats.qnode_count += 1;
+            if STATS { self.stats.qnode_count += 1; }
             return beta;
         }
         // delta pruning
         // queen worth
         if stand_pat < alpha - 850 {
             self.stats.node_count += 1;
-            self.stats.qnode_count += 1;
+            if STATS { self.stats.qnode_count += 1; }
             return alpha;
         }
         // improving alpha bound
@@ -47,13 +47,13 @@ impl Search {
             //} else {
             //    score = -self.quiesce(-beta, -alpha, ply + 1);
             //}
-            score = -self.quiesce(-beta, -alpha, ply + 1);
+            score = -self.quiesce::<STATS>(-beta, -alpha, ply + 1);
             self.position.unmake_move(ctx);
 
             // beta pruning
             if score >= beta {
                 self.stats.node_count += 1;
-                self.stats.qnode_count += 1;
+                if STATS { self.stats.qnode_count += 1; }
                 return beta;
             }
             // improve alpha bound
@@ -62,7 +62,7 @@ impl Search {
             }
         }
         self.stats.node_count += 1;
-        self.stats.qnode_count += 1;
+        if STATS { self.stats.qnode_count += 1; }
         alpha
     }
 }
