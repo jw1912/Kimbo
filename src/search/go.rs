@@ -1,4 +1,5 @@
 use super::*;
+use crate::engine::sorting::is_score_near_mate;
 use crate::io::outputs::uci_info;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
@@ -27,7 +28,7 @@ impl Search {
                 self.ttable.num_entries as u64,
             );
 
-            if score == MAX || score == -MAX {
+            if is_score_near_mate(score) {
                 break;
             }
         }

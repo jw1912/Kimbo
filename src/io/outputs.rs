@@ -1,5 +1,7 @@
 use kimbo_state::Position;
 
+use crate::{engine::sorting::is_score_near_mate, search::MAX};
+
 /// board index to square
 fn index_to_square(idx: u16) -> String {
     let rank = idx >> 3;
@@ -41,11 +43,22 @@ pub fn uci_info(
 ) {
     let pv_str: String = pv.iter().map(u16_to_uci).collect();
     let hashfull = filled * 1000 / hash_size;
+    let mut score_type = "cp";
+    let mut score = eval;
+    if is_score_near_mate(eval) {
+        score_type = "mate";
+        if eval < 0 {
+            score = eval.abs() - MAX;
+        } else {
+            score = MAX - eval;
+        }
+    }
     // need to add mate score possibility
     println!(
-        "info depth {} score cp {} time {} nodes {} nps {} hashfull {} pv {}",
+        "info depth {} score {} {} time {} nodes {} nps {} hashfull {} pv {}",
         depth,
-        eval,
+        score_type,
+        score,
         time,
         nodes,
         ((nodes as f64) / ((time as f64) / 1000.0)) as u32,

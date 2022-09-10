@@ -88,7 +88,7 @@ impl Search {
                 .board
                 .is_square_attacked(idx, side, self.position.board.occupied)
             {
-                return -MAX;
+                return -MAX + ply as i16 - 1;
             }
             // stalemate
             return 0;
