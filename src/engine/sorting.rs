@@ -1,4 +1,4 @@
-use crate::search::MAX;
+use crate::search::MAX_SCORE;
 
 use super::EnginePosition;
 
@@ -35,5 +35,5 @@ impl EnginePosition {
 
 #[inline(always)]
 pub fn is_score_near_mate(score: i16) -> bool {
-    score >= MAX - (u8::MAX as i16) || score <= -MAX + (u8::MAX as i16)
+    score >= MAX_SCORE - (u8::MAX as i16) || score <= -MAX_SCORE + (u8::MAX as i16)
 }

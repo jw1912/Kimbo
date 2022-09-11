@@ -55,7 +55,6 @@ impl Search {
         self.stats.report();
         // resetting counts
         self.stats.reset();
-        self.age += 1;
         self.best_move
     }
 }

@@ -1,3 +1,4 @@
+use kimbo::io::outputs::output_features;
 use kimbo::io::uci::uci_run;
 use std::io;
 use std::process;
@@ -11,6 +12,7 @@ fn main() {
         match commands[0] {
             "uci" => uci_run(),
             "quit" => process::exit(0),
+            "features" => output_features(),
             _ => println!("Unknown command!"),
         }
     }

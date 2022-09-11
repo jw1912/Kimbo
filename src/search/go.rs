@@ -13,7 +13,7 @@ impl Search {
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
-            let score = self.negamax::<true, true, STATS>( -MAX, MAX, d + 1, 1, &mut pv);
+            let score = self.negamax::<true, true, STATS>( -MAX_SCORE, MAX_SCORE, d + 1, 1, &mut pv);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;

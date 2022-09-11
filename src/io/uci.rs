@@ -10,6 +10,9 @@ use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
+
 struct State {
     pos: EnginePosition,
     search_handle: Option<JoinHandle<()>>,
@@ -27,7 +30,7 @@ impl Default for State {
             search_handle: None,
             stop: Arc::new(AtomicBool::new(false)),
             ttable_size: 1,
-            ttable: Arc::new(TT::new(32 * 1024 * 1024)),
+            ttable: Arc::new(TT::new(1024 * 1024)),
             age: 0,
             move_overhead: 10,
         }
@@ -36,32 +39,41 @@ impl Default for State {
 
 /// runs the uci loop
 pub fn uci_run() {
-    println!("id name Kimbo");
-    println!("id author Jamie Whiting");
+    println!("id name Kimbo {}", VERSION);
+    println!("id author {}", AUTHOR);
     println!("option name Hash type spin default 32 min 1 max 256");
     println!("option name Clear Hash type button");
-    println!("option name Move Overhead type spin default 0 min 0 max 500");
+    println!("option name Move Overhead type spin default 10 min 0 max 500");
     println!("uciok");
     let state: Arc<Mutex<State>> = Arc::new(Mutex::new(State::default()));
 
-    loop {
+    'uci: loop {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
-        match commands[0] {
-            // standard uci commands
-            "go" => go(state.clone(), commands),
-            "isready" => isready(),
-            "position" => position(state.clone(), commands),
-            "ucinewgame" => ucinewgame(state.clone()),
-            "setoption" => setoption(state.clone(), commands),
-            "stop" => stop(state.clone()),
-            "quit" => quit(),
-            // custom commands
-            "display" => display(state.clone(), commands),
-            _ => println!("unknown command!"),
+        let leave = run_commands(state.clone(), commands);
+        if leave {
+            break 'uci
         }
     }
+}
+
+fn run_commands(state: Arc<Mutex<State>>, commands: Vec<&str>) -> bool {
+    match commands[0] {
+        // standard uci commands
+        "go" => go(state, commands),
+        "isready" => isready(),
+        "position" => position(state, commands),
+        "ucinewgame" => ucinewgame(state),
+        "setoption" => setoption(state, commands),
+        "stop" => stop(state),
+        "quit" => quit(),
+        // custom commands
+        "display" => display(state, commands),
+        "break" => return true,
+        _ => return false,
+    };
+    false
 }
 
 fn quit() {
@@ -252,10 +264,17 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
         let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
         drop(state_lock);
+
+        let move_time = if max_move_time <= move_overhead {
+            move_overhead
+        } else {
+            max_move_time - move_overhead
+        };
+
         let mut search = Search::new(
             position,
             abort_signal,
-            max_move_time - move_overhead,
+            move_time,
             max_depth,
             max_nodes,
             tt,

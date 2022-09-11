@@ -1,6 +1,12 @@
 use kimbo_state::Position;
 
-use crate::{engine::sorting::is_score_near_mate, search::MAX};
+use crate::{engine::sorting::is_score_near_mate, search::MAX_SCORE};
+
+const FEATURES: &str = env!("CARGO_PKG_DESCRIPTION");
+/// description of main features of version
+pub fn output_features() {
+    println!("{}", FEATURES);
+}
 
 /// board index to square
 fn index_to_square(idx: u16) -> String {
@@ -60,9 +66,9 @@ pub fn uci_info(
     if is_score_near_mate(eval) {
         score_type = "mate";
         if eval < 0 {
-            score = eval.abs() - MAX;
+            score = eval.abs() - MAX_SCORE;
         } else {
-            score = MAX - eval;
+            score = MAX_SCORE - eval;
         }
     }
     // need to add mate score possibility

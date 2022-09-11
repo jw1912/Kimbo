@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use crate::engine::sorting::is_score_near_mate;
 
-const ENTRIES_PER_BUCKET: usize = 8;
+const ENTRIES_PER_BUCKET: usize = 4;
 
 #[derive(Default)]
 pub struct TTEntry {
@@ -86,39 +86,29 @@ impl TT {
         let key = (zobrist >> 48) as u16;
         let index = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[index];
-        let mut smallest_depth = u8::MAX;
         let mut desired_index = usize::MAX;
-        let mut found_old_entry = false;
         let mut score = orig_score;
-
+        let mut smallest_depth = u8::MAX;
         for (entry_index, entry) in bucket.entries.iter().enumerate() {
-            let entry_data = entry.get_data();
+            let entry_data = entry.load_data();
+            // ignoring entries from previous searches anyway, so they are first to be replaced
+            if entry_data.age != age {
+                desired_index = entry_index;
+                break;
+            }
+            // then fill remaining empty entries
             if entry_data.depth == 0 {
                 self.filled.fetch_add(1, Ordering::Relaxed);
                 desired_index = entry_index;
                 break;
             }
-
+            // then replace lower depth entries with this key
             if entry_data.key == key && depth > entry_data.depth {
                 desired_index = entry_index;
                 break;
             }
-            if entry_data.age != age {
-                if found_old_entry {
-                    if entry_data.depth < smallest_depth {
-                        desired_index = entry_index;
-                        smallest_depth = entry_data.depth;
-                    }
-                } else {
-                    desired_index = entry_index;
-                    smallest_depth = entry_data.depth;
-                    found_old_entry = true;
-                }
-
-                continue;
-            }
-
-            if !found_old_entry && entry_data.depth < smallest_depth {
+            // if all else fails, replace the entry with lowest search depth
+            if entry_data.depth < smallest_depth {
                 smallest_depth = entry_data.depth;
                 desired_index = entry_index;
                 continue;
@@ -126,29 +116,31 @@ impl TT {
         }
         if is_score_near_mate(score) {
             if score > 0 {
-                score += ply as i16 - 1;
+                score += ply as i16;
             } else {
-                score -= ply as i16 + 1;
+                score -= ply as i16;
             }
         }
 
         bucket.entries[desired_index].set_data(key, score, best_move, depth, age, cutoff_type);
     }
 
-    pub fn get(&self, zobrist: u64, ply: u8) -> Option<TTResult> {
+    pub fn get(&self, zobrist: u64, ply: u8, search_age: u8) -> Option<TTResult> {
         let key = (zobrist >> 48) as u16;
         let index = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[index];
-
         for entry in &bucket.entries {
-            let entry_key = entry.get_key();
-            if entry_key == key {
-                let mut entry_data = entry.get_data();
+            let data = entry.data.load(Ordering::Relaxed);
+            let entry_key = TTEntry::get_key(data);
+            // require that the key matches AND that the result is from this search
+            if entry_key == key && search_age == TTEntry::get_age(data) {
+                let mut entry_data = TTEntry::get_data(data);
+                // return mate score with plies
                 if is_score_near_mate(entry_data.score) {
                     if entry_data.score > 0 {
-                        entry_data.score -= ply as i16 + 1
+                        entry_data.score -= ply as i16
                     } else {
-                        entry_data.score += ply as i16 - 1
+                        entry_data.score += ply as i16
                     }
                 }
                 return Some(entry_data);
@@ -159,7 +151,7 @@ impl TT {
 }
 
 impl TTEntry {
-    pub fn set_data(
+    fn set_data(
         &self,
         key: u16,
         score: i16,
@@ -178,17 +170,31 @@ impl TTEntry {
         self.data.store(data, Ordering::Relaxed);
     }
 
-    pub fn get_key(&self) -> u16 {
-        let data = self.data.load(Ordering::Relaxed);
+    fn get_key(data: u64) -> u16 {
         data as u16
     }
 
-    pub fn get_data(&self) -> TTResult {
+    fn get_age(data: u64) -> u8 {
+        (data >> 58) as u8
+    }
+
+    fn get_data(data: u64) -> TTResult {
+        TTResult {
+            key: data as u16,
+            best_move: (data >> 32) as u16,
+            score: (data >> 16) as i16,
+            depth: (data >> 48) as u8,
+            age: (data >> 58) as u8,
+            cutoff_type: ((data >> 56) & 3) as u8,
+        }
+    }
+
+    fn load_data(&self) -> TTResult {
         let data = self.data.load(Ordering::Relaxed);
         TTResult {
             key: data as u16,
             best_move: (data >> 32) as u16,
-            score: ((data >> 16) as u16) as i16,
+            score: (data >> 16) as i16,
             depth: (data >> 48) as u8,
             age: (data >> 58) as u8,
             cutoff_type: ((data >> 56) & 3) as u8,
