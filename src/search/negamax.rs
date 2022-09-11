@@ -40,6 +40,9 @@ impl Search {
             pv.append(&mut sub_pv);
             return score;
         }
+
+        self.stats.node_count += 1;
+
         // probing transposition table
         let orig_alpha = alpha;
         let zobrist = self.position.zobrist;
@@ -57,7 +60,7 @@ impl Search {
                             alpha = res.score;
                         }
                     }
-                    CutoffType::BETA => {
+                    CutoffType::BETA => {                      
                         if res.score < beta {
                             if STATS { self.stats.tt_cutoffs.1 += 1; }
                             beta = res.score;
@@ -68,7 +71,6 @@ impl Search {
                             self.stats.tt_cutoffs.2 += 1;
                             self.stats.tt_hits_returned += 1; 
                         }
-                        self.stats.node_count += 1;
                         return res.score;
                     }
                     _ => ()
@@ -78,7 +80,6 @@ impl Search {
                         self.stats.tt_beta_prunes += 1;
                         self.stats.tt_hits_returned += 1;
                     }
-                    self.stats.node_count += 1;
                     return res.score;
                 }
             }
@@ -91,7 +92,6 @@ impl Search {
         let king_in_check = _king_checked != Check::None;
         // checking if game is over
         if moves.is_empty() {
-            self.stats.node_count += 1;
             // checkmate
             if king_in_check {  
                 return -MAX_SCORE + ply as i16;
@@ -110,7 +110,6 @@ impl Search {
         // tracking best move information
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
-        let mut best_d = 0;
 
         // going through legal moves
         let mut ctx: EngineMoveContext;
@@ -118,12 +117,11 @@ impl Search {
         for m_idx in 0..moves.len() {
             let m = moves[m_idx];
             // CHECK EXTENSIONS
-            //let d = if king_in_check {
-            //    1
-            //} else {
-            //    0
-            //};
-            let d = 0;
+            let d = if king_in_check {
+                1
+            } else {
+                0
+            };
 
             // new vector
             let mut sub_pv = Vec::new();
@@ -135,7 +133,6 @@ impl Search {
             if score > best_score {
                 best_score = score;
                 best_move = m;
-                best_d = d;
             }
             // improve alpha
             if score > alpha {
@@ -162,9 +159,8 @@ impl Search {
                 CutoffType::EXACT
             };
             self.ttable
-                .push(zobrist, best_score, best_move, depth + 1 + best_d, ply, self.age, cutoff_type);
+                .push(zobrist, best_score, best_move, depth + 1, ply, self.age, cutoff_type);
         }
-        self.stats.node_count += 1;
         best_score
     }
 }

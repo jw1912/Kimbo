@@ -5,18 +5,16 @@ use kimbo_state::{MoveType, Check, movelist::MoveList};
 impl Search {
     /// Quiescence search
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16, ply: u8, pv: &mut Vec<u16>) -> i16 {
+        self.stats.node_count += 1;
+        if STATS { self.stats.qnode_count += 1; }
         let stand_pat = self.position.static_eval();
         // beta pruning
         // there is an argument for returning stand pat instead of beta
         if stand_pat >= beta {
-            self.stats.node_count += 1;
-            if STATS { self.stats.qnode_count += 1; }
             return beta;
         }
         // delta pruning
         if stand_pat < alpha - 850 {
-            self.stats.node_count += 1;
-            if STATS { self.stats.qnode_count += 1; }
             return alpha;
         }
         // improving alpha bound
@@ -47,13 +45,9 @@ impl Search {
             }
             // beta pruning
             if score >= beta {
-                self.stats.node_count += 1;
-                if STATS { self.stats.qnode_count += 1; }
                 return beta;
             }
         }
-        self.stats.node_count += 1;
-        if STATS { self.stats.qnode_count += 1; }
         alpha
     }
 }

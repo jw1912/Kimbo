@@ -34,9 +34,9 @@ fn _search_all() {
             tt.clone(),
             i as u8,
         );
-        display_board::<true>(&search.position.board);
         search.go::<true>();
         println!("best move {}", u16_to_uci(&search.best_move));
+        println!(" ");
     }
     println!("Total time: {}ms", now.elapsed().as_millis());
 }
@@ -61,5 +61,5 @@ fn _search_one(pos: usize) {
 }
 
 fn main() {
-    _search_one(8)
+    _search_all()
 }
