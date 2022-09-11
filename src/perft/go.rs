@@ -1,6 +1,6 @@
 use super::PerftSearch;
 use crate::{engine::EngineMoveContext, io::outputs::u16_to_uci};
-use kimbo_state::MoveType;
+use kimbo_state::{MoveType, movelist::MoveList};
 
 impl PerftSearch {
     pub fn perft<const TT_ACTIVE: bool>(&mut self, depth_left: u8) -> u64 {
@@ -17,7 +17,8 @@ impl PerftSearch {
         }
 
         // bulk counting on depth 1
-        let moves = self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None);
+        let mut moves = MoveList::default();
+        self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut moves);
         if depth_left == 1 {
             return moves.len() as u64;
         }
@@ -25,7 +26,8 @@ impl PerftSearch {
         // calculate number of positions
         let mut positions: u64 = 0;
         let mut ctx: EngineMoveContext;
-        for m in moves {
+        for m_idx in 0..moves.len() {
+            let m = moves[m_idx];
             ctx = self.position.make_move(m);
             positions += self.perft::<TT_ACTIVE>(depth_left - 1);
             self.position.unmake_move(ctx);
@@ -45,10 +47,12 @@ impl PerftSearch {
             return 1;
         }
         let mut new_move_list: Vec<(u16, u64)> = Vec::new();
-        let move_list = self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None);
+        let mut moves = MoveList::default();
+        self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut moves);
         let mut ctx: EngineMoveContext;
         let mut score: u64;
-        for mo in move_list {
+        for m_idx in 0..moves.len() {
+            let mo = moves[m_idx];
             ctx = self.position.make_move(mo);
             score = self.perft::<true>(depth - 1);
             self.position.unmake_move(ctx);

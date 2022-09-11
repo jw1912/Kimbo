@@ -280,8 +280,11 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             tt,
             age,
         );
-        let best_move = search.go::<false>();
+        let best_move = search.go::<true>();
         println!("bestmove {}", u16_to_uci(&best_move));
+        let mut state_lock = state_2.lock().unwrap();
+        state_lock.age += 1;
+        drop(state_lock);
     });
     // join handle provided to master thread
     state.lock().unwrap().search_handle = Some(search_thread);

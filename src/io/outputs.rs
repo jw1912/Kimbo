@@ -68,8 +68,9 @@ pub fn uci_info(
         if eval < 0 {
             score = eval.abs() - MAX_SCORE;
         } else {
-            score = MAX_SCORE - eval;
+            score = MAX_SCORE - eval + 1;
         }
+        score /= 2;
     }
     // need to add mate score possibility
     println!(

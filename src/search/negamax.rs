@@ -1,7 +1,7 @@
 use super::*;
 use crate::engine::EngineMoveContext;
 use crate::hash::search::CutoffType;
-use kimbo_state::{MoveType, Check};
+use kimbo_state::{MoveType, Check, movelist::MoveList};
 use std::sync::atomic::Ordering;
 
 impl Search {
@@ -10,7 +10,7 @@ impl Search {
     /// PV - is the node a PV node?
     /// ROOT - is this the entry point for the search? (don't want to prune root nodes)
     /// STATS - get debug stats?
-    pub fn negamax<const PV: bool, const ROOT: bool, const STATS: bool>(
+    pub fn negamax<const ROOT: bool, const STATS: bool>(
         &mut self,
         mut alpha: i16,
         mut beta: i16,
@@ -30,8 +30,8 @@ impl Search {
             return 0;
         }
         // update seldepth (due to extensions)
-        if ply > self.stats.seldepth + 1 {
-            self.stats.seldepth = ply - 1;
+        if ply > self.stats.seldepth {
+            self.stats.seldepth = ply;
         }
         // depth 0 quiescence search
         if depth == 0 {
@@ -64,14 +64,12 @@ impl Search {
                         }
                     }
                     CutoffType::EXACT => {
-                        if !PV {
-                            if STATS { 
-                                self.stats.tt_cutoffs.2 += 1;
-                                self.stats.tt_hits_returned += 1; 
-                            }
-                            self.stats.node_count += 1;
-                            return res.score;
+                        if STATS { 
+                            self.stats.tt_cutoffs.2 += 1;
+                            self.stats.tt_hits_returned += 1; 
                         }
+                        self.stats.node_count += 1;
+                        return res.score;
                     }
                     _ => ()
                 }
@@ -88,14 +86,15 @@ impl Search {
 
         // generating move
         let mut _king_checked = Check::None;
-        let mut moves = self.position.board.gen_moves::<{ MoveType::ALL }>(&mut _king_checked);
+        let mut moves = MoveList::default();
+        self.position.board.gen_moves::<{ MoveType::ALL }>(&mut _king_checked, &mut moves);
         let king_in_check = _king_checked != Check::None;
         // checking if game is over
         if moves.is_empty() {
             self.stats.node_count += 1;
             // checkmate
             if king_in_check {  
-                return -MAX_SCORE + ply as i16 - 1;
+                return -MAX_SCORE + ply as i16;
             }
             // stalemate
             return 0;
@@ -103,7 +102,7 @@ impl Search {
 
         // move sorting
         let mut move_hit: bool = false;
-        moves.sort_by_key(|m| self.position.score_move(m, hash_move, &mut move_hit));
+        moves.sort(|m| self.position.score_move(m, hash_move, &mut move_hit));
         if STATS && move_hit {
             self.stats.tt_move_hits += 1;
         }
@@ -116,19 +115,21 @@ impl Search {
         // going through legal moves
         let mut ctx: EngineMoveContext;
         let mut score: i16;
-        for m in moves {
+        for m_idx in 0..moves.len() {
+            let m = moves[m_idx];
             // CHECK EXTENSIONS
-            let d = if king_in_check {
-                1
-            } else {
-                0
-            };
+            //let d = if king_in_check {
+            //    1
+            //} else {
+            //    0
+            //};
+            let d = 0;
 
             // new vector
             let mut sub_pv = Vec::new();
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
-            score = -self.negamax::<false, false, STATS>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv);
+            score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + d, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
             // updating best move and score
             if score > best_score {

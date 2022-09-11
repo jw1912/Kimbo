@@ -1,6 +1,6 @@
 use super::*;
 use crate::engine::EngineMoveContext;
-use kimbo_state::{MoveType, Check};
+use kimbo_state::{MoveType, Check, movelist::MoveList};
 
 impl Search {
     /// Quiescence search
@@ -25,12 +25,14 @@ impl Search {
         }
         // generating and sorting captures
         let mut _king_checked = Check::None;
-        let mut captures = self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut _king_checked);
-        captures.sort_by_key(|m| self.position.mvv_lva(m));
+        let mut captures = MoveList::default();
+        self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut _king_checked, &mut captures);
+        captures.sort(|m| self.position.mvv_lva(m));
         // going through captures
         let mut ctx: EngineMoveContext;
         let mut score: i16;
-        for m in captures {
+        for m_idx in 0..captures.len() {
+            let m = captures[m_idx];
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
             let mut sub_pv = Vec::new();

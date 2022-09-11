@@ -4,7 +4,7 @@ use kimbo::hash::perft::PerftTT;
 use std::sync::Arc;
 use std::time::Instant;
 
-pub const NUM_TESTS: usize = 6;
+pub const NUM_TESTS: usize = 7;
 
 pub const TESTS: [&str; NUM_TESTS] = [
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -12,7 +12,8 @@ pub const TESTS: [&str; NUM_TESTS] = [
     "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 1 1",
     "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
     "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
-    "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10"
+    "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+    "1Q6/8/8/8/2k2P2/1p6/1B4K1/8 w - - 3 63"
 ];
 
 pub const TESTS_EXPECTED: [&[u64];NUM_TESTS] = [
@@ -22,6 +23,7 @@ pub const TESTS_EXPECTED: [&[u64];NUM_TESTS] = [
     &[6,264,9467,422333,15833292],
     &[44,1486,62379,2103487,89941194],
     &[46,2079,89890,3894594],
+    &[34, 115, 3907, 18736, 626398, 3307800, 106824961,703134803]
 ];
 
 fn _perft_tests() {
@@ -30,6 +32,7 @@ fn _perft_tests() {
     for (i, expected) in TESTS_EXPECTED.iter().enumerate() {
         let len: usize = expected.len();
         let now = Instant::now();
+        let mut total = 0;
         let mut results = Vec::new();
         let mut search: PerftSearch = PerftSearch::new(
             EnginePosition::from_fen(TESTS[i]),
@@ -40,10 +43,12 @@ fn _perft_tests() {
             search.ttable = new_tt;
             let count = search.perft::<true>((j + 1) as u8);
             results.push(count);
+            total += count;
         }
-
+        let time = now.elapsed().as_millis() as u64;
         println!(" ");
-        println!("Test {} complete in {}ms.", i+1, now.elapsed().as_millis());
+        println!("Test {} complete in {}ms.", i+1, time);
+        println!("Nodes: {}, NPS: {}", total, total * 1000 / time);
         search.stats.report();
         search.stats.reset();
         

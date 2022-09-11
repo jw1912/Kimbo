@@ -96,14 +96,14 @@ impl TT {
                 desired_index = entry_index;
                 break;
             }
-            // then fill remaining empty entries
-            if entry_data.depth == 0 {
-                self.filled.fetch_add(1, Ordering::Relaxed);
+            // then replace lower depth entries with this key
+            if entry_data.key == key && depth > entry_data.depth {
                 desired_index = entry_index;
                 break;
             }
-            // then replace lower depth entries with this key
-            if entry_data.key == key && depth > entry_data.depth {
+            // then fill remaining empty entries
+            if entry_data.depth == 0 {
+                self.filled.fetch_add(1, Ordering::Relaxed);
                 desired_index = entry_index;
                 break;
             }

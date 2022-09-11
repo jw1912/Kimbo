@@ -67,9 +67,6 @@ pub struct Stats {
     pub tt_additions: (u64, u64, u64),
     pub tt_move_hits: u64,
     pub tt_beta_prunes: u64,
-    pub pvs_attempts: u64,
-    pub pvs_success: u64,
-    pub pvs_fails: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -84,9 +81,6 @@ impl Default for Stats {
             tt_move_hits: 0,
             tt_beta_prunes: 0,
             seldepth: 0,
-            pvs_attempts: 0,
-            pvs_fails: 0,
-            pvs_success: 0,
         } 
     }
 }
@@ -104,7 +98,6 @@ impl Stats {
         println!("cutoffs alpha: {}, beta: {}, exact: {}, resulting beta prunes: {}", self.tt_cutoffs.0, self.tt_cutoffs.1, self.tt_cutoffs.2, self.tt_beta_prunes);
         println!("total direct tt prunes: {}", self.tt_hits_returned);
         println!("additions alpha: {}, beta: {}, exact: {}", self.tt_additions.0, self.tt_additions.1, self.tt_additions.2);
-        println!("pvs attempts: {}, successes: {}, fails {}", self.pvs_attempts, self.pvs_success, self.pvs_fails);
     }
 }
 

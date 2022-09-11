@@ -1,4 +1,4 @@
-use kimbo_state::MoveType;
+use kimbo_state::{MoveType, movelist::MoveList};
 
 use crate::engine::EnginePosition;
 
@@ -36,8 +36,10 @@ pub fn uci_to_u16(pos: &EnginePosition, m: &str) -> u16 {
             _ => panic!("Invalid promotion piece!"),
         }
     }
-    let possible_moves = pos.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None);
-    for um in possible_moves {
+    let mut possible_moves = MoveList::default();
+    pos.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut possible_moves);
+    for m_idx in 0..possible_moves.len() {
+        let um = possible_moves[m_idx];
         if no_flags & TWELVE == um & TWELVE {
             if l < 5 {
                 return um;
