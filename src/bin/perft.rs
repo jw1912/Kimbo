@@ -34,8 +34,11 @@ fn _perft_tests() {
         let now = Instant::now();
         let mut total = 0;
         let mut results = Vec::new();
+        let pow = Instant::now();
+        let position = EnginePosition::from_fen(TESTS[i]).unwrap();
+        println!("Time to process fen: {}", pow.elapsed().as_micros());
         let mut search: PerftSearch = PerftSearch::new(
-            EnginePosition::from_fen(TESTS[i]),
+            position,
             tt.clone(),
         );
         for j in 0..len {

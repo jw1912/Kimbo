@@ -1,9 +1,9 @@
 [package]
 name = "kimbo"
-version = "0.1.6"
+version = "0.1.0"
 authors = ["Jamie Whiting"]
 edition = "2021"
-description = "check extensions"
+description = "Kimbo, a chess engine written in rust."
 
 [dependencies]
 kimbo_state = { git = "https://github.com/JacquesRW/kimbo_state" }

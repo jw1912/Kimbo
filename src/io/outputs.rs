@@ -2,12 +2,6 @@ use kimbo_state::Position;
 
 use crate::{engine::sorting::is_score_near_mate, search::MAX_SCORE};
 
-const FEATURES: &str = env!("CARGO_PKG_DESCRIPTION");
-/// description of main features of version
-pub fn output_features() {
-    println!("{}", FEATURES);
-}
-
 /// board index to square
 fn index_to_square(idx: u16) -> String {
     let rank = idx >> 3;

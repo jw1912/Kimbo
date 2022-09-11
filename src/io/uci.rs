@@ -1,5 +1,9 @@
+// The enums of tokens are inspired by Rustic
+// SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
+
 use super::inputs::uci_to_u16;
 use crate::engine::EnginePosition;
+use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
 use crate::search::{Search, Times};
 use crate::perft::PerftSearch;
@@ -59,7 +63,7 @@ pub fn uci_run() {
 }
 
 fn run_commands(state: Arc<Mutex<State>>, commands: Vec<&str>) -> bool {
-    match commands[0] {
+    let result = match commands[0] {
         // standard uci commands
         "go" => go(state, commands),
         "isready" => isready(),
@@ -67,32 +71,34 @@ fn run_commands(state: Arc<Mutex<State>>, commands: Vec<&str>) -> bool {
         "ucinewgame" => ucinewgame(state),
         "setoption" => setoption(state, commands),
         "stop" => stop(state),
-        "quit" => quit(),
+        "quit" => process::exit(0),
         // custom commands
         "display" => display(state, commands),
         "break" => return true,
         _ => return false,
     };
+    if result.is_err() {
+        println!("{}",result.unwrap_err())
+    }
     false
 }
 
-fn quit() {
-    process::exit(0)
+fn stop(state: Arc<Mutex<State>>) -> Result<(), UciError> {
+    state.lock().unwrap().stop.store(true, Ordering::Relaxed);
+    Ok(())
 }
 
-fn stop(state: Arc<Mutex<State>>) {
-    state.lock().unwrap().stop.store(true, Ordering::Relaxed)
+fn isready() -> Result<(), UciError> {
+    println!("readyok");
+    Ok(())
 }
 
-fn isready() {
-    println!("readyok")
-}
-
-fn ucinewgame(state: Arc<Mutex<State>>) {
+fn ucinewgame(state: Arc<Mutex<State>>) -> Result<(), UciError> {
     state.lock().unwrap().pos = EnginePosition::default();
+    Ok(())
 }
 
-fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) {
+fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     enum Tokens {
         None,
         Fancy,
@@ -105,8 +111,7 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             "fancy" => token = Tokens::Fancy,
             "hash" => token = Tokens::Hash,
             _ => {
-                println!("unknown command!");
-                return;
+                return Err(UciError::Display);
             }
         }
     }
@@ -119,12 +124,11 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             drop(state_lock);
         }
     }
+    Ok(())
 }
 
-fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) {
+fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     let mut state_lock = state.lock().unwrap();
-
-    // SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
     enum Tokens {
         Nothing,
         Fen,
@@ -149,7 +153,7 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             }
             "moves" => token = Tokens::Moves,
             _ => match token {
-                Tokens::Nothing => (),
+                Tokens::Nothing => return Err(UciError::Position),
                 Tokens::Fen => {
                     fen.push_str(command);
                     fen.push(' ');
@@ -160,17 +164,19 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) {
     }
 
     if !fen.is_empty() && !skip_fen {
-        state_lock.pos = EnginePosition::from_fen(&fen);
+        state_lock.pos = EnginePosition::from_fen(&fen)?;
     }
 
     for m in moves {
-        let mo = uci_to_u16(&state_lock.pos, &m);
+        let mo = uci_to_u16(&state_lock.pos, &m)?;
         state_lock.pos.make_move(mo);
     }
     drop(state_lock);
+    Ok(())
 }
 
-fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
+fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
+    #[derive(PartialEq)]
     enum Tokens {
         Ponder,
         Depth,
@@ -213,19 +219,23 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
                 perft = true;
                 Tokens::Perft
             },
-            _ => match token {
-                Tokens::Ponder => (),
-                Tokens::Depth => max_depth = command.parse::<u8>().unwrap_or(u8::MAX),
-                Tokens::Nodes => max_nodes = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::MoveTime => max_move_time = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::WTime => times.wtime = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::BTime => times.btime = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::WInc => times.winc = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::BInc => times.binc = command.parse::<u64>().unwrap_or(u64::MAX),
-                Tokens::MovesToGo => {
-                    times.moves_to_go = Some(command.parse::<u8>().unwrap_or(u8::MAX))
-                },
-                Tokens::Perft => perft_depth = command.parse::<u8>().unwrap_or(0),
+            _ => {
+                let mut parse: u64 = 0;
+                if token != Tokens::Ponder {
+                    parse = command.parse::<u64>()?;
+                }
+                match token {
+                    Tokens::Ponder => return Err(UciError::Go),
+                    Tokens::Depth => max_depth = parse as u8,
+                    Tokens::Nodes => max_nodes = parse,
+                    Tokens::MoveTime => max_move_time = parse,
+                    Tokens::WTime => times.wtime = parse,
+                    Tokens::BTime => times.btime = parse,
+                    Tokens::WInc => times.winc = parse,
+                    Tokens::BInc => times.binc = parse,
+                    Tokens::MovesToGo => times.moves_to_go = Some(parse as u8),
+                    Tokens::Perft => perft_depth = parse as u8,
+                }
             },
         }
     }
@@ -251,7 +261,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             println!("Move count: {count}");
         });
         state.lock().unwrap().search_handle = Some(search_thread);
-        return;
+        return Ok(());
     }
 
     // SEARCHING ON SECOND THREAD
@@ -288,9 +298,10 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) {
     });
     // join handle provided to master thread
     state.lock().unwrap().search_handle = Some(search_thread);
+    Ok(())
 }
 
-fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
+fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError>{
     let mut reading_name = false;
     let mut reading_value = false;
     let mut name_token = Vec::new();
@@ -318,9 +329,9 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
     }
     match name_token.join(" ").as_str() {
         "Hash" => {
-            let size = value_token[0].parse::<usize>();
+            let size = value_token[0].parse::<usize>()?;
             let mut state_lock = state.lock().unwrap();
-            state_lock.ttable_size = size.unwrap_or(32);
+            state_lock.ttable_size = size;
             state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)
@@ -332,10 +343,12 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) {
             drop(state_lock)
         }
         "Move Overhead" => {
+            let size = value_token[0].parse::<u64>()?;
             let mut state_lock = state.lock().unwrap();
-            state_lock.move_overhead = value_token[0].parse::<u64>().unwrap_or(10);
+            state_lock.move_overhead = size;
             drop(state_lock)
         }
-        _ => println!("Unknown option!"),
+        _ => return Err(UciError::SetOption),
     }
+    Ok(())
 }

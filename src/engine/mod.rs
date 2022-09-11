@@ -6,6 +6,7 @@ pub mod zobrist;
 pub mod sorting;
 
 use eval::*;
+use crate::io::errors::UciError;
 use kimbo_state::*;
 use std::sync::Arc;
 
@@ -31,7 +32,7 @@ pub struct EnginePosition {
 }
 impl Default for EnginePosition {
     fn default() -> Self {
-        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap()
     }
 }
 
@@ -47,15 +48,15 @@ pub struct EngineMoveContext {
 
 impl EnginePosition {
     /// Initialise a new position from a fen string
-    pub fn from_fen(s: &str) -> Self {
-        let board = Position::from_fen(s);
+    pub fn from_fen(s: &str) -> Result<Self, UciError> {
+        let board = Position::from_fen(s)?;
         let mat_mg = calculate_mat_mg(&board);
         let pst_mg = calculate_pst_mg_scores(&board);
         let pst_eg = calculate_pst_eg_scores(&board);
         let phase = calculate_phase(&board);
         let zobrist_vals = Arc::new(ZobristVals::default());
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
-        Self {
+        Ok(Self {
             board,
             mat_mg,
             pst_mg,
@@ -63,6 +64,6 @@ impl EnginePosition {
             phase,
             zobrist,
             zobrist_vals,
-        }
+        })
     }
 }

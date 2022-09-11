@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "kimbo"
-version = "0.1.6"
+version = "0.1.0"
 dependencies = [
  "fastrand",
  "kimbo_state",
@@ -37,4 +37,4 @@ dependencies = [
 [[package]]
 name = "kimbo_state"
 version = "0.1.0"
-source = "git+https://github.com/JacquesRW/kimbo_state#05b1f316993cb1e2a65467f734867986c35360e4"
+source = "git+https://github.com/JacquesRW/kimbo_state#e0c9f13da147defa990415e1e3f7face5accf998"
