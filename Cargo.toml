@@ -1,9 +1,9 @@
 [package]
 name = "kimbo"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Jamie Whiting"]
 edition = "2021"
-description = "check extensions"
+description = "none"
 
 [dependencies]
 kimbo_state = { git = "https://github.com/JacquesRW/kimbo_state" }
