@@ -6,7 +6,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
 
-pub const _POSITIONS: [&str; 7] = [
+pub const _POSITIONS: [&str; 8] = [
     // Start Position
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 
     // Lasker-Reichhelm Position
@@ -18,6 +18,7 @@ pub const _POSITIONS: [&str; 7] = [
     // Positions that catch pruning methods out
     "8/2krR3/1pp3bp/42p1/PPNp4/3P1PKP/8/8 w - - 0 1",
     "1Q6/8/8/8/2k2P2/1p6/1B4K1/8 w - - 3 63",
+    "3r2k1/pp3ppp/4p3/8/QP6/P1P5/5KPP/7q w - - 0 27"
 ];
 
 fn _search_all() {

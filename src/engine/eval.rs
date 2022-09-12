@@ -4,7 +4,7 @@ use super::*;
 pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];
 pub const EG_PC_VALS: [i16; 6] = [94, 281, 297, 512,  936,  0];
 pub const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
-pub const TOTALPHASE: i16 = 24;
+const TOTALPHASE: i32 = 24;
 const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
 
 /// Calculating phase
@@ -59,10 +59,11 @@ impl EnginePosition {
         let mat_eg = self.mat_eg[0] - self.mat_eg[1];
         let pst_mg = self.pst_mg[0] - self.pst_mg[1];
         let pst_eg = self.pst_eg[0] - self.pst_eg[1];
-        let mut phase = self.phase;
+        // i32 needed here to avoid rare overflows in extremely imbalanced games
+        let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
             phase = TOTALPHASE
         };
-        SIDE_FACTOR[self.board.side_to_move] * (phase * (mat_mg + pst_mg) + (TOTALPHASE - phase) * (mat_eg + pst_eg)) / TOTALPHASE
+        SIDE_FACTOR[self.board.side_to_move] * ((phase * (mat_mg + pst_mg) as i32 + (TOTALPHASE - phase) * (mat_eg + pst_eg) as i32) / TOTALPHASE) as i16
     }
 }
