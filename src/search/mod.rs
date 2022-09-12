@@ -11,10 +11,11 @@ mod negamax;
 mod qsearch;
 mod timings;
 mod sorting;
+mod pruning;
 
 /// Checkmate stuff
 pub const MAX_SCORE: i16 = 30000;
-const MATE_THRESHOLD: i16 = MAX_SCORE - u8::MAX as i16;
+pub const MATE_THRESHOLD: i16 = MAX_SCORE - u8::MAX as i16;
 #[inline(always)]
 pub fn is_mate_score(score: i16) -> bool {
     score >= MATE_THRESHOLD || score <= -MATE_THRESHOLD
@@ -103,6 +104,7 @@ struct Stats {
     qnode_count: u64,
     tt_hits: u64,
     tt_move_hits: u64,
+    tt_prunes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -113,6 +115,7 @@ impl Default for Stats {
             qnode_count: 0,
             tt_hits: 0,
             tt_move_hits: 0,
+            tt_prunes: 0,
         } 
     }
 }
@@ -126,7 +129,8 @@ impl Stats {
         println!("total nodes: {} ({}% quiescent)", self.node_count, self.qnode_count * 100 / self.node_count);
         println!("time: {}ms", time);
         println!("nps: {}", self.node_count * 1000 / (time + 1) as u64);
-        println!("hash hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / self.tt_hits);
+        println!("hash hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes));
+        println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
     }
 }
 

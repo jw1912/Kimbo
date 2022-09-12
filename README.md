@@ -1,27 +1,14 @@
 # Kimbo
 
-Kimbo is a uci-compatible chess engine. 
+Kimbo is a UCI compatible chess engine written in Rust. 
 
-#### Move Generation
-- handled in [kimbo_state](https://github.com/JacquesRW/kimbo_state)
-- fully legal
-- classical bitboard approach
+Move generation is handled in [kimbo_state](https://github.com/JacquesRW/kimbo_state).
 
-#### Search
-- alpha-beta (negamax) search
-- quiescence search
-- MVV-LVA move ordering
-- hash move
-- iterative deepening
-- check extensions
-- mate pruning
+See releases for a list of features.
 
-#### Evaluation
-- tapered midgame to endgame
-- material
-- piece-square tables
-
-#### Features currently being tested
-- hash score pruning
-- late move reductions and pruning
-- razoring
+#### TODO
+- Progress through move list rather than pre-sorting
+- Quiet move ordering heuristics
+- Add back LMR, LMP and razoring
+- Add PVS
+- Add null move pruning

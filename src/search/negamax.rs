@@ -1,12 +1,15 @@
 use super::*;
+use super::pruning::tt_prune;
 use crate::{engine::EngineMoveContext, hash::search::Bound};
 use kimbo_state::{MoveType, Check, movelist::MoveList};
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
 
 impl Search {
-    /// returns the evaluation of a position to a given depth
-    pub fn negamax<const STATS: bool>(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8, pv: &mut Vec<u16>,) -> i16 {
+    /// Main search
+    /// ROOT: is this a root (ply = 0) node?
+    /// STATS: are debug stats required?
+    pub fn negamax<const ROOT: bool, const STATS: bool>(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8, pv: &mut Vec<u16>,) -> i16 {
         // if stop token, abort
         if self.stop.load(Ordering::Relaxed) {
             return 0; // immediately bow out of search
@@ -47,13 +50,20 @@ impl Search {
             if STATS { self.stats.tt_hits += 1; }
             hash_move = res.best_move;
             entry_found = true;
+            // hash score pruning (no pruning on root)
+            if !ROOT {
+                if let Some(score) = tt_prune(res, depth, alpha, beta) {
+                    if STATS { self.stats.tt_prunes += 1 }
+                    return score;
+                }
+            }
         }
 
         // generating moves
-        let mut _king_checked = Check::None;
+        let mut king_checked = Check::None;
         let mut moves = MoveList::default();
-        self.position.board.gen_moves::<{ MoveType::ALL }>(&mut _king_checked, &mut moves);
-        let king_in_check = _king_checked != Check::None;
+        self.position.board.gen_moves::<{ MoveType::ALL }>(&mut king_checked, &mut moves);
+        let king_in_check = king_checked != Check::None;
 
         // checking for checkmate/stalemate
         if moves.is_empty() {
@@ -84,7 +94,7 @@ impl Search {
 
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
-            score = -self.negamax::<STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv);
+            score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
 
             // updating best move and score
@@ -103,7 +113,7 @@ impl Search {
             if score >= beta {
                 bound = Bound::LOWER;
                 break;
-            }         
+            } 
         }
         // writing to tt
         if !entry_found || alpha != orig_alpha {

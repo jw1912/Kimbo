@@ -5,6 +5,8 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::search::MATE_THRESHOLD;
+
 pub struct Bound;
 impl Bound {
     pub const INVALID: u8 = 0;
@@ -64,7 +66,7 @@ impl HashTable {
         }
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn push(&self, zobrist: u64, best_move: u16, depth: u8, age: u8, bound: u8, score: i16, _ply: u8) {
+    pub fn push(&self, zobrist: u64, best_move: u16, depth: u8, age: u8, bound: u8, mut score: i16, _ply: u8) {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
@@ -96,6 +98,11 @@ impl HashTable {
                 continue;
             }
         }
+        if score > MATE_THRESHOLD {
+            score += _ply as i16;
+        } else if score < -MATE_THRESHOLD {
+            score -= _ply as i16;
+        }
         bucket.entries[desired_idx].store(key, best_move, depth, age, bound, score);
     }
 
@@ -108,7 +115,12 @@ impl HashTable {
             let entry_key = HashEntry::get_key(data);
             // require that the key matches AND that the result is from this search
             if entry_key == key && search_age == HashEntry::get_age(data) {
-                let entry_data = HashEntry::load(data);
+                let mut entry_data = HashEntry::load(data);
+                if entry_data.score > MATE_THRESHOLD {
+                    entry_data.score -= _ply as i16;
+                } else if entry_data.score < -MATE_THRESHOLD {
+                    entry_data.score += _ply as i16;
+                }
                 return Some(entry_data);
             } 
         }

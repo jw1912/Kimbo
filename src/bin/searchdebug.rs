@@ -38,7 +38,7 @@ fn _search_all() {
             i as u8,
         );
         display_board::<true>(&search.position.board);
-        println!("Fen: {}", position);
+        println!("fen: {}", position);
         search.go::<true>();
         println!("best move {}", u16_to_uci(&search.best_move));
         println!(" ");
@@ -51,8 +51,9 @@ fn _search_one(pos: usize) {
     let max_time = 10000;
     let max_depth = u8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
+    let position = _POSITIONS[pos];
     let mut search: Search = Search::new(
-        EnginePosition::from_fen(_POSITIONS[pos]).unwrap(),
+        EnginePosition::from_fen(position).unwrap(),
         Arc::new(AtomicBool::new(false)),
         max_time,
         max_depth,
@@ -61,6 +62,7 @@ fn _search_one(pos: usize) {
         0,
     );
     display_board::<true>(&search.position.board);
+    println!("fen: {}", position);
     search.go::<true>();
     println!("best move {}", u16_to_uci(&search.best_move));
 }
