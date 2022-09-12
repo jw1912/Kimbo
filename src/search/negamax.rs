@@ -1,19 +1,12 @@
 use super::*;
-use crate::engine::EngineMoveContext;
-use crate::hash::search::CutoffType;
+use crate::{engine::EngineMoveContext, hash::search::Bound};
 use kimbo_state::{MoveType, Check, movelist::MoveList};
 use std::sync::atomic::Ordering;
+use std::cmp::{max, min};
 
 impl Search {
     /// returns the evaluation of a position to a given depth
-    pub fn negamax<const STATS: bool>(
-        &mut self,
-        mut alpha: i16,
-        beta: i16,
-        depth: u8,
-        ply: u8,
-        pv: &mut Vec<u16>,
-    ) -> i16 {
+    pub fn negamax<const STATS: bool>(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8, pv: &mut Vec<u16>,) -> i16 {
         // if stop token, abort
         if self.stop.load(Ordering::Relaxed) {
             return 0; // immediately bow out of search
@@ -30,6 +23,13 @@ impl Search {
         // update seldepth (due to extensions)
         if ply > self.stats.seldepth {
             self.stats.seldepth = ply;
+        }
+
+        // mate distance pruning - safe
+        alpha = max(alpha, -MAX_SCORE + ply as i16);
+        beta = min(beta, MAX_SCORE - ply as i16);
+        if alpha >= beta {
+            return alpha
         }
 
         // depth 0 quiescence search
@@ -82,48 +82,44 @@ impl Search {
             self.stats.tt_move_hits += 1;
         }
 
-        // tracking best move information
+        // initialising stuff
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
-
-        // going through legal moves
         let mut ctx: EngineMoveContext;
         let mut score: i16;
+        let mut bound: u8 = Bound::UPPER;
+
+        // going through legal moves
         for m_idx in 0..moves.len() {
             let m = moves[m_idx];
-            // new vector
             let mut sub_pv = Vec::new();
+
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
             score = -self.negamax::<STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv);
             self.position.unmake_move(ctx);
+
             // updating best move and score
             if score > best_score {
                 best_score = score;
-                best_move = m;  
+                best_move = m;
+                // improve alpha
+                if score > alpha {
+                    alpha = score;
+                    bound = Bound::EXACT;
+                    update_pv(pv, m, &mut sub_pv);
+                } 
             }
 
             // beta pruning
             if score >= beta {
-                if STATS && m == hash_move {
-                    self.stats.tt_beta_prunes += 1;
-                }
+                bound = Bound::LOWER;
                 break;
-            } 
-
-            // improve alpha
-            if score > alpha {
-                alpha = score;
-                if STATS && m == hash_move {
-                    self.stats.tt_alpha_improvements += 1;
-                }
-                update_pv(pv, m, &mut sub_pv);
             }         
         }
         // writing to tt
         if !entry_found || alpha != orig_alpha {
-            self.ttable
-                .push(zobrist, best_score, best_move, depth + 1, ply, self.age, CutoffType::EXACT);
+            self.ttable.push(zobrist, best_move, depth, self.age, bound, best_score, ply);
         }
         best_score
     }

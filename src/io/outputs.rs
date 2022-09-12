@@ -1,93 +1,49 @@
 use kimbo_state::Position;
+use crate::search::{MAX_SCORE, is_mate_score};
+use super::FILES;
 
-use crate::{engine::sorting::is_score_near_mate, search::MAX_SCORE};
-
-/// board index to square
-fn index_to_square(idx: u16) -> String {
+/// board idx to square
+fn idx_to_sq(idx: u16) -> String {
     let rank = idx >> 3;
     let file = idx & 7;
     let srank = (rank + 1).to_string();
-    let sfile = match file {
-        0 => "a",
-        1 => "b",
-        2 => "c",
-        3 => "d",
-        4 => "e",
-        5 => "f",
-        6 => "g",
-        7 => "h",
-        _ => panic!(""),
-    };
+    let sfile = FILES[file as usize];
     format!("{sfile}{srank}")
 }
 
 /// u16 move format to uci move format
+const PROMOS: [&str; 4] = ["n","b","r","q"];
+const PROMO_BIT: u16 = 0b1000_0000_0000_0000;
 pub fn u16_to_uci(m: &u16) -> String {
     let mut promo = "";
-    if m & 0b1000_0000_0000_0000 > 0 {
-        promo = match (m >> 12) & 0b11 {
-            0b00 => "n",
-            0b01 => "b",
-            0b10 => "r",
-            0b11 => "q",
-            _ => panic!("maths not mathsing"),
-        }
+    if m & PROMO_BIT > 0 {
+        promo = PROMOS[((m >> 12) & 0b11) as usize];
     }
-    format!(
-        "{}{}{} ",
-        index_to_square(m & 0b111111),
-        index_to_square((m >> 6) & 0b111111),
-        promo
-    )
+    format!("{}{}{} ", idx_to_sq(m & 0b111111), idx_to_sq((m >> 6) & 0b111111), promo)
 }
 
 /// returns info on the search
-pub fn uci_info(
-    depth: u8,
-    seldepth: u8,
-    nodes: u64,
-    time: u128,
-    pv: Vec<u16>,
-    eval: i16,
-    hashfull: u64,
-) {
+pub fn uci_info(depth: u8, seldepth: u8, nodes: u64, time: u128, pv: Vec<u16>, eval: i16, hashfull: u64) {
     let pv_str: String = pv.iter().map(u16_to_uci).collect();
     let mut score_type = "cp";
     let mut score = eval;
-    if is_score_near_mate(eval) {
+    if is_mate_score(eval) {
         score_type = "mate";
-        if eval < 0 {
-            score = eval.abs() - MAX_SCORE;
-        } else {
-            score = MAX_SCORE - eval + 1;
-        }
-        score /= 2;
+        score = if eval < 0 { eval.abs() - MAX_SCORE } else { MAX_SCORE - eval + 1 } / 2;
     }
-    // need to add mate score possibility
+    let nps = ((nodes as f64) / ((time as f64) / 1000.0)) as u32;
     println!(
         "info depth {} seldepth {} score {} {} time {} nodes {} nps {} hashfull {} pv {}",
-        depth,
-        seldepth,
-        score_type,
-        score,
-        time,
-        nodes,
-        ((nodes as f64) / ((time as f64) / 1000.0)) as u32,
-        hashfull,
-        pv_str
+        depth, seldepth, score_type, score, time, nodes, nps, hashfull, pv_str
     );
 }
 
-const PIECE_SYMBOLS: [&str; 13] = [
-    " ", "P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k",
-];
-const PIECE_SYMBOLS_FANCY: [&str; 13] = [
-    " ", "♟", "♞", "♝", "♜", "♛", "♚", "♙", "♘", "♗", "♖", "♕", "♔",
-];
-
+// getting symbols for pieces
+const PIECE_SYMBOLS: [&str; 13] = [" ", "P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"];
+const PIECE_SYMBOLS_FANCY: [&str; 13] = [" ", "♟", "♞", "♝", "♜", "♛", "♚", "♙", "♘", "♗", "♖", "♕", "♔"];
 fn symbol_at_idx<const FANCY: bool>(idx: usize, pos: &Position) -> &str {
     let indx = match pos.squares[idx] {
-        7 => 0,
+        6 => 0,
         _ => ((pos.squares[idx] + 1) as u64 + 6 * ((pos.sides[1] >> idx) & 1)) as usize,
     };
     match FANCY {
@@ -109,12 +65,4 @@ pub fn display_board<const FANCY: bool>(pos: &Position) {
         println!("{}", line);
         println!("+---+---+---+---+---+---+---+---+");
     }
-}
-
-pub fn move_list_out(move_list: &Vec<u16>) -> String {
-    let mut out = String::from("");
-    for m in move_list {
-        out.push_str(&u16_to_uci(m));
-    }
-    out
 }

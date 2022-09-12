@@ -2,7 +2,7 @@ pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 
     let indx = match side {
         0 => idx ^ 56,
         1 => idx,
-        _ => panic!("Invalid index in get_weight!")
+        _ => panic!("Invalid idx in get_weight!")
     };
     if MG {
         PST_MG[piece][indx]

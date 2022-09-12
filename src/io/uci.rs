@@ -7,7 +7,7 @@ use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
 use crate::search::{Search, Times};
 use crate::perft::PerftSearch;
-use crate::hash::{perft::PerftTT, search::TT};
+use crate::hash::{perft::PerftTT, search::HashTable};
 use std::io;
 use std::process;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
@@ -20,7 +20,7 @@ struct State {
     search_handle: Option<JoinHandle<()>>,
     stop: Arc<AtomicBool>,
     ttable_size: usize,
-    ttable: Arc<TT>,
+    ttable: Arc<HashTable>,
     age: u8,
     move_overhead: u64,
 }
@@ -32,7 +32,7 @@ impl Default for State {
             search_handle: None,
             stop: Arc::new(AtomicBool::new(false)),
             ttable_size: 1,
-            ttable: Arc::new(TT::new(1024 * 1024)),
+            ttable: Arc::new(HashTable::new(1024 * 1024)),
             age: 0,
             move_overhead: 10,
         }
@@ -330,13 +330,13 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErr
             let size = value_token[0].parse::<usize>()?;
             let mut state_lock = state.lock().unwrap();
             state_lock.ttable_size = size;
-            state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
+            state_lock.ttable = Arc::new(HashTable::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)
         }
         "Clear Hash" => {
             let mut state_lock = state.lock().unwrap();
-            state_lock.ttable = Arc::new(TT::new(state_lock.ttable_size * 1024 * 1024));
+            state_lock.ttable = Arc::new(HashTable::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)
         }

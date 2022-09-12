@@ -3,7 +3,7 @@ use super::*;
 
 pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];
 pub const EG_PC_VALS: [i16; 6] = [94, 281, 297, 512,  936,  0];
-pub const PHASE_VALS: [i16; 8] = [0, 1, 1, 2, 4, 0, 0, 0];
+pub const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
 pub const TOTALPHASE: i16 = 24;
 const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
 

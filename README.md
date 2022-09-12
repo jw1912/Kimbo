@@ -14,6 +14,7 @@ Kimbo is a uci-compatible chess engine.
 - hash move
 - iterative deepening
 - check extensions
+- mate pruning
 
 #### Evaluation
 - tapered midgame to endgame

@@ -12,6 +12,9 @@ use info::*;
 use std::io;
 use std::process;
 
+// used in inputs/outputs
+const FILES: [char; 8] = ['a','b','c','d','e','f','g','h'];
+
 /// description of of version
 pub fn description() {
     println!("{}", DESCRIPTION);

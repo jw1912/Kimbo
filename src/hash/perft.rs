@@ -1,3 +1,5 @@
+// shamelessly copied from https://github.com/Tearth/Inanis/blob/master/src/cache/perft.rs
+
 use std::sync::atomic::{AtomicU64, Ordering};
 const ENTRIES_PER_BUCKET: usize = 8;
 
@@ -42,19 +44,19 @@ impl PerftTT {
     }
 
     pub fn push(&self, zobrist: u64, count: u64, depth: u8) {
-        let index = (zobrist as usize) % self.num_buckets;
-        let bucket = &self.table[index];
+        let idx = (zobrist as usize) % self.num_buckets;
+        let bucket = &self.table[idx];
 
         let mut smallest_depth = u8::MAX;
-        let mut desired_index = 0;
-        for (entry_index, entry) in bucket.entries.iter().enumerate() {
+        let mut desired_idx = 0;
+        for (entry_idx, entry) in bucket.entries.iter().enumerate() {
             let entry_key = entry.key.load(Ordering::Relaxed);
             let entry_data = entry.data.load(Ordering::Relaxed);
             let entry_depth = ((entry_key ^ entry_data) as u8) & 0xf;
 
             if entry_depth < smallest_depth {
                 smallest_depth = entry_depth;
-                desired_index = entry_index;
+                desired_idx = entry_idx;
             }
         }
         let key = (zobrist & !0xf) | (depth as u64);
@@ -62,13 +64,13 @@ impl PerftTT {
         if smallest_depth == 0 {
             self.filled.fetch_add(1, Ordering::Relaxed);
         }
-        bucket.entries[desired_index].key.store(key ^ data, Ordering::Relaxed);
-        bucket.entries[desired_index].data.store(data, Ordering::Relaxed);
+        bucket.entries[desired_idx].key.store(key ^ data, Ordering::Relaxed);
+        bucket.entries[desired_idx].data.store(data, Ordering::Relaxed);
     }
 
     pub fn get(&self, zobrist: u64, depth: u8) -> Option<u64> {
-        let index = (zobrist as usize) % self.num_buckets;
-        let bucket = &self.table[index];
+        let idx = (zobrist as usize) % self.num_buckets;
+        let bucket = &self.table[idx];
 
         for entry in &bucket.entries {
             let entry_key = entry.key.load(Ordering::Relaxed);

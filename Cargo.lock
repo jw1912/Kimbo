@@ -37,4 +37,4 @@ dependencies = [
 [[package]]
 name = "kimbo_state"
 version = "0.1.0"
-source = "git+https://github.com/JacquesRW/kimbo_state#e0c9f13da147defa990415e1e3f7face5accf998"
+source = "git+https://github.com/JacquesRW/kimbo_state#33410bbc46660c06cd68a382c07d03a0aeb062d5"

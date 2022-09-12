@@ -1,9 +1,8 @@
-pub mod eval;
+mod eval;
 #[rustfmt::skip]
 mod pst;
 mod moves;
 pub mod zobrist;
-pub mod sorting;
 
 use eval::*;
 use crate::io::errors::UciError;

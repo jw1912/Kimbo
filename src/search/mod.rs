@@ -1,18 +1,24 @@
-use crate::hash::search::TT;
+use crate::hash::search::HashTable;
+use crate::engine::EnginePosition;
 use std::{
     sync::{atomic::AtomicBool, Arc},
     time::Instant,
 };
 
-use super::engine::EnginePosition;
 mod go;
 #[rustfmt::skip]
 mod negamax;
 mod qsearch;
 mod timings;
+mod sorting;
 
 /// maximal score (for mate)
 pub const MAX_SCORE: i16 = 30000;
+pub const MATE_THRESHOLD: i16 = MAX_SCORE - u8::MAX as i16;
+#[inline(always)]
+pub fn is_mate_score(score: i16) -> bool {
+    score >= MATE_THRESHOLD || score <= -MATE_THRESHOLD
+}
 
 /// Move timing info
 #[derive(Default, PartialEq, Eq)]
@@ -46,7 +52,7 @@ pub struct Search {
     /// Forced nodes
     pub max_nodes: u64,
     /// Transposition table
-    pub ttable: Arc<TT>,
+    pub ttable: Arc<HashTable>,
     /// number of searches run, for overwriting the tt
     pub age: u8,
     /// Search stats
@@ -61,7 +67,7 @@ impl Search {
         max_move_time: u64,
         max_depth: u8,
         max_nodes: u64,
-        ttable: Arc<TT>,
+        ttable: Arc<HashTable>,
         age: u8,
     ) -> Self {
         let stats = Stats::default();
@@ -91,8 +97,6 @@ pub struct Stats {
     pub qnode_count: u64,
     pub tt_hits: u64,
     pub tt_move_hits: u64,
-    pub tt_alpha_improvements: u64,
-    pub tt_beta_prunes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -103,8 +107,6 @@ impl Default for Stats {
             qnode_count: 0,
             tt_hits: 0,
             tt_move_hits: 0,
-            tt_alpha_improvements: 0,
-            tt_beta_prunes: 0,
         } 
     }
 }
@@ -119,8 +121,6 @@ impl Stats {
         println!("time: {}ms", time);
         println!("nps: {}", self.node_count * 1000 / (time + 1) as u64);
         println!("hash hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / self.tt_hits);
-        println!("hash prunes, alpha: {}, beta: {}", self.tt_alpha_improvements, self.tt_beta_prunes);
-        println!("{}% of hash moves useful", (self.tt_alpha_improvements + self.tt_beta_prunes) * 100 / self.tt_move_hits)
     }
 }
 
