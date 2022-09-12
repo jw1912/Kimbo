@@ -1,3 +1,8 @@
+// ZobristVals struct copied from Inanis
+// Inanis: https://github.com/Tearth/Inanis/blob/master/src/state/zobrist.rs
+// simply because this is the only way to do it
+// initialise_zobrist function is my own
+
 use fastrand;
 use kimbo_state::{ls1b_scan, Position};
 
@@ -9,18 +14,22 @@ pub struct ZobristVals {
 }
 
 impl ZobristVals {
+    #[inline(always)]
     pub fn piece_hash(&self, idx: usize, side: usize, piece: usize) -> u64 {
         self.pieces[side][piece][idx]
     }
+    #[inline(always)]
     pub fn castle_hash(&self, current: u8, update: u8) -> u64 {
         if current & update == 0 {
             return 0;
         }
         self.castle[ls1b_scan(update as u64) as usize]
     }
+    #[inline(always)]
     pub fn en_passant_hash(&self, file: usize) -> u64 {
         self.en_passant[file]
     }
+    #[inline(always)]
     pub fn side_hash(&self) -> u64 {
         self.side
     }
@@ -28,28 +37,31 @@ impl ZobristVals {
 
 impl Default for ZobristVals {
     fn default() -> Self {
+        fastrand::seed(353012);
+        
         let mut vals = Self {
             pieces: [[[0; 64]; 6]; 2],
             castle: [0; 4],
             en_passant: [0; 8],
-            side: 0,
+            side: fastrand::u64(1..u64::MAX),
         };
-        fastrand::seed(353012);
+        
         for color in 0..2 {
             for piece in 0..6 {
-                for field_idx in 0..64 {
-                    vals.pieces[color][piece][field_idx] = fastrand::u64(1..u64::MAX);
+                for sq_idx in 0..64 {
+                    vals.pieces[color][piece][sq_idx] = fastrand::u64(1..u64::MAX);
                 }
             }
         }
 
-        for castle_idx in 0..4 {
-            vals.castle[castle_idx] = fastrand::u64(1..u64::MAX);
+        for idx in 0..4 {
+            vals.castle[idx] = fastrand::u64(1..u64::MAX);
         }
 
-        for enp_idx in 0..8 {
-            vals.en_passant[enp_idx] = fastrand::u64(1..u64::MAX);
+        for idx in 0..8 {
+            vals.en_passant[idx] = fastrand::u64(1..u64::MAX);
         }
+
         vals
     }
 }
@@ -74,6 +86,9 @@ pub fn initialise_zobrist(pos: &Position, zvals: &ZobristVals) -> u64 {
     }
     if pos.en_passant_sq > 0 {
         zobrist ^= zvals.en_passant_hash((pos.en_passant_sq & 7) as usize);
+    }
+    if pos.side_to_move == 0 {
+        zobrist ^= zvals.side_hash();
     }
     zobrist
 }

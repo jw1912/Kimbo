@@ -1,4 +1,4 @@
-// The enums of tokens are inspired by Rustic
+// 'Tokens' enum inspired by Rustic
 // SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
 
 use super::inputs::uci_to_u16;
@@ -100,14 +100,12 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
     enum Tokens {
         None,
         Fancy,
-        Hash,
     }
     let mut token: Tokens = Tokens::None;
     for command in commands {
         match command {
             "display" => (),
             "fancy" => token = Tokens::Fancy,
-            "hash" => token = Tokens::Hash,
             _ => {
                 return Err(UciError::Display);
             }
@@ -116,11 +114,6 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
     match token {
         Tokens::None => display_board::<false>(&state.lock().unwrap().pos.board),
         Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos.board),
-        Tokens::Hash => {
-            let state_lock = state.lock().unwrap();
-            println!("{} / {} entries filled", state_lock.ttable.filled.load(Ordering::Relaxed), state_lock.ttable.num_entries);
-            drop(state_lock);
-        }
     }
     Ok(())
 }

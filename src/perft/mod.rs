@@ -22,16 +22,9 @@ pub struct PerftStats {
 
 impl PerftSearch {
     /// Makes a new search instance
-    pub fn new(
-        position: EnginePosition,
-        ttable: Arc<PerftTT>,
-    ) -> Self {
+    pub fn new(position: EnginePosition, ttable: Arc<PerftTT>,) -> Self {
         let stats = PerftStats::default();
-        PerftSearch {
-            position,
-            ttable,
-            stats,
-        }
+        PerftSearch {position, ttable, stats}
     }
 
     pub fn report(&self) {

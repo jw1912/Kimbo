@@ -1,3 +1,8 @@
+// This implementation is heavily inspired by Rustic and Inanis
+// Rustic: https://github.com/mvanthoor/rustic/blob/master/src/engine/transposition.rs
+// Inanis: https://github.com/Tearth/Inanis/blob/master/src/cache/search.rs
+// however the replacement scheme is my own and optimisations have been made
+
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct Bound;
@@ -33,8 +38,8 @@ const BUCKET_SIZE: usize = std::mem::size_of::<HashBucket>();
 pub struct HashTable {
     table: Vec<HashBucket>,
     num_buckets: usize,
-    pub num_entries: usize,
-    pub filled: AtomicU64,
+    num_entries: usize,
+    filled: AtomicU64,
 }
 
 #[derive(Default)]
@@ -67,7 +72,7 @@ impl HashTable {
         let mut smallest_depth = u8::MAX;
         for (entry_idx, entry) in bucket.entries.iter().enumerate() {
             let data = entry.data.load(Ordering::Relaxed);
-            let entry_data = HashEntry::get_data(data);
+            let entry_data = HashEntry::load(data);
             // ignoring entries from previous searches anyway, so they are first to be replaced
             if entry_data.age != age {
                 desired_idx = entry_idx;
@@ -91,7 +96,7 @@ impl HashTable {
                 continue;
             }
         }
-        bucket.entries[desired_idx].set_data(key, best_move, depth, age, bound, score);
+        bucket.entries[desired_idx].store(key, best_move, depth, age, bound, score);
     }
 
     pub fn get(&self, zobrist: u64, _ply: u8, search_age: u8) -> Option<HashResult> {
@@ -103,23 +108,26 @@ impl HashTable {
             let entry_key = HashEntry::get_key(data);
             // require that the key matches AND that the result is from this search
             if entry_key == key && search_age == HashEntry::get_age(data) {
-                let entry_data = HashEntry::get_data(data);
+                let entry_data = HashEntry::load(data);
                 return Some(entry_data);
             } 
         }
         None
     }
+
+    pub fn hashfull(&self) -> u64 {
+        self.filled.load(Ordering::Relaxed) * 1000 / self.num_entries as u64
+    }
 }
 
 impl HashEntry {
-    fn set_data(&self, key: u16, best_move: u16, depth: u8, age: u8, bound: u8, score: i16) {
+    fn store(&self, key: u16, best_move: u16, depth: u8, age: u8, bound: u8, score: i16) {
         let data = (key as u64)
             | ((best_move as u64) << 16)
             | (((score as u16) as u64) << 32)
             | ((depth as u64) << 48)
             | ((bound as u64) << 56)
             | ((age as u64) << 58);
-
         self.data.store(data, Ordering::Relaxed);
     }
 
@@ -131,7 +139,7 @@ impl HashEntry {
         (data >> 58) as u8
     }
 
-    fn get_data(data: u64) -> HashResult {
+    fn load(data: u64) -> HashResult {
         HashResult {
             key: data as u16,
             best_move: (data >> 16) as u16,

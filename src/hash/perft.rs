@@ -1,4 +1,5 @@
-// shamelessly copied from https://github.com/Tearth/Inanis/blob/master/src/cache/perft.rs
+// Shamelessly copied from Inanis
+// Inanis: https://github.com/Tearth/Inanis/blob/master/src/cache/perft.rs
 
 use std::sync::atomic::{AtomicU64, Ordering};
 const ENTRIES_PER_BUCKET: usize = 8;

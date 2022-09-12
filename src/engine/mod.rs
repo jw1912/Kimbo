@@ -2,7 +2,7 @@ mod eval;
 #[rustfmt::skip]
 mod pst;
 mod moves;
-mod zobrist;
+pub mod zobrist;
 
 use eval::*;
 use crate::io::errors::UciError;
@@ -29,7 +29,7 @@ pub struct EnginePosition {
     /// zobrist hash
     pub zobrist: u64,
     /// pointer to zobrist hash values
-    zobrist_vals: Arc<ZobristVals>,
+    pub zobrist_vals: Arc<ZobristVals>,
 }
 impl Default for EnginePosition {
     fn default() -> Self {

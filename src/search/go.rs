@@ -25,7 +25,7 @@ impl Search {
                 self.stats.start_time.elapsed().as_millis(),
                 pv,
                 score,
-                self.ttable.filled.load(Ordering::Relaxed) * 1000 / self.ttable.num_entries as u64
+                self.ttable.hashfull(),
             );
 
             if is_mate_score(score) {
@@ -33,7 +33,6 @@ impl Search {
             }
         }
         if STATS {
-            println!("{} / {} hash entries filled", self.ttable.filled.load(Ordering::Relaxed), self.ttable.num_entries);
             self.stats.report();
         }
         // resetting counts
