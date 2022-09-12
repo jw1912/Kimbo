@@ -52,12 +52,12 @@ impl PerftSearch {
         let mut ctx: EngineMoveContext;
         let mut score: u64;
         for m_idx in 0..moves.len() {
-            let mo = moves[m_idx];
-            ctx = self.position.make_move(mo);
+            let m = moves[m_idx];
+            ctx = self.position.make_move(m);
             score = self.perft::<true>(depth - 1);
             self.position.unmake_move(ctx);
-            new_move_list.push((mo, score));
-            println!("{}: {}", u16_to_uci(&mo), score);
+            new_move_list.push((m, score));
+            println!("{}: {}", u16_to_uci(&m), score);
         }
         let mut positions: u64 = 0;
         for sm in new_move_list {

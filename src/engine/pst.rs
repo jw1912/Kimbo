@@ -4,10 +4,9 @@ pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 
         1 => idx,
         _ => panic!("Invalid idx in get_weight!")
     };
-    if MG {
-        PST_MG[piece][indx]
-    } else {
-        PST_EG[piece][indx]
+    match MG {
+        true => PST_MG[piece][indx],
+        false => PST_EG[piece][indx],
     }
 }
 

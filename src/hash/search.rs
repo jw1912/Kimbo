@@ -12,7 +12,7 @@ const ENTRIES_PER_BUCKET: usize = 8;
 
 #[derive(Default)]
 pub struct HashEntry {
-    pub data: AtomicU64,
+    data: AtomicU64,
 }
 impl Clone for HashEntry {
     fn clone(&self) -> Self {
@@ -25,14 +25,14 @@ impl Clone for HashEntry {
 #[derive(Clone, Default)]
 #[repr(align(64))]
 pub struct HashBucket {
-    pub entries: [HashEntry; ENTRIES_PER_BUCKET],
+    entries: [HashEntry; ENTRIES_PER_BUCKET],
 }
 // should be 64 bytes
 const BUCKET_SIZE: usize = std::mem::size_of::<HashBucket>();
 
 pub struct HashTable {
-    pub table: Vec<HashBucket>,
-    pub num_buckets: usize,
+    table: Vec<HashBucket>,
+    num_buckets: usize,
     pub num_entries: usize,
     pub filled: AtomicU64,
 }

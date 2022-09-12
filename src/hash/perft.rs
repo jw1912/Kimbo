@@ -5,8 +5,8 @@ const ENTRIES_PER_BUCKET: usize = 8;
 
 #[derive(Default)]
 pub struct PerftTTEntry {
-    pub key: AtomicU64,
-    pub data: AtomicU64,
+    key: AtomicU64,
+    data: AtomicU64,
 }
 impl Clone for PerftTTEntry {
     fn clone(&self) -> Self {
@@ -20,13 +20,13 @@ impl Clone for PerftTTEntry {
 #[derive(Clone, Default)]
 #[repr(align(64))]
 pub struct PerftTTBucket {
-    pub entries: [PerftTTEntry; ENTRIES_PER_BUCKET],
+    entries: [PerftTTEntry; ENTRIES_PER_BUCKET],
 }
 const BUCKET_SIZE: usize = std::mem::size_of::<PerftTTBucket>();
 
 pub struct PerftTT {
-    pub table: Vec<PerftTTBucket>,
-    pub num_buckets: usize,
+    table: Vec<PerftTTBucket>,
+    num_buckets: usize,
     pub num_entries: usize,
     pub filled: AtomicU64,
 }

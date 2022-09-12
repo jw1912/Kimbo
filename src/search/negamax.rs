@@ -13,9 +13,7 @@ impl Search {
         }
 
         // check if nodes or time limits reached
-        if self.stats.node_count > self.max_nodes
-            || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time
-        {
+        if self.search_limits_reached() {
             self.stop.store(true, Ordering::Relaxed);
             return 0;
         }
@@ -25,7 +23,7 @@ impl Search {
             self.stats.seldepth = ply;
         }
 
-        // mate distance pruning - safe
+        // mate distance pruning
         alpha = max(alpha, -MAX_SCORE + ply as i16);
         beta = min(beta, MAX_SCORE - ply as i16);
         if alpha >= beta {
@@ -34,8 +32,7 @@ impl Search {
 
         // depth 0 quiescence search
         if depth == 0 {
-            let score = self.quiesce::<STATS>(alpha, beta, ply + 1);
-            return score;
+            return self.quiesce::<STATS>(alpha, beta, ply + 1);
         }
 
         // now will be generating moves, so this node is counted as visited
@@ -60,20 +57,11 @@ impl Search {
 
         // checking for checkmate/stalemate
         if moves.is_empty() {
-            // checkmate
-            if king_in_check {
-                return -MAX_SCORE + ply as i16;
-            }
-            // stalemate
-            return 0;
+            return king_in_check as i16 * (-MAX_SCORE + ply as i16);
         }
 
-        // CHECK EXTENSIONS
-        let ext = if king_in_check {
-            1
-        } else {
-            0
-        };
+        // check extensions
+        let ext = king_in_check as u8;
 
         // move sorting
         let mut move_hit: bool = false;
@@ -82,7 +70,7 @@ impl Search {
             self.stats.tt_move_hits += 1;
         }
 
-        // initialising stuff
+        // initialising stuff for going through move list
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
         let mut ctx: EngineMoveContext;

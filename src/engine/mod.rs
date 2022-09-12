@@ -2,7 +2,7 @@ mod eval;
 #[rustfmt::skip]
 mod pst;
 mod moves;
-pub mod zobrist;
+mod zobrist;
 
 use eval::*;
 use crate::io::errors::UciError;
@@ -17,19 +17,19 @@ pub struct EnginePosition {
     /// Basic position, for move generation and making moves
     pub board: Position,
     /// Midgame material scores
-    pub mat_mg: [i16; 2],
+    mat_mg: [i16; 2],
     /// Endgame material scores
-    pub mat_eg: [i16; 2],
+    mat_eg: [i16; 2],
     /// Midgame piece-square table scores
-    pub pst_mg: [i16; 2],
+    pst_mg: [i16; 2],
     /// Endgame piece-square table scores
-    pub pst_eg: [i16; 2],
+    pst_eg: [i16; 2],
     /// heuristic for game phase
-    pub phase: i16,
+    phase: i16,
     /// zobrist hash
     pub zobrist: u64,
     /// pointer to zobrist hash values
-    pub zobrist_vals: Arc<ZobristVals>,
+    zobrist_vals: Arc<ZobristVals>,
 }
 impl Default for EnginePosition {
     fn default() -> Self {

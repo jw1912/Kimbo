@@ -6,8 +6,8 @@ const MVV_LVA: [[i8; 7]; 7] = [
     [35, 34, 33, 32, 31, 30, 0], // victim BISHOP
     [45, 44, 43, 42, 41, 40, 0], // victim ROOK
     [55, 54, 53, 52, 51, 50, 0], // victim QUEEN
-    [0, 0, 0, 0, 0, 0, 0],       // victim KING (should not be referenced)
-    [5, 0, 0, 0, 0, -1, 0],      // empty
+    [ 0,  0,  0,  0,  0,  0, 0],       // victim KING (should not be referenced)
+    [ 0,  0,  0,  0,  0,  0, 0],      // empty
 ];
 
 impl EnginePosition {

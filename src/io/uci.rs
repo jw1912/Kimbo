@@ -273,11 +273,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let move_overhead = state_lock.move_overhead;
         drop(state_lock);
 
-        let move_time = if max_move_time <= move_overhead {
-            move_overhead
-        } else {
-            max_move_time - move_overhead
-        };
+        let move_time = max_move_time - move_overhead * (max_move_time > move_overhead) as u64; 
 
         let mut search = Search::new(
             position,

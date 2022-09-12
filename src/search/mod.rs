@@ -12,9 +12,9 @@ mod qsearch;
 mod timings;
 mod sorting;
 
-/// maximal score (for mate)
+/// Checkmate stuff
 pub const MAX_SCORE: i16 = 30000;
-pub const MATE_THRESHOLD: i16 = MAX_SCORE - u8::MAX as i16;
+const MATE_THRESHOLD: i16 = MAX_SCORE - u8::MAX as i16;
 #[inline(always)]
 pub fn is_mate_score(score: i16) -> bool {
     score >= MATE_THRESHOLD || score <= -MATE_THRESHOLD
@@ -35,28 +35,28 @@ pub struct Times {
     pub moves_to_go: Option<u8>,
 }
 
-/// Search info
+/// Search struct
 pub struct Search {
     /// Position to be searched
     pub position: EnginePosition,
     /// Side searching for a move
-    pub searching_side: usize,
+    searching_side: usize,
     /// Token to say if search needs to be stopped
-    pub stop: Arc<AtomicBool>,
+    stop: Arc<AtomicBool>,
     /// Best move found
     pub best_move: u16,
     /// Force time limit
-    pub max_move_time: u64,
+    max_move_time: u64,
     /// Forced depth
-    pub max_depth: u8,
+    max_depth: u8,
     /// Forced nodes
-    pub max_nodes: u64,
+    max_nodes: u64,
     /// Transposition table
-    pub ttable: Arc<HashTable>,
+    ttable: Arc<HashTable>,
     /// number of searches run, for overwriting the tt
-    pub age: u8,
+    age: u8,
     /// Search stats
-    pub stats: Stats,
+    stats: Stats,
 }
 
 impl Search {
@@ -85,18 +85,24 @@ impl Search {
             stats,
         }
     }
+
+    #[inline(always)]
+    fn search_limits_reached(&self) -> bool {
+        self.stats.node_count > self.max_nodes // node count reached
+        || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time // search time exceeded
+    }
 }
 
 /// Search statistics
-pub struct Stats {
+struct Stats {
     /// Always tracked
-    pub node_count: u64,
-    pub start_time: Instant,
-    pub seldepth: u8,
+    node_count: u64,
+    start_time: Instant,
+    seldepth: u8,
     // Debugging only
-    pub qnode_count: u64,
-    pub tt_hits: u64,
-    pub tt_move_hits: u64,
+    qnode_count: u64,
+    tt_hits: u64,
+    tt_move_hits: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -112,10 +118,10 @@ impl Default for Stats {
 }
 
 impl Stats {
-    pub fn reset(&mut self) {
+    fn reset(&mut self) {
         *self = Self::default();
     }
-    pub fn report(&self) {
+    fn report(&self) {
         let time = self.start_time.elapsed().as_millis();
         println!("total nodes: {} ({}% quiescent)", self.node_count, self.qnode_count * 100 / self.node_count);
         println!("time: {}ms", time);
@@ -124,7 +130,7 @@ impl Stats {
     }
 }
 
-pub fn update_pv(pv: &mut Vec<u16>, m: u16, sub_pv: &mut Vec<u16>) {
+fn update_pv(pv: &mut Vec<u16>, m: u16, sub_pv: &mut Vec<u16>) {
     pv.clear();
     pv.push(m);
     pv.append(sub_pv); 

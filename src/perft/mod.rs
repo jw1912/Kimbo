@@ -7,7 +7,7 @@ use std::sync::Arc;
 /// Search info
 pub struct PerftSearch {
     /// Position to be searched
-    pub position: EnginePosition,
+    position: EnginePosition,
     /// Transposition table
     pub ttable: Arc<PerftTT>,
     /// Search stats
@@ -17,7 +17,7 @@ pub struct PerftSearch {
 /// Search statistics
 #[derive(Default)]
 pub struct PerftStats {
-    pub tt_hits: u64,
+    tt_hits: u64,
 }
 
 impl PerftSearch {
@@ -45,7 +45,7 @@ impl PerftStats {
         *self = Self::default();
     }
 
-    pub fn report(&self) {
+    fn report(&self) {
         println!("tt hits: {}", self.tt_hits);
     }
 }

@@ -16,11 +16,11 @@ use std::process;
 const FILES: [char; 8] = ['a','b','c','d','e','f','g','h'];
 
 /// description of of version
-pub fn description() {
+fn description() {
     println!("{}", DESCRIPTION);
 }
 /// output listed features
-pub fn features() {
+fn features() {
     println!("{}", FEATURES);
 }
 
