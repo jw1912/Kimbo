@@ -53,54 +53,6 @@ pub struct Search {
     pub stats: Stats,
 }
 
-/// Search statistics
-pub struct Stats {
-    /// Always tracked
-    pub node_count: u64,
-    pub start_time: Instant,
-    pub seldepth: u8,
-    // Debugging only
-    pub qnode_count: u64,
-    pub tt_hits: u64,
-    pub tt_hits_returned: u64,
-    pub tt_cutoffs: (u64, u64, u64),
-    pub tt_additions: (u64, u64, u64),
-    pub tt_move_hits: u64,
-    pub tt_beta_prunes: u64,
-}
-impl Default for Stats {
-    fn default() -> Self {
-        Self {
-            node_count: 0,
-            qnode_count: 0,
-            start_time: Instant::now(),
-            tt_hits: 0,
-            tt_hits_returned: 0,
-            tt_cutoffs: (0,0,0),
-            tt_additions: (0,0,0),
-            tt_move_hits: 0,
-            tt_beta_prunes: 0,
-            seldepth: 0,
-        } 
-    }
-}
-
-impl Stats {
-    pub fn reset(&mut self) {
-        *self = Self::default();
-    }
-    pub fn report(&self) {
-        let time = self.start_time.elapsed().as_millis();
-        println!("total nodes: {} ({}% quiescent)", self.node_count, self.qnode_count * 100 / self.node_count);
-        println!("time: {}ms", time);
-        println!("nps: {}", self.node_count * 1000 / (time + 1) as u64);
-        println!("tt hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / (self.tt_hits - self.tt_hits_returned));
-        println!("cutoffs alpha: {}, beta: {}, exact: {}, resulting beta prunes: {}", self.tt_cutoffs.0, self.tt_cutoffs.1, self.tt_cutoffs.2, self.tt_beta_prunes);
-        println!("total direct tt prunes: {}", self.tt_hits_returned);
-        println!("additions alpha: {}, beta: {}, exact: {}", self.tt_additions.0, self.tt_additions.1, self.tt_additions.2);
-    }
-}
-
 impl Search {
     /// Makes a new search instance
     pub fn new(
@@ -127,4 +79,53 @@ impl Search {
             stats,
         }
     }
+}
+
+/// Search statistics
+pub struct Stats {
+    /// Always tracked
+    pub node_count: u64,
+    pub start_time: Instant,
+    pub seldepth: u8,
+    // Debugging only
+    pub qnode_count: u64,
+    pub tt_hits: u64,
+    pub tt_move_hits: u64,
+    pub tt_alpha_improvements: u64,
+    pub tt_beta_prunes: u64,
+}
+impl Default for Stats {
+    fn default() -> Self {
+        Self {
+            node_count: 0,
+            seldepth: 0,
+            start_time: Instant::now(),
+            qnode_count: 0,
+            tt_hits: 0,
+            tt_move_hits: 0,
+            tt_alpha_improvements: 0,
+            tt_beta_prunes: 0,
+        } 
+    }
+}
+
+impl Stats {
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+    pub fn report(&self) {
+        let time = self.start_time.elapsed().as_millis();
+        println!("total nodes: {} ({}% quiescent)", self.node_count, self.qnode_count * 100 / self.node_count);
+        println!("time: {}ms", time);
+        println!("nps: {}", self.node_count * 1000 / (time + 1) as u64);
+        println!("hash hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / self.tt_hits);
+        println!("hash prunes, alpha: {}, beta: {}", self.tt_alpha_improvements, self.tt_beta_prunes);
+        println!("{}% of hash moves useful", (self.tt_alpha_improvements + self.tt_beta_prunes) * 100 / self.tt_move_hits)
+    }
+}
+
+pub fn update_pv(pv: &mut Vec<u16>, m: u16, sub_pv: &mut Vec<u16>) {
+    pv.clear();
+    pv.push(m);
+    pv.append(sub_pv); 
 }

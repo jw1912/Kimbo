@@ -36,7 +36,8 @@ fn _perft_tests() {
         let mut results = Vec::new();
         let pow = Instant::now();
         let position = EnginePosition::from_fen(TESTS[i]).unwrap();
-        println!("Time to process fen: {}", pow.elapsed().as_micros());
+        println!(" ");
+        println!("Time to process fen: {} micros", pow.elapsed().as_micros());
         let mut search: PerftSearch = PerftSearch::new(
             position,
             tt.clone(),
@@ -49,26 +50,14 @@ fn _perft_tests() {
             total += count;
         }
         let time = now.elapsed().as_millis() as u64;
-        println!(" ");
         println!("Test {} complete in {}ms.", i+1, time);
         println!("Nodes: {}, NPS: {}", total, total * 1000 / time);
-        search.stats.report();
+        search.report();
         search.stats.reset();
         
         assert_eq!(results, *expected, "Failed at test {}.", i+1);
     }
     println!("Took {}ms", start.elapsed().as_millis());
-}
-
-fn _root() {
-    let now = Instant::now();
-    let tt = Arc::new(PerftTT::new(32 * 1024 * 1024));
-    let mut search: PerftSearch = PerftSearch::new(
-        EnginePosition::default(),
-        tt,
-    );
-    let count = search.perft::<true>(7);
-    println!("Nodes: {count}, Time: {}ms", now.elapsed().as_millis());
 }
 
 fn main() {

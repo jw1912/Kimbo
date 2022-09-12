@@ -12,7 +12,7 @@ impl PerftSearch {
         if TT_ACTIVE {
             if let Some(res) = self.ttable.get(zobrist, depth_left) {
                 self.stats.tt_hits += 1;
-                return res.count;
+                return res;
             }
         }
 

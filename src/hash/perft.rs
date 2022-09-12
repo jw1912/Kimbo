@@ -1,5 +1,4 @@
 use std::sync::atomic::{AtomicU64, Ordering};
-
 const ENTRIES_PER_BUCKET: usize = 8;
 
 #[derive(Default)]
@@ -21,38 +20,25 @@ impl Clone for PerftTTEntry {
 pub struct PerftTTBucket {
     pub entries: [PerftTTEntry; ENTRIES_PER_BUCKET],
 }
+const BUCKET_SIZE: usize = std::mem::size_of::<PerftTTBucket>();
 
 pub struct PerftTT {
     pub table: Vec<PerftTTBucket>,
     pub num_buckets: usize,
-}
-
-#[derive(Default)]
-pub struct PerftTTResult {
-    pub count: u64,
-}
-impl PerftTTResult {
-    fn new(count: u64) -> Self {
-        Self {
-            count
-        }
-    }
+    pub num_entries: usize,
+    pub filled: AtomicU64,
 }
 
 impl PerftTT {
     pub fn new(size: usize) -> Self {
-        let bucket_size = std::mem::size_of::<PerftTTBucket>();
-        let num_buckets = size / bucket_size;
-        let mut table = Self {
-            table: Vec::with_capacity(num_buckets),
+        let num_buckets = size / BUCKET_SIZE;
+        let num_entries = num_buckets * ENTRIES_PER_BUCKET;
+        Self {
+            table: vec![Default::default(); num_buckets],
             num_buckets,
-        };
-        if size != 0 {
-            table
-                .table
-                .resize(table.table.capacity(), Default::default())
+            num_entries,
+            filled: AtomicU64::new(0),
         }
-        table
     }
 
     pub fn push(&self, zobrist: u64, count: u64, depth: u8) {
@@ -73,12 +59,14 @@ impl PerftTT {
         }
         let key = (zobrist & !0xf) | (depth as u64);
         let data = count;
-
+        if smallest_depth == 0 {
+            self.filled.fetch_add(1, Ordering::Relaxed);
+        }
         bucket.entries[desired_index].key.store(key ^ data, Ordering::Relaxed);
         bucket.entries[desired_index].data.store(data, Ordering::Relaxed);
     }
 
-    pub fn get(&self, zobrist: u64, depth: u8) -> Option<PerftTTResult> {
+    pub fn get(&self, zobrist: u64, depth: u8) -> Option<u64> {
         let index = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[index];
 
@@ -88,9 +76,13 @@ impl PerftTT {
             let key = (zobrist & !0xf) | (depth as u64);
 
             if (entry_key ^ entry_data) == key {
-                return Some(PerftTTResult::new(entry_data));
+                return Some(entry_data);
             }
         }
         None
+    }
+
+    pub fn report(&self) {
+        println!("Hashtable: {} / {} entries filled", self.filled.load(Ordering::Relaxed), self.num_entries)
     }
 }

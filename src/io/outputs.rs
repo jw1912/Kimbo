@@ -42,7 +42,6 @@ pub fn u16_to_uci(m: &u16) -> String {
 }
 
 /// returns info on the search
-#[allow(clippy::too_many_arguments)]
 pub fn uci_info(
     depth: u8,
     seldepth: u8,
@@ -50,11 +49,9 @@ pub fn uci_info(
     time: u128,
     pv: Vec<u16>,
     eval: i16,
-    filled: u64,
-    hash_size: u64,
+    hashfull: u64,
 ) {
     let pv_str: String = pv.iter().map(u16_to_uci).collect();
-    let hashfull = filled * 1000 / hash_size;
     let mut score_type = "cp";
     let mut score = eval;
     if is_score_near_mate(eval) {

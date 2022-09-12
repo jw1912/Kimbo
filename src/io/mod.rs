@@ -5,21 +5,12 @@ pub mod outputs;
 pub mod uci;
 /// error handling
 pub mod errors;
+mod info;
 
 use uci::uci_run;
+use info::*;
 use std::io;
 use std::process;
-
-const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
-const FEATURES: [&str; 7] = [
-    "fully-legal move generation",
-    "alpha-beta search",
-    "quiescence search",
-    "mvv-lva move ordering",
-    "transposition table",
-    "iterative deepening",
-    "check extensions",
-];
 
 /// description of of version
 pub fn description() {
@@ -27,9 +18,7 @@ pub fn description() {
 }
 /// output listed features
 pub fn features() {
-    for feature in FEATURES {
-        println!("{}", feature);
-    }
+    println!("{}", FEATURES);
 }
 
 pub fn main_loop() {
@@ -42,6 +31,7 @@ pub fn main_loop() {
             "uci" => uci_run(),
             "quit" => process::exit(0),
             "description" => description(),
+            "features" => features(),
             _ => println!("Unknown command!"),
         }
     }

@@ -13,7 +13,7 @@ impl Search {
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
-            let score = self.negamax::<true, STATS>( -MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv);
+            let score = self.negamax::<STATS>( -MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
@@ -26,8 +26,7 @@ impl Search {
                 self.stats.start_time.elapsed().as_millis(),
                 pv,
                 score,
-                self.ttable.filled.load(Ordering::Relaxed),
-                self.ttable.num_entries as u64,
+                self.ttable.filled.load(Ordering::Relaxed) * 1000 / self.ttable.num_entries as u64
             );
 
             if is_score_near_mate(score) {

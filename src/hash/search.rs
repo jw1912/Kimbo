@@ -110,12 +110,11 @@ impl TT {
         }
         //if is_score_near_mate(score) {
         //    if score > 0 {
-        //        score += ply as i16;
+        //        score += _ply as i16;
         //    } else {
-        //        score -= ply as i16;
+        //        score -= _ply as i16;
         //    }
         //}
-
         bucket.entries[desired_index].set_data(key, score, best_move, depth, age, cutoff_type);
     }
 
@@ -132,9 +131,9 @@ impl TT {
                 // return mate score with plies
                 //if is_score_near_mate(entry_data.score) {
                 //    if entry_data.score > 0 {
-                //        entry_data.score -= ply as i16
+                //        entry_data.score -= _ply as i16
                 //    } else {
-                //        entry_data.score += ply as i16
+                //        entry_data.score += _ply as i16
                 //    }
                 //}
                 return Some(entry_data);

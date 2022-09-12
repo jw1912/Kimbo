@@ -19,6 +19,8 @@ pub struct EnginePosition {
     pub board: Position,
     /// Midgame material scores
     pub mat_mg: [i16; 2],
+    /// Endgame material scores
+    pub mat_eg: [i16; 2],
     /// Midgame piece-square table scores
     pub pst_mg: [i16; 2],
     /// Endgame piece-square table scores
@@ -40,6 +42,7 @@ impl Default for EnginePosition {
 pub struct EngineMoveContext {
     ctx: MoveContext,
     mat_mg: [i16; 2],
+    mat_eg: [i16; 2],
     pst_mg: [i16; 2],
     pst_eg: [i16; 2],
     phase: i16,
@@ -50,15 +53,17 @@ impl EnginePosition {
     /// Initialise a new position from a fen string
     pub fn from_fen(s: &str) -> Result<Self, UciError> {
         let board = Position::from_fen(s)?;
-        let mat_mg = calculate_mat_mg(&board);
-        let pst_mg = calculate_pst_mg_scores(&board);
-        let pst_eg = calculate_pst_eg_scores(&board);
+        let mat_mg = calc_material::<true>(&board);
+        let mat_eg = calc_material::<false>(&board);
+        let pst_mg = calc_pst::<true>(&board);
+        let pst_eg = calc_pst::<false>(&board);
         let phase = calculate_phase(&board);
         let zobrist_vals = Arc::new(ZobristVals::default());
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
         Ok(Self {
             board,
             mat_mg,
+            mat_eg,
             pst_mg,
             pst_eg,
             phase,

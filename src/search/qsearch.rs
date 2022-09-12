@@ -4,7 +4,7 @@ use kimbo_state::{MoveType, Check, movelist::MoveList};
 
 impl Search {
     /// Quiescence search
-    pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16, ply: u8, pv: &mut Vec<u16>) -> i16 {
+    pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16, ply: u8) -> i16 {
         self.stats.node_count += 1;
         if STATS { self.stats.qnode_count += 1; }
         let stand_pat = self.position.static_eval();
@@ -33,15 +33,11 @@ impl Search {
             let m = captures[m_idx];
             // making move, getting score, unmaking move
             ctx = self.position.make_move(m);
-            let mut sub_pv = Vec::new();
-            score = -self.quiesce::<STATS>(-beta, -alpha, ply + 1, &mut sub_pv);
+            score = -self.quiesce::<STATS>(-beta, -alpha, ply + 1);
             self.position.unmake_move(ctx);
             // improve alpha bound
             if score > alpha {
                 alpha = score;
-                pv.clear();
-                pv.push(m);
-                pv.append(&mut sub_pv);
             }
             // beta pruning
             if score >= beta {

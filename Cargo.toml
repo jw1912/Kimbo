@@ -11,11 +11,11 @@ fastrand = "1.8.0"
 
 [profile.release.build-override]
 opt-level = 3
-codegen-units = 1
 
 [profile.release]
 panic = "abort"
 lto = true
+codegen-units = 1
 strip = true
 debug = false
 incremental = false

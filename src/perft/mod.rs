@@ -33,6 +33,11 @@ impl PerftSearch {
             stats,
         }
     }
+
+    pub fn report(&self) {
+        self.ttable.report();
+        self.stats.report();
+    }
 }
 
 impl PerftStats {

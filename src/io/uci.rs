@@ -13,9 +13,7 @@ use std::process;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
+use super::info::*;
 
 struct State {
     pos: EnginePosition,
@@ -290,7 +288,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             tt,
             age,
         );
-        let best_move = search.go::<true>();
+        let best_move = search.go::<false>();
         println!("bestmove {}", u16_to_uci(&best_move));
         let mut state_lock = state_2.lock().unwrap();
         state_lock.age += 1;
