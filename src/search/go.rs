@@ -5,10 +5,13 @@ use std::time::Instant;
 
 impl Search {
     /// iterative deepening search
-    pub fn go<const STATS: bool>(&mut self) -> u16 {
+    /// CLI: command line output of info needed?
+    /// STATS: debug stats needed?
+    pub fn go<const CLI: bool, const STATS: bool>(&mut self) -> u16 {
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
         self.searching_side = self.position.board.side_to_move;
+        let mut stats = SearchStats::new(0, 0, 0, Vec::new());
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
@@ -18,27 +21,32 @@ impl Search {
                 break;
             }
             self.best_move = pv[0];
-            uci_info(
-                d + 1,
-                self.stats.seldepth,
-                self.stats.node_count,
-                self.stats.start_time.elapsed().as_millis(),
-                pv,
-                score,
-                self.ttable.hashfull(),
-            );
+            let time = self.stats.start_time.elapsed().as_millis();
+            if STATS { 
+                stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone())
+            }
+            if CLI {
+                uci_info(
+                    d + 1,
+                    self.stats.seldepth,
+                    self.stats.node_count,
+                    time,
+                    pv,
+                    score,
+                    self.ttable.hashfull(),
+                );
+            }
 
             if is_mate_score(score) {
                 break;
             }
         }
         if STATS {
-            self.stats.report();
+            self.report(stats);
         }
         // resetting counts
         self.stats.reset();
         self.age += 1;
-        println!("search age: {}", self.age);
         self.best_move
     }
 }

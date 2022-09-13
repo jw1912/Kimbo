@@ -277,7 +277,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             tt,
             age,
         );
-        let best_move = search.go::<false>();
+        let best_move = search.go::<true, false>();
         println!("bestmove {}", u16_to_uci(&best_move));
         let mut state_lock = state_2.lock().unwrap();
         state_lock.age += 1;

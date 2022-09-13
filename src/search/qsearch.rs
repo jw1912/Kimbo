@@ -1,47 +1,72 @@
 use super::*;
+use super::sorting::{MoveScores, get_next_move};
 use crate::engine::EngineMoveContext;
 use kimbo_state::{MoveType, Check, movelist::MoveList};
 
 impl Search {
     /// Quiescence search
+    /// 
+    /// Constant parameters:
+    /// STATS - are debug stats required?
+    /// 
+    /// Comments:
+    /// UCI: implemented for the uci protocol / debug stats
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16, ply: u8) -> i16 {
+        // UCI: all quiescent nodes are counted
         self.stats.node_count += 1;
         if STATS { self.stats.qnode_count += 1; }
+
+        // static eval
         let stand_pat = self.position.static_eval();
+
         // beta pruning
-        // there is an argument for returning stand pat instead of beta
         if stand_pat >= beta {
             return beta;
         }
+
         // delta pruning
         if stand_pat < alpha - 850 {
             return alpha;
         }
+
         // improving alpha bound
         if alpha < stand_pat {
             alpha = stand_pat;
         }
-        // generating and sorting captures
+
+        // generating captures
         let mut _king_checked = Check::None;
         let mut captures = MoveList::default();
         self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut _king_checked, &mut captures);
-        captures.sort(|m| self.position.mvv_lva(m));
-        // going through captures
+
+        // scoring captures
+        let mut move_scores = MoveScores::default();
+        self.position.score_captures(&captures, &mut move_scores);
+
+        // initialising stuff for going through captures
         let mut ctx: EngineMoveContext;
         let mut score: i16;
-        for m_idx in 0..captures.len() {
-            let m = captures[m_idx];
-            // making move, getting score, unmaking move
+        let mut m_idx = 0;
+
+        // going through captures
+        while let Some(m) = get_next_move(&mut captures, &mut move_scores, &mut m_idx) {
+            // making move
             ctx = self.position.make_move(m);
+
+            // getting score
             score = -self.quiesce::<STATS>(-beta, -alpha, ply + 1);
+
+            // undoing move
             self.position.unmake_move(ctx);
-            // improve alpha bound
-            if score > alpha {
-                alpha = score;
-            }
+
             // beta pruning
             if score >= beta {
                 return beta;
+            }
+
+            // improve alpha bound
+            if score > alpha {
+                alpha = score;
             }
         }
         alpha

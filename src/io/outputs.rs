@@ -1,9 +1,9 @@
-use kimbo_state::Position;
+use kimbo_state::{Position, movelist::MoveList};
 use crate::search::{MAX_SCORE, is_mate_score};
 use super::FILES;
 
 /// board idx to square
-fn idx_to_sq(idx: u16) -> String {
+pub fn idx_to_sq(idx: u16) -> String {
     let rank = idx >> 3;
     let file = idx & 7;
     let srank = (rank + 1).to_string();
@@ -64,5 +64,11 @@ pub fn display_board<const FANCY: bool>(pos: &Position) {
         }
         println!("{}", line);
         println!("+---+---+---+---+---+---+---+---+");
+    }
+}
+
+pub fn display_movelist(moves: &MoveList) {
+    for i in 0..moves.len() {
+        println!("{}", u16_to_uci(&moves[i]))
     }
 }

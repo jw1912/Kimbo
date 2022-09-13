@@ -1,3 +1,4 @@
+use crate::io::outputs::u16_to_uci;
 use crate::hash::search::HashTable;
 use crate::engine::EnginePosition;
 use std::{
@@ -92,9 +93,14 @@ impl Search {
         self.stats.node_count > self.max_nodes // node count reached
         || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time // search time exceeded
     }
+
+    fn report(&self, stats: SearchStats) {
+        stats.report();
+        self.stats.report();
+    }
 }
 
-/// Search statistics
+/// Statistics within a single negamax search
 struct Stats {
     /// Always tracked
     node_count: u64,
@@ -125,10 +131,6 @@ impl Stats {
         *self = Self::default();
     }
     fn report(&self) {
-        let time = self.start_time.elapsed().as_millis();
-        println!("total nodes: {} ({}% quiescent)", self.node_count, self.qnode_count * 100 / self.node_count);
-        println!("time: {}ms", time);
-        println!("nps: {}", self.node_count * 1000 / (time + 1) as u64);
         println!("hash hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes));
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
     }
@@ -138,4 +140,28 @@ fn update_pv(pv: &mut Vec<u16>, m: u16, sub_pv: &mut Vec<u16>) {
     pv.clear();
     pv.push(m);
     pv.append(sub_pv); 
+}
+
+// Stats for a full iterative deepening search
+struct SearchStats {
+    depth_reached: u8,
+    nodes_to_depth: u64,
+    time_to_depth: u64,
+    pv: Vec<u16>
+}
+
+impl SearchStats {
+    fn new(depth_reached: u8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>) -> Self {
+        Self { 
+            depth_reached, 
+            nodes_to_depth, 
+            time_to_depth,
+            pv
+        }
+    }
+
+    fn report(&self) {
+        println!("depth reached {} nodes {} time {}", self.depth_reached, self.nodes_to_depth, self.time_to_depth);
+        println!("pv {}", self.pv.iter().map(u16_to_uci).collect::<String>());
+    }
 }

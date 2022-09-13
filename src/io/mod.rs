@@ -5,6 +5,7 @@ pub mod outputs;
 pub mod uci;
 /// error handling
 pub mod errors;
+pub mod fen;
 mod info;
 
 use uci::uci_run;
