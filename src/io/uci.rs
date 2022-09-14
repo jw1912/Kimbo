@@ -1,13 +1,15 @@
 // 'Tokens' enum inspired by Rustic
 // SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
 
+use kimbo_state::Position;
+
 use super::inputs::uci_to_u16;
-use crate::engine::EnginePosition;
+use crate::engine::Engine;
 use crate::hash::pawn::PawnHashTable;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
-use crate::search::{Search, timings::Times};
-use crate::perft::PerftSearch;
+use crate::search::timings::Times;
+use crate::engine::perft::PerftSearch;
 use crate::hash::{perft::PerftTT, search::HashTable};
 use std::io;
 use std::process;
@@ -17,7 +19,7 @@ use std::thread::JoinHandle;
 use super::info::*;
 
 struct State {
-    pos: EnginePosition,
+    pos: Position,
     search_handle: Option<JoinHandle<()>>,
     stop: Arc<AtomicBool>,
     ttable_size: usize,
@@ -30,7 +32,7 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         State {
-            pos: EnginePosition::default(),
+            pos: Position::default(),
             search_handle: None,
             stop: Arc::new(AtomicBool::new(false)),
             ttable_size: 1,
@@ -95,7 +97,7 @@ fn isready() -> Result<(), UciError> {
 }
 
 fn ucinewgame(state: Arc<Mutex<State>>) -> Result<(), UciError> {
-    state.lock().unwrap().pos = EnginePosition::default();
+    state.lock().unwrap().pos = Position::default();
     Ok(())
 }
 
@@ -115,8 +117,8 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
         }
     }
     match token {
-        Tokens::None => display_board::<false>(&state.lock().unwrap().pos.board),
-        Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos.board),
+        Tokens::None => display_board::<false>(&state.lock().unwrap().pos),
+        Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos),
     }
     Ok(())
 }
@@ -138,7 +140,7 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
             "position" => (),
             "startpos" => {
                 skip_fen = true;
-                state_lock.pos = EnginePosition::default();
+                state_lock.pos = Position::default();
             }
             "fen" => {
                 if !skip_fen {
@@ -158,7 +160,7 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
     }
 
     if !fen.is_empty() && !skip_fen {
-        state_lock.pos = EnginePosition::from_fen(&fen)?;
+        state_lock.pos = Position::from_fen(&fen)?;
     }
 
     for m in moves {
@@ -236,7 +238,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
 
     if !times.is_default() {
         let state_lock = state.lock().unwrap();
-        max_move_time = times.to_movetime(state_lock.pos.board.side_to_move);
+        max_move_time = times.to_movetime(state_lock.pos.side_to_move);
         drop(state_lock);
     }
 
@@ -244,12 +246,15 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let state_2 = state.clone();
         let search_thread = thread::spawn(move || {
             let state_lock = state_2.lock().unwrap();
-            let position = state_lock.pos.clone();
-            let tt = Arc::new(PerftTT::new(state_lock.ttable_size * 1024 * 1024));
+            let position = state_lock.pos;
+            let tt = state_lock.ttable.clone();
+            let pt = state_lock.ptable.clone();
+            let ptt = Arc::new(PerftTT::new(state_lock.ttable_size * 1024 * 1024));
             drop(state_lock);
+            let engine = Engine::new(position, Arc::new(AtomicBool::new(false)), 0, 0, 0, tt, pt, 0);
             let mut search = PerftSearch::new(
-                position,
-                tt
+                engine,
+                ptt
             );
             let count = search.go(perft_depth);
             println!("Move count: {count}");
@@ -262,7 +267,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     let state_2 = state.clone();
     let search_thread = thread::spawn(move || {
         let state_lock = state_2.lock().unwrap();
-        let position = state_lock.pos.clone();
+        let position = state_lock.pos;
         let abort_signal = state_lock.stop.clone();
         let tt = state_lock.ttable.clone();
         let pt = state_lock.ptable.clone();
@@ -272,7 +277,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
 
         let move_time = max_move_time - move_overhead * (max_move_time > move_overhead) as u64; 
 
-        let mut search = Search::new(
+        let mut search = Engine::new(
             position,
             abort_signal,
             move_time,

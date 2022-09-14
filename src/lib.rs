@@ -8,5 +8,3 @@ pub mod hash;
 pub mod io;
 /// Controlling the search
 pub mod search;
-/// Perft
-pub mod perft;

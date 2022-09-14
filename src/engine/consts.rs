@@ -15,11 +15,29 @@ pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 
 /// Pawn eval stuff
 pub const FILES: [u64; 8] = [9259542123273814144, 4629771061636907072, 2314885530818453536, 1157442765409226768, 578721382704613384, 289360691352306692, 144680345676153346, 72340172838076673];
 pub const RAILS: [u64; 8] = [FILES[1], FILES[0] | FILES[2], FILES[1] | FILES[3], FILES[2] | FILES[4], FILES[3] | FILES[5], FILES[4] | FILES[6], FILES[5] | FILES[7], FILES[6]];
-pub const IN_FRONT: [[u64;64];2] = [NORTH, SOUTH];
-pub const CHAINS: [u64; 64] = get_chain_positions();
+pub const IN_FRONT: [[u64;64];2] = init_in_front();
+pub const CHAINS: [u64; 64] = init_chains();
 
-
-const fn get_chain_positions() -> [u64; 64]{
+const fn init_in_front() -> [[u64;64];2] {
+    let mut in_front = [[0;64];2];
+    const DIRECTION: [[u64;64];2] = [NORTH, SOUTH];
+    let mut side = 0;
+    while side < 2 {
+        let mut idx = 0;
+        while idx < 64 {
+            let file = idx & 7;
+            in_front[side][idx] = match file {
+                0 => DIRECTION[side][idx] | DIRECTION[side][idx + 1],
+                7 => DIRECTION[side][idx - 1] | DIRECTION[side][idx],
+                _ => DIRECTION[side][idx - 1] | DIRECTION[side][idx] | DIRECTION[side][idx + 1],
+            };
+            idx += 1;
+        }
+        side += 1;
+    }
+    in_front
+}
+const fn init_chains() -> [u64; 64]{
     let mut chains = [0;64];
     let mut idx = 0;
     while idx < 64 {
@@ -29,13 +47,13 @@ const fn get_chain_positions() -> [u64; 64]{
     chains
 }
 // just guesses, need improvement
-pub const DOUBLED_MG: i16 = -5;
-pub const DOUBLED_EG: i16 = -20;
-pub const ISOLATED_MG: i16 = -15;
-pub const ISOLATED_EG: i16 = -10;
-pub const CHAINED_MG: i16 = 5;
-pub const CHAINED_EG: i16 = 10;
-pub const PASSED_MG: i16 = 5;
+pub const DOUBLED_MG: i16 = 0;
+pub const DOUBLED_EG: i16 = -10;
+pub const ISOLATED_MG: i16 = -10;
+pub const ISOLATED_EG: i16 = -5;
+pub const CHAINED_MG: i16 = 2;
+pub const CHAINED_EG: i16 = 5;
+pub const PASSED_MG: i16 = -5;
 pub const PASSED_EG: i16 = 50;
 
 // PeSTO evaluation values

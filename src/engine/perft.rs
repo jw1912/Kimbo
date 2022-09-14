@@ -1,8 +1,46 @@
-use super::PerftSearch;
-use crate::{engine::EngineMoveContext, io::outputs::u16_to_uci};
-use kimbo_state::{MoveType, movelist::MoveList};
+use crate::{hash::perft::PerftTT, engine::Engine};
+use std::sync::Arc;
+use crate::engine::EngineMoveContext;
+use crate::io::outputs::u16_to_uci;
+use kimbo_state::{MoveType, MoveList};
+
+/// Search info
+pub struct PerftSearch {
+    /// Position to be searched
+    position: Engine,
+    /// Transposition table
+    pub ttable: Arc<PerftTT>,
+    /// Search stats
+    pub stats: PerftStats,
+}
+
+/// Search statistics
+#[derive(Default)]
+pub struct PerftStats {
+    tt_hits: u64,
+}
+impl PerftStats {
+    pub fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    fn report(&self) {
+        println!("tt hits: {}", self.tt_hits);
+    }
+}
 
 impl PerftSearch {
+    /// Makes a new search instance
+    pub fn new(position: Engine, ttable: Arc<PerftTT>,) -> Self {
+        let stats = PerftStats::default();
+        PerftSearch {position, ttable, stats}
+    }
+
+    pub fn report(&self) {
+        self.ttable.report();
+        self.stats.report();
+    }
+
     pub fn perft<const TT_ACTIVE: bool>(&mut self, depth_left: u8) -> u64 {
         if depth_left == 0 {
             return 1;
@@ -15,14 +53,12 @@ impl PerftSearch {
                 return res;
             }
         }
-
         // bulk counting on depth 1
         let mut moves = MoveList::default();
         self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut moves);
         if depth_left == 1 {
             return moves.len() as u64;
         }
-
         // calculate number of positions
         let mut positions: u64 = 0;
         let mut ctx: EngineMoveContext;
@@ -32,7 +68,6 @@ impl PerftSearch {
             positions += self.perft::<TT_ACTIVE>(depth_left - 1);
             self.position.unmake_move(ctx);
         }
-
         // push position info to tt
         if TT_ACTIVE {
             self.ttable.push(zobrist, positions, depth_left);

@@ -1,5 +1,4 @@
-use kimbo_state::{MoveType, movelist::MoveList};
-use crate::engine::EnginePosition;
+use kimbo_state::{MoveType, MoveList, Position};
 use super::errors::UciError;
 use super::FILES;
 
@@ -15,7 +14,7 @@ fn sq_to_idx(sq: &str) -> Result<u16, UciError> {
 
 const TWELVE: u16 = 0b0000_1111_1111_1111;
 
-pub fn uci_to_u16(pos: &EnginePosition, m: &str) -> Result<u16, UciError> {
+pub fn uci_to_u16(pos: &Position, m: &str) -> Result<u16, UciError> {
     let l = m.len();
     if !(l == 4 || l == 5) {
         return Err(UciError::Move)
@@ -33,7 +32,7 @@ pub fn uci_to_u16(pos: &EnginePosition, m: &str) -> Result<u16, UciError> {
         }
     }
     let mut possible_moves = MoveList::default();
-    pos.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut possible_moves);
+    pos.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut possible_moves);
     for m_idx in 0..possible_moves.len() {
         let um = possible_moves[m_idx];
         if no_flags & TWELVE == um & TWELVE {

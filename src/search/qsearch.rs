@@ -1,9 +1,9 @@
-use super::*;
+use crate::engine::Engine;
 use super::sorting::{MoveScores, get_next_move};
 //use crate::engine::EngineMoveContext;
-use kimbo_state::{MoveType, Check, movelist::MoveList};
+use kimbo_state::{MoveType, Check, MoveList};
 
-impl Search {
+impl Engine {
     /// Quiescence search
     /// 
     /// Constant parameters:
@@ -13,7 +13,7 @@ impl Search {
     /// UCI: implemented for the uci protocol / debug stats
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // static eval
-        let stand_pat = self.position.static_eval::<STATS>(self.ptable.clone(), &mut self.stats);
+        let stand_pat = self.static_eval::<STATS>(self.ptable.clone());
 
         // beta pruning
         if stand_pat >= beta {
@@ -37,22 +37,22 @@ impl Search {
         // generating captures
         let mut king_checked = Check::None;
         let mut captures = MoveList::default();
-        self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut king_checked, &mut captures);
+        self.board.gen_moves::<{ MoveType::CAPTURES }>(&mut king_checked, &mut captures);
 
         // scoring captures
         let mut move_scores = MoveScores::default();
-        self.position.score_captures(&captures, &mut move_scores);
+        self.score_captures(&captures, &mut move_scores);
 
         // going through captures
         while let Some(m) = get_next_move(&mut captures, &mut move_scores) {
             // making move
-            let ctx = self.position.make_move(m);
+            let ctx = self.make_move(m);
 
             // getting score
             let score = -self.quiesce::<STATS>(-beta, -alpha);
 
             // unmaking move
-            self.position.unmake_move(ctx);
+            self.unmake_move(ctx);
 
             // beta pruning
             if score >= beta {

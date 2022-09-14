@@ -1,8 +1,8 @@
-use kimbo::engine::EnginePosition;
+use kimbo::engine::Engine;
 use kimbo::hash::search::HashTable;
 use kimbo::hash::pawn::PawnHashTable;
-use kimbo::io::outputs::{display_board, u16_to_uci};
-use kimbo::search::Search;
+use kimbo::io::outputs::display_board;
+use kimbo_state::Position;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
@@ -30,8 +30,8 @@ fn _search_all() {
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let now = Instant::now();
     for (i, position ) in _POSITIONS.iter().enumerate() {
-        let mut search: Search = Search::new(
-            EnginePosition::from_fen(*position).unwrap(),
+        let mut search= Engine::new(
+            Position::from_fen(*position).unwrap(),
             Arc::new(AtomicBool::new(false)),
             max_time,
             max_depth,
@@ -40,11 +40,10 @@ fn _search_all() {
             pt.clone(),
             i as u8,
         );
-        assert_eq!(String::from(*position), search.position.to_fen());
-        display_board::<true>(&search.position.board);
+        assert_eq!(String::from(*position), search.to_fen());
+        display_board::<true>(&search.board);
         println!("fen: {}", position);
         search.go::<true, true>();
-        println!("best move {}", u16_to_uci(&search.best_move));
         println!(" ");
     }
     println!("Total time: {}ms", now.elapsed().as_millis());
@@ -57,8 +56,8 @@ fn _search_one(pos: usize) {
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let position = _POSITIONS[pos];
-    let mut search: Search = Search::new(
-        EnginePosition::from_fen(position).unwrap(),
+    let mut search = Engine::new(
+        Position::from_fen(position).unwrap(),
         Arc::new(AtomicBool::new(false)),
         max_time,
         max_depth,
@@ -67,10 +66,9 @@ fn _search_one(pos: usize) {
         pt,
         0,
     );
-    display_board::<true>(&search.position.board);
+    display_board::<true>(&search.board);
     println!("fen: {}", position);
     search.go::<true, true>();
-    println!("best move {}", u16_to_uci(&search.best_move));
 }
 
 fn main() {

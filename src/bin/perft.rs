@@ -1,5 +1,7 @@
-use kimbo::engine::EnginePosition;
-use kimbo::perft::PerftSearch;
+use kimbo::engine::Engine;
+use kimbo::hash::pawn::PawnHashTable;
+use kimbo::hash::search::HashTable;
+use kimbo::engine::perft::PerftSearch;
 use kimbo::hash::perft::PerftTT;
 use std::sync::Arc;
 use std::time::Instant;
@@ -35,7 +37,7 @@ fn _perft_tests() {
         let mut total = 0;
         let mut results = Vec::new();
         let pow = Instant::now();
-        let position = EnginePosition::from_fen(TESTS[i]).unwrap();
+        let position = Engine::from_fen(TESTS[i], Arc::new(HashTable::new(1024)), Arc::new(PawnHashTable::new(1024))).unwrap();
         println!(" ");
         println!("Time to process fen: {} micros", pow.elapsed().as_micros());
         let mut search: PerftSearch = PerftSearch::new(

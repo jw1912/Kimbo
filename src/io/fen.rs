@@ -1,7 +1,7 @@
 // Converting position to fen
 // other way is handled in kimbo_state
 
-use crate::engine::EnginePosition;
+use crate::engine::Engine;
 
 use super::outputs::idx_to_sq;
 
@@ -56,7 +56,7 @@ fn castle_rights(rights: u8) -> String {
     s
 }
 
-impl EnginePosition {
+impl Engine {
     pub fn to_fen(&self) -> String {
         format!("{} {} {} {} {} {}",
             board(self.board.squares, self.board.sides),
@@ -70,11 +70,4 @@ impl EnginePosition {
             self.board.fullmove_counter,
         )
     }
-}
-
-#[test]
-fn t() {
-    let pos = EnginePosition::default();
-    println!("{}", pos.board.squares[18]);
-    println!("{}", pos.to_fen());
 }

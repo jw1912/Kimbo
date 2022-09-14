@@ -1,7 +1,7 @@
-use kimbo::engine::EnginePosition;
+use kimbo::engine::Engine;
 use kimbo::hash::search::HashTable;
 use kimbo::hash::pawn::PawnHashTable;
-use kimbo::search::Search;
+use kimbo_state::Position;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
@@ -29,8 +29,8 @@ fn main() {
     let pt = Arc::new(PawnHashTable::new(4 * 1024 * 1024));
     let now = Instant::now();
     for (i, position ) in _POSITIONS.iter().enumerate() {
-        let mut search: Search = Search::new(
-            EnginePosition::from_fen(*position).unwrap(),
+        let mut search = Engine::new(
+            Position::from_fen(*position).unwrap(),
             Arc::new(AtomicBool::new(false)),
             max_time,
             max_depth,

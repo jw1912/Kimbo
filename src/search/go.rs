@@ -1,18 +1,19 @@
 use super::*;
+use crate::engine::Engine;
 use crate::io::SearchStats;
 use crate::io::outputs::uci_info;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
-impl Search {
+impl Engine {
     /// iterative deepening search
     /// CLI: command line output of info needed?
     /// STATS: debug stats needed?
     pub fn go<const CLI: bool, const STATS: bool>(&mut self) -> u16 {
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
-        self.searching_side = self.position.board.side_to_move;
         let mut stats = SearchStats::new(0, 0, 0, Vec::new(), 0);
+        let mut best_move = 0;
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
@@ -21,7 +22,7 @@ impl Search {
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
             }
-            self.best_move = pv[0];
+            best_move = pv[0];
             let time = self.stats.start_time.elapsed().as_millis();
             if STATS { 
                 stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone(), self.ptable.hashfull())
@@ -49,6 +50,6 @@ impl Search {
         // resetting counts
         self.stats.reset();
         self.age += 1;
-        self.best_move
+        best_move
     }
 }

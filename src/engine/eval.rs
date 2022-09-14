@@ -1,6 +1,4 @@
 use crate::hash::pawn::PawnHashTable;
-use crate::search::Stats;
-
 use super::consts::*;
 use super::*;
 
@@ -63,9 +61,9 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
     taper(phase, eval_mg, eval_eg)
 }
 
-impl EnginePosition {
+impl Engine {
     /// static evaluation of position
-    pub fn static_eval<const STATS: bool>(&self, table: Arc<PawnHashTable>, stats: &mut Stats) -> i16 {
+    pub fn static_eval<const STATS: bool>(&mut self, table: Arc<PawnHashTable>) -> i16 {
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
             phase = TOTALPHASE
@@ -74,17 +72,17 @@ impl EnginePosition {
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
         let pwn: i16;
         if let Some(val) = table.get(self.pawnhash) {
-            if STATS { stats.pwn_hits += 1 }
+            if STATS { self.stats.pwn_hits += 1 }
             pwn = val.score;
         } else {
-            if STATS { stats.pwn_misses += 1 }
-            pwn = self.initialise_pawn_score(0, phase) - self.initialise_pawn_score(1, phase);
+            if STATS { self.stats.pwn_misses += 1 }
+            pwn = self.side_pawn_score(0, phase) - self.side_pawn_score(1, phase);
             table.push(self.pawnhash, pwn);
         }
         SIDE_FACTOR[self.board.side_to_move] * (mat + pst + pwn)
     }
 
-    pub fn initialise_pawn_score(&self, side: usize, phase: i32) -> i16 {
+    fn side_pawn_score(&self, side: usize, phase: i32) -> i16 {
         let mut doubled = 0;
         let mut isolated = 0;
         let mut passed = 0;

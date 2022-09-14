@@ -1,6 +1,6 @@
-use kimbo_state::movelist::MoveList;
+use kimbo_state::MoveList;
 
-use super::EnginePosition;
+use crate::engine::Engine;
 use super::is_capture;
 use super::is_castling;
 use super::is_promotion;
@@ -22,7 +22,7 @@ const MVV_LVA: [[i8; 7]; 7] = [
     [ 0,  0,  0,  0,  0,  0, 0], // empty square
 ];
 
-impl EnginePosition {
+impl Engine {
     /// Calculates MVV-LVA score for a move
     pub fn mvv_lva(&self, m: u16) -> i8 {
         let from_idx = m & 0b111111;

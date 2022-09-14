@@ -1,15 +1,14 @@
 use super::{
-    Search,
     MAX_SCORE,
     update_pv,
     pruning::tt_prune,
     sorting::{MoveScores, get_next_move}};
-use crate::hash::search::Bound;
-use kimbo_state::{MoveType, Check, movelist::MoveList};
+use crate::{hash::search::Bound, engine::Engine};
+use kimbo_state::{MoveType, Check, MoveList};
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
 
-impl Search {
+impl Engine {
     /// Main search
     /// 
     /// Constant parameters:
@@ -54,7 +53,7 @@ impl Search {
         }
 
         // hash table stuff
-        let zobrist = self.position.zobrist;
+        let zobrist = self.zobrist;
         let mut hash_move = 0;
 
         // dictates if hash table will be written to at end of this node
@@ -90,7 +89,7 @@ impl Search {
         // generating moves
         let mut king_checked = Check::None;
         let mut moves = MoveList::default();
-        self.position.board.gen_moves::<{ MoveType::ALL }>(&mut king_checked, &mut moves);
+        self.board.gen_moves::<{ MoveType::ALL }>(&mut king_checked, &mut moves);
         let king_in_check = king_checked != Check::None;
 
         // ESSENTIAL: checking for checkmate/stalemate
@@ -107,7 +106,7 @@ impl Search {
         // ESSENTIAL: move scoring for move ordering
         let mut move_hit: bool = false;
         let mut move_scores = MoveScores::default();
-        self.position.score_moves(&moves, &mut move_scores, hash_move, &mut move_hit);
+        self.score_moves(&moves, &mut move_scores, hash_move, &mut move_hit);
         if STATS && move_hit {
             self.stats.tt_move_hits += 1;
         }
@@ -121,14 +120,14 @@ impl Search {
         while let Some(m) = get_next_move(&mut moves, &mut move_scores) {
 
             // making move
-            let ctx = self.position.make_move(m);
+            let ctx = self.make_move(m);
 
             // scoring move and getting the pv for it
             let mut sub_pv = Vec::new();
             let score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv);
 
             // unmaking move
-            self.position.unmake_move(ctx);
+            self.unmake_move(ctx);
 
             // ESSENTIAL: alpha improvements
             if score > best_score {

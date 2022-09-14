@@ -1,8 +1,8 @@
 use super::consts::*;
-use super::{EngineMoveContext, EnginePosition};
+use super::{EngineMoveContext, Engine};
 use kimbo_state::{MoveFlags, Side};
 
-impl EnginePosition {
+impl Engine {
     /// Making move, updates engine's scores as well
     pub fn make_move(&mut self, m: u16) -> EngineMoveContext {
         let ctx = self.board.make_move(m);

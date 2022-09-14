@@ -1,4 +1,4 @@
-use kimbo_state::{Position, movelist::MoveList};
+use kimbo_state::{Position, MoveList};
 use crate::search::{MAX_SCORE, is_mate_score};
 use super::FILES;
 
