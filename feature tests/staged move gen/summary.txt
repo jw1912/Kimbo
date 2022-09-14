@@ -1,0 +1,4 @@
+Lots of time wasted over nothing.
+Not being able to immediately play the hash move (if it is quiet)
+negatively impacts performance enough to outweigh the benefits of
+the saved move generation.

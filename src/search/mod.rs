@@ -1,4 +1,3 @@
-use crate::io::outputs::u16_to_uci;
 use crate::hash::search::HashTable;
 use crate::engine::EnginePosition;
 use std::{
@@ -6,11 +5,11 @@ use std::{
     time::Instant,
 };
 
+pub mod timings;
 mod go;
 #[rustfmt::skip]
 mod negamax;
 mod qsearch;
-mod timings;
 mod sorting;
 mod pruning;
 
@@ -22,42 +21,17 @@ pub fn is_mate_score(score: i16) -> bool {
     score >= MATE_THRESHOLD || score <= -MATE_THRESHOLD
 }
 
-/// Move timing info
-#[derive(Default, PartialEq, Eq)]
-pub struct Times {
-    /// White time on clock
-    pub wtime: u64,
-    /// Black time on clock
-    pub btime: u64,
-    /// White time increment
-    pub winc: u64,
-    /// Black time increment
-    pub binc: u64,
-    /// Moves until next time control
-    pub moves_to_go: Option<u8>,
-}
-
 /// Search struct
 pub struct Search {
-    /// Position to be searched
     pub position: EnginePosition,
-    /// Side searching for a move
     searching_side: usize,
-    /// Token to say if search needs to be stopped
     stop: Arc<AtomicBool>,
-    /// Best move found
     pub best_move: u16,
-    /// Force time limit
     max_move_time: u64,
-    /// Forced depth
     max_depth: u8,
-    /// Forced nodes
     max_nodes: u64,
-    /// Transposition table
     ttable: Arc<HashTable>,
-    /// number of searches run, for overwriting the tt
     age: u8,
-    /// Search stats
     stats: Stats,
 }
 
@@ -93,11 +67,6 @@ impl Search {
         self.stats.node_count > self.max_nodes // node count reached
         || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time // search time exceeded
     }
-
-    fn report(&self, stats: SearchStats) {
-        stats.report();
-        self.stats.report();
-    }
 }
 
 /// Statistics within a single negamax search
@@ -131,37 +100,31 @@ impl Stats {
         *self = Self::default();
     }
     fn report(&self) {
-        println!("hash hits: {} ({}% valid moves)", self.tt_hits, self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes));
+        let valid = self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes);
+        println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
+        println!("hash hits: {} ({}% valid moves)", self.tt_hits, valid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
     }
 }
 
+
+
+// useful functions
 fn update_pv(pv: &mut Vec<u16>, m: u16, sub_pv: &mut Vec<u16>) {
     pv.clear();
     pv.push(m);
     pv.append(sub_pv); 
 }
 
-// Stats for a full iterative deepening search
-struct SearchStats {
-    depth_reached: u8,
-    nodes_to_depth: u64,
-    time_to_depth: u64,
-    pv: Vec<u16>
+fn is_capture(m: u16) -> bool {
+    m & 0b0100_0000_0000_0000 > 0
 }
 
-impl SearchStats {
-    fn new(depth_reached: u8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>) -> Self {
-        Self { 
-            depth_reached, 
-            nodes_to_depth, 
-            time_to_depth,
-            pv
-        }
-    }
+fn is_promotion(m: u16) -> bool {
+    m & 0b1000_0000_0000_0000 > 0
+}
 
-    fn report(&self) {
-        println!("depth reached {} nodes {} time {}", self.depth_reached, self.nodes_to_depth, self.time_to_depth);
-        println!("pv {}", self.pv.iter().map(u16_to_uci).collect::<String>());
-    }
+fn is_castling(m: u16) -> bool {
+    let flags = m & 0b1111_0000_0000_0000;
+    flags == 0b0011_0000_0000_0000 || flags == 0b0010_0000_0000_0000
 }

@@ -5,7 +5,7 @@ use super::inputs::uci_to_u16;
 use crate::engine::EnginePosition;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
-use crate::search::{Search, Times};
+use crate::search::{Search, timings::Times};
 use crate::perft::PerftSearch;
 use crate::hash::{perft::PerftTT, search::HashTable};
 use std::io;

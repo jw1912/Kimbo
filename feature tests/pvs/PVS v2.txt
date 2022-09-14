@@ -1,0 +1,75 @@
+If PV node, do full full search on first move.
+Do a null window search on every other move in the node.
+Do full search on non-PV nodes.
+
+===Search Report===
+fen: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+depth reached 7 nodes 1640384 time 255
+pv e2e4 e7e5 g1f3 g8f6 f1d3 f8d6 b1c3   
+hash hits: 189290 (99% valid moves)     
+61% of tt hits pruned
+pvs attempts: 1381, fails: 43 (3%)      
+0% of searches were with null windows   
+ 
+===Search Report===
+fen: 8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -
+depth reached 19 nodes 568696 time 123
+pv a1b2 a7a6 b2c2 a6b6 c2d2 b6c7 d2d3 c7b7 d3e2 b7c8 e2f2 c8d7 f2g3 d7e7 g3h4 e7f6 h4h5 f6f7 h5g5 
+hash hits: 3556130 (100% valid moves)
+34% of tt hits pruned
+pvs attempts: 1214068, fails: 258933 (21%)
+22% of searches were with null windows
+ 
+===Search Report===
+fen: rn5r/pp3kpp/2p1R3/5p2/3P4/2B2N2/PPP3PP/2K4n w - - 1 17
+depth reached 5 nodes 26276 time 5
+pv f3g5 f7f8 c3b4 c6c5 b4c5 f8g8 e6e8 
+hash hits: 2501 (99% valid moves)
+44% of tt hits pruned
+pvs attempts: 816, fails: 68 (8%)
+2% of searches were with null windows
+ 
+===Search Report===
+fen: 4r1rk/pp4pp/2n5/8/6Q1/7R/1qPK1P1P/3R4 w - - 0 28
+depth reached 3 nodes 2431 time 0
+pv h3h7 h8h7 g4h5
+hash hits: 63 (96% valid moves)
+0% of tt hits pruned
+pvs attempts: 495, fails: 31 (6%)
+31% of searches were with null windows
+
+===Search Report===
+fen: 2r1rbk1/1R3R1N/p3p1p1/3pP3/8/q7/P1Q3PP/7K b - - 0 25
+depth reached 4 nodes 2564 time 1
+pv a3c1 c2c1 c8c1 f7f1 c1f1
+hash hits: 233 (96% valid moves)
+33% of tt hits pruned
+pvs attempts: 306, fails: 2 (0%)
+9% of searches were with null windows
+
+===Search Report===
+fen: 8/2krR3/1pp3bp/42p1/PPNp4/3P1PKP/8/8 w - - 0 1
+depth reached 10 nodes 2138109 time 434
+pv e7d7 c7d7 c4e5 d7e6 e5g6 e6f6 g6f8 f6e7 f8g6 e7f6 g6f8 f6e7 f8g6 
+hash hits: 1243444 (99% valid moves)
+48% of tt hits pruned
+pvs attempts: 1767, fails: 77 (4%)
+0% of searches were with null windows
+
+===Search Report===
+fen: 1Q6/8/8/8/2k2P2/1p6/1B4K1/8 w - - 3 63
+depth reached 8 nodes 4509174 time 558
+pv g2f3 c4c5 b8b7 c5c4 b7c6 c4b4 b2c3 b4a3 c6a6 
+hash hits: 1242894 (96% valid moves)
+78% of tt hits pruned
+pvs attempts: 5785, fails: 209 (3%)
+0% of searches were with null windows
+
+===Search Report===
+fen: 3r2k1/pp3ppp/4p3/8/QP6/P1P5/5KPP/7q w - - 0 27
+depth reached 8 nodes 4022566 time 654
+pv a4c2 h1h2 a3a4 h2f4 f2e2 d8d5 a4a5 d5e5 e2d1 e5e4 
+hash hits: 443366 (99% valid moves)
+49% of tt hits pruned
+pvs attempts: 8430, fails: 321 (3%)
+0% of searches were with null windows

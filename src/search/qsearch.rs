@@ -1,6 +1,6 @@
 use super::*;
 use super::sorting::{MoveScores, get_next_move};
-use crate::engine::EngineMoveContext;
+//use crate::engine::EngineMoveContext;
 use kimbo_state::{MoveType, Check, movelist::MoveList};
 
 impl Search {
@@ -11,11 +11,7 @@ impl Search {
     /// 
     /// Comments:
     /// UCI: implemented for the uci protocol / debug stats
-    pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16, ply: u8) -> i16 {
-        // UCI: all quiescent nodes are counted
-        self.stats.node_count += 1;
-        if STATS { self.stats.qnode_count += 1; }
-
+    pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // static eval
         let stand_pat = self.position.static_eval();
 
@@ -34,29 +30,28 @@ impl Search {
             alpha = stand_pat;
         }
 
+        // UCI: now will be generating moves, so this node is counted as visited
+        self.stats.node_count += 1;
+        if STATS { self.stats.qnode_count += 1; }
+
         // generating captures
-        let mut _king_checked = Check::None;
+        let mut king_checked = Check::None;
         let mut captures = MoveList::default();
-        self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut _king_checked, &mut captures);
+        self.position.board.gen_moves::<{ MoveType::CAPTURES }>(&mut king_checked, &mut captures);
 
         // scoring captures
         let mut move_scores = MoveScores::default();
         self.position.score_captures(&captures, &mut move_scores);
 
-        // initialising stuff for going through captures
-        let mut ctx: EngineMoveContext;
-        let mut score: i16;
-        let mut m_idx = 0;
-
         // going through captures
-        while let Some(m) = get_next_move(&mut captures, &mut move_scores, &mut m_idx) {
+        while let Some(m) = get_next_move(&mut captures, &mut move_scores) {
             // making move
-            ctx = self.position.make_move(m);
+            let ctx = self.position.make_move(m);
 
             // getting score
-            score = -self.quiesce::<STATS>(-beta, -alpha, ply + 1);
+            let score = -self.quiesce::<STATS>(-beta, -alpha);
 
-            // undoing move
+            // unmaking move
             self.position.unmake_move(ctx);
 
             // beta pruning

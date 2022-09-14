@@ -1,4 +1,5 @@
 use super::*;
+use crate::io::SearchStats;
 use crate::io::outputs::uci_info;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
@@ -42,7 +43,8 @@ impl Search {
             }
         }
         if STATS {
-            self.report(stats);
+            stats.report();
+            self.stats.report();
         }
         // resetting counts
         self.stats.reset();

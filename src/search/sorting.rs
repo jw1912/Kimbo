@@ -1,9 +1,17 @@
 use kimbo_state::movelist::MoveList;
 
 use super::EnginePosition;
+use super::is_capture;
+use super::is_castling;
+use super::is_promotion;
 use std::mem;
 use std::ptr;
 
+// Move ordering scores
+const HASH_MOVE: i8 = 125;
+const PROMOTIONS: [i8;4] = [95, 85, 90, 100];
+const CASTLE: i8 = 80;
+const QUIET: i8 = 0;
 const MVV_LVA: [[i8; 7]; 7] = [
     [15, 14, 13, 12, 11, 10, 0], // victim PAWN
     [25, 24, 23, 22, 21, 20, 0], // victim KNIGHT
@@ -23,39 +31,50 @@ impl EnginePosition {
         let captured_pc = self.board.squares[to_idx as usize] as usize;
         MVV_LVA[captured_pc][moved_pc]
     }
+
     /// Scores moves as follows:
     /// 1. Hash move
     /// 2. Captures sorted via MMV-LVA
-    /// 3. Quiets
+    /// 3. Promotions
+    /// 4. Castling
+    /// 5. Quiets
     pub fn score_move(&self, m: u16, hash_move: u16, move_hit: &mut bool) -> i8 {
         if m == hash_move {
             *move_hit = true;
-            i8::MAX
-        } else {
+            HASH_MOVE
+        } else if is_capture(m) {
             self.mvv_lva(m)
-        }
+        } else if is_promotion(m) {
+            let pc = (m >> 12) & 3;
+            PROMOTIONS[pc as usize]
+        } else if is_castling(m) {
+            CASTLE
+        } else {
+            QUIET
+        }  
     }
-
+    
     pub fn score_moves(&self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, move_hit: &mut bool) {
-        for i in 0..moves.len() {
+        for i in move_scores.start_idx..moves.len() {
             let m = moves[i]; 
-            move_scores.push(-self.score_move(m, hash_move, move_hit));
+            move_scores.push(self.score_move(m, hash_move, move_hit));
         }
     }
-
     pub fn score_captures(&self, moves: &MoveList, move_scores: &mut MoveScores) {
-        for i in 0..moves.len() {
+        if moves.is_empty() { return }
+        for i in move_scores.start_idx..moves.len() {
             let m = moves[i]; 
-            move_scores.push(-self.mvv_lva(m));
+            move_scores.push(self.mvv_lva(m));
         }
     }
 }
 
+/// Score list for move list
 pub struct MoveScores {
     list: [i8; 255],
     len: usize,
+    start_idx: usize,
 }
-
 impl Default for MoveScores {
     fn default() -> Self {
         Self {
@@ -63,11 +82,11 @@ impl Default for MoveScores {
                 #[allow(clippy::uninit_assumed_init)]
                 mem::MaybeUninit::uninit().assume_init()
             },
-            len: 0
+            len: 0,
+            start_idx: 0,
         } 
     }
 }
-
 impl MoveScores {
     #[inline(always)]
     fn push(&mut self, m: i8) {
@@ -83,26 +102,25 @@ impl MoveScores {
     }
 }
 
-// O(n^2) move sorting, however due to most nodes being cut, its marginally faster than presorting moves
-// and more importantly, will be essential when adding more performance intensive move ordering (SEE)
-// as 
-pub fn get_next_move(moves: &mut MoveList, move_scores: &mut MoveScores, m_idx: &mut usize) -> Option<u16> {
-    if *m_idx == move_scores.len {
+/// Move sort function
+/// O(n^2), however with pruning this is actually marginally faster
+pub fn get_next_move(moves: &mut MoveList, move_scores: &mut MoveScores) -> Option<u16> {
+    if move_scores.start_idx == move_scores.len {
         return None
     }
     let mut best_idx = 0;
-    let mut best_score = i8::MAX;
-    for i in *m_idx..move_scores.len {
+    let mut best_score = i8::MIN;
+    for i in move_scores.start_idx..move_scores.len {
         let score = move_scores.list[i];
-        if score < best_score {
+        if score > best_score {
             best_score = score;
             best_idx = i;
         }
     }
     let m = moves[best_idx];
     // swap the found element with the last element in the list
-    move_scores.swap_unchecked(best_idx, *m_idx);
-    moves.swap_unchecked(best_idx, *m_idx);
-    *m_idx += 1;
+    move_scores.swap_unchecked(best_idx, move_scores.start_idx);
+    moves.swap_unchecked(best_idx, move_scores.start_idx);
+    move_scores.start_idx += 1;
     Some(m)
 }
