@@ -3,6 +3,7 @@
 
 use super::inputs::uci_to_u16;
 use crate::engine::EnginePosition;
+use crate::hash::pawn::PawnHashTable;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
 use crate::search::{Search, timings::Times};
@@ -21,6 +22,7 @@ struct State {
     stop: Arc<AtomicBool>,
     ttable_size: usize,
     ttable: Arc<HashTable>,
+    ptable: Arc<PawnHashTable>,
     age: u8,
     move_overhead: u64,
 }
@@ -33,6 +35,7 @@ impl Default for State {
             stop: Arc::new(AtomicBool::new(false)),
             ttable_size: 1,
             ttable: Arc::new(HashTable::new(1024 * 1024)),
+            ptable: Arc::new(PawnHashTable::new(4 * 1024 * 1024)),
             age: 0,
             move_overhead: 10,
         }
@@ -262,6 +265,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let position = state_lock.pos.clone();
         let abort_signal = state_lock.stop.clone();
         let tt = state_lock.ttable.clone();
+        let pt = state_lock.ptable.clone();
         let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
         drop(state_lock);
@@ -275,6 +279,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             max_depth,
             max_nodes,
             tt,
+            pt,
             age,
         );
         let best_move = search.go::<true, false>();

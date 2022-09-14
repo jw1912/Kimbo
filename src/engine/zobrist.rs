@@ -92,3 +92,18 @@ pub fn initialise_zobrist(pos: &Position, zvals: &ZobristVals) -> u64 {
     }
     zobrist
 }
+
+pub fn initialise_pawnhash(pos: &Position, zvals: &ZobristVals) -> u64 {
+    let mut hash = 0;
+    for side in 0..2 {
+        for pc in [0, 5] {
+            let mut piece = pos.pieces[side][pc];
+            while piece > 0 {
+                let idx = ls1b_scan(piece) as usize;
+                hash ^= zvals.piece_hash(idx, side, pc);
+                piece &= piece - 1
+            }
+        }
+    }
+    hash
+}

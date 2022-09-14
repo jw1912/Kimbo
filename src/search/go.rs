@@ -12,7 +12,7 @@ impl Search {
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
         self.searching_side = self.position.board.side_to_move;
-        let mut stats = SearchStats::new(0, 0, 0, Vec::new());
+        let mut stats = SearchStats::new(0, 0, 0, Vec::new(), 0);
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
@@ -24,7 +24,7 @@ impl Search {
             self.best_move = pv[0];
             let time = self.stats.start_time.elapsed().as_millis();
             if STATS { 
-                stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone())
+                stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone(), self.ptable.hashfull())
             }
             if CLI {
                 uci_info(

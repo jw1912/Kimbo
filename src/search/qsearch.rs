@@ -13,7 +13,7 @@ impl Search {
     /// UCI: implemented for the uci protocol / debug stats
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // static eval
-        let stand_pat = self.position.static_eval();
+        let stand_pat = self.position.static_eval::<STATS>(self.ptable.clone(), &mut self.stats);
 
         // beta pruning
         if stand_pat >= beta {

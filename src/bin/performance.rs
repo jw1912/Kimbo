@@ -1,5 +1,6 @@
 use kimbo::engine::EnginePosition;
 use kimbo::hash::search::HashTable;
+use kimbo::hash::pawn::PawnHashTable;
 use kimbo::search::Search;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -25,6 +26,7 @@ fn main() {
     let max_time = 1000;
     let max_depth = u8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
+    let pt = Arc::new(PawnHashTable::new(4 * 1024 * 1024));
     let now = Instant::now();
     for (i, position ) in _POSITIONS.iter().enumerate() {
         let mut search: Search = Search::new(
@@ -34,6 +36,7 @@ fn main() {
             max_depth,
             u64::MAX,
             tt.clone(),
+            pt.clone(),
             i as u8,
         );
         println!("===Search Report===");

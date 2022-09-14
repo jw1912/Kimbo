@@ -1,6 +1,6 @@
 mod eval;
 #[rustfmt::skip]
-mod pst;
+mod consts;
 mod moves;
 pub mod zobrist;
 
@@ -9,7 +9,7 @@ use crate::io::errors::UciError;
 use kimbo_state::*;
 use std::sync::Arc;
 
-use self::zobrist::{initialise_zobrist, ZobristVals};
+use self::zobrist::{initialise_zobrist, ZobristVals, initialise_pawnhash};
 
 /// The extended position used by the engine.
 #[derive(Clone)]
@@ -30,6 +30,8 @@ pub struct EnginePosition {
     pub zobrist: u64,
     /// pointer to zobrist hash values
     pub zobrist_vals: Arc<ZobristVals>,
+    /// pawn hash
+    pub pawnhash: u64,
 }
 impl Default for EnginePosition {
     fn default() -> Self {
@@ -46,6 +48,7 @@ pub struct EngineMoveContext {
     pst_eg: [i16; 2],
     phase: i16,
     zobrist: u64,
+    pawnhash: u64
 }
 
 impl EnginePosition {
@@ -59,6 +62,7 @@ impl EnginePosition {
         let phase = calculate_phase(&board);
         let zobrist_vals = Arc::new(ZobristVals::default());
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
+        let pawnhash = initialise_pawnhash(&board, &zobrist_vals);
         Ok(Self {
             board,
             mat_mg,
@@ -68,6 +72,7 @@ impl EnginePosition {
             phase,
             zobrist,
             zobrist_vals,
+            pawnhash,
         })
     }
 }

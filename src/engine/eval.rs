@@ -1,11 +1,8 @@
-use super::pst::*;
-use super::*;
+use crate::hash::pawn::PawnHashTable;
+use crate::search::Stats;
 
-pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];
-pub const EG_PC_VALS: [i16; 6] = [94, 281, 297, 512,  936,  0];
-pub const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
-const TOTALPHASE: i32 = 24;
-const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
+use super::consts::*;
+use super::*;
 
 /// Calculating phase
 pub fn calculate_phase(pos: &Position) -> i16 {
@@ -52,18 +49,69 @@ pub fn calc_pst<const MG: bool>(pos: &Position) -> [i16; 2] {
     scores
 }
 
+const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
+
+#[inline(always)]
+fn taper(phase: i32, mg: i16, eg: i16) -> i16 {
+    ((phase * mg as i32 + (TOTALPHASE - phase) * eg as i32) / TOTALPHASE) as i16
+}
+
+#[inline(always)]
+fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
+    let eval_mg = mg[0] - mg[1];
+    let eval_eg = eg[0] - eg[1];
+    taper(phase, eval_mg, eval_eg)
+}
+
 impl EnginePosition {
     /// static evaluation of position
-    pub fn static_eval(&self) -> i16 {
-        let mat_mg = self.mat_mg[0] - self.mat_mg[1];
-        let mat_eg = self.mat_eg[0] - self.mat_eg[1];
-        let pst_mg = self.pst_mg[0] - self.pst_mg[1];
-        let pst_eg = self.pst_eg[0] - self.pst_eg[1];
-        // i32 needed here to avoid rare overflows in extremely imbalanced games
+    pub fn static_eval<const STATS: bool>(&self, table: Arc<PawnHashTable>, stats: &mut Stats) -> i16 {
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
             phase = TOTALPHASE
         };
-        SIDE_FACTOR[self.board.side_to_move] * ((phase * (mat_mg + pst_mg) as i32 + (TOTALPHASE - phase) * (mat_eg + pst_eg) as i32) / TOTALPHASE) as i16
+        let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
+        let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
+        let pwn: i16;
+        if let Some(val) = table.get(self.pawnhash) {
+            if STATS { stats.pwn_hits += 1 }
+            pwn = val.score;
+        } else {
+            if STATS { stats.pwn_misses += 1 }
+            pwn = self.initialise_pawn_score(0, phase) - self.initialise_pawn_score(1, phase);
+            table.push(self.pawnhash, pwn);
+        }
+        SIDE_FACTOR[self.board.side_to_move] * (mat + pst + pwn)
+    }
+
+    pub fn initialise_pawn_score(&self, side: usize, phase: i32) -> i16 {
+        let mut doubled = 0;
+        let mut isolated = 0;
+        let mut passed = 0;
+        let mut chained = 0;
+        let mut pawns = self.board.pieces[side][0];
+        // doubled and isolated pawns
+        for file in 0..8 {
+            let count = (FILES[file] & pawns).count_ones();
+            doubled += (count > 1) as i16 * count as i16;
+            if count > 0 {
+                let rail_count = (RAILS[file] & pawns).count_ones();
+                isolated += (rail_count == 0) as i16;
+            }
+        }
+        // chained and passed pawns
+        let enemies = self.board.pieces[side ^ 1][0];
+        while pawns > 0 {
+            let ls1b = pawns & pawns.wrapping_neg();
+            let pawn = ls1b_scan(ls1b) as usize;
+            chained += (CHAINS[pawn] & self.board.pieces[side][0]).count_ones() as i16;
+            let enemies_ahead = (IN_FRONT[side][pawn] & enemies).count_ones();
+            passed += (enemies_ahead == 0) as i16;
+            pawns &= pawns - 1
+        }
+        // score
+        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG + passed * PASSED_MG + chained * CHAINED_MG;
+        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG + chained * CHAINED_EG;
+        taper(phase, mg, eg)
     }
 }

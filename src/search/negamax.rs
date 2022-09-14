@@ -1,8 +1,9 @@
-use super::*;
-use super::pruning::tt_prune;
-use super::sorting::MoveScores;
-//use super::sorting::StagedGenerator;
-use super::sorting::get_next_move;
+use super::{
+    Search,
+    MAX_SCORE,
+    update_pv,
+    pruning::tt_prune,
+    sorting::{MoveScores, get_next_move}};
 use crate::hash::search::Bound;
 use kimbo_state::{MoveType, Check, movelist::MoveList};
 use std::sync::atomic::Ordering;
@@ -86,7 +87,7 @@ impl Search {
         // UCI: now will be generating moves, so this node is counted as visited
         self.stats.node_count += 1;
 
-        // staged move generation: captures first
+        // generating moves
         let mut king_checked = Check::None;
         let mut moves = MoveList::default();
         self.position.board.gen_moves::<{ MoveType::ALL }>(&mut king_checked, &mut moves);

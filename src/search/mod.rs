@@ -1,4 +1,4 @@
-use crate::hash::search::HashTable;
+use crate::hash::{search::HashTable, pawn::PawnHashTable};
 use crate::engine::EnginePosition;
 use std::{
     sync::{atomic::AtomicBool, Arc},
@@ -31,12 +31,14 @@ pub struct Search {
     max_depth: u8,
     max_nodes: u64,
     ttable: Arc<HashTable>,
+    ptable: Arc<PawnHashTable>,
     age: u8,
     stats: Stats,
 }
 
 impl Search {
     /// Makes a new search instance
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         position: EnginePosition,
         stop: Arc<AtomicBool>,
@@ -44,6 +46,7 @@ impl Search {
         max_depth: u8,
         max_nodes: u64,
         ttable: Arc<HashTable>,
+        ptable: Arc<PawnHashTable>,
         age: u8,
     ) -> Self {
         let stats = Stats::default();
@@ -57,6 +60,7 @@ impl Search {
             max_depth,
             max_nodes,
             ttable,
+            ptable,
             age,
             stats,
         }
@@ -70,7 +74,7 @@ impl Search {
 }
 
 /// Statistics within a single negamax search
-struct Stats {
+pub struct Stats {
     /// Always tracked
     node_count: u64,
     start_time: Instant,
@@ -80,6 +84,8 @@ struct Stats {
     tt_hits: u64,
     tt_move_hits: u64,
     tt_prunes: u64,
+    pub pwn_hits: u64,
+    pub pwn_misses: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -91,6 +97,8 @@ impl Default for Stats {
             tt_hits: 0,
             tt_move_hits: 0,
             tt_prunes: 0,
+            pwn_hits: 0,
+            pwn_misses: 0,
         } 
     }
 }
@@ -104,6 +112,7 @@ impl Stats {
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
         println!("hash hits: {} ({}% valid moves)", self.tt_hits, valid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
+        println!("{}% pawn hash table hit rate", self.pwn_hits * 100 / (self.pwn_hits + self.pwn_misses));
     }
 }
 

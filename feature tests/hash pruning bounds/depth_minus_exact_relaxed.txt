@@ -1,0 +1,66 @@
+res.depth >= depth - (res.bound == Bound::EXACT) as u8
+
+===Search Report===
+fen: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+depth reached 8 nodes 1070539 time 324
+pv d2d4 g8f6 
+74% of nodes are quiescence nodes       
+hash hits: 174679 (99% valid moves)     
+64% of tt hits pruned
+ 
+===Search Report===
+fen: 8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -
+depth reached 22 nodes 1562430 time 413
+pv a1b1 a7b7 
+47% of nodes are quiescence nodes
+hash hits: 2775187 (100% valid moves)
+14% of tt hits pruned
+ 
+===Search Report===
+fen: rn5r/pp3kpp/2p1R3/5p2/3P4/2B2N2/PPP3PP/2K4n w - - 1 17
+depth reached 6 nodes 23260 time 12
+pv f3g5 f7f8 c3b4 c6c5 b4c5 f8g8 e6e8 
+20% of nodes are quiescence nodes
+hash hits: 9799 (100% valid moves)
+48% of tt hits pruned
+res.depth >= depth - (res.bound == Bound::EXACT) as u8
+ 
+===Search Report===
+fen: 4r1rk/pp4pp/2n5/8/6Q1/7R/1qPK1P1P/3R4 w - - 0 28    
+depth reached 3 nodes 725 time 0
+pv h3h7 h8h7 g4h5 
+83% of nodes are quiescence nodes
+hash hits: 44 (100% valid moves)
+4% of tt hits pruned
+ 
+===Search Report===
+fen: 2r1rbk1/1R3R1N/p3p1p1/3pP3/8/q7/P1Q3PP/7K b - - 0 25
+depth reached 4 nodes 9947 time 3
+pv a3c1 c2c1 c8c1 f7f1 c1f1 
+68% of nodes are quiescence nodes
+hash hits: 273 (100% valid moves)
+36% of tt hits pruned
+
+===Search Report===
+fen: 8/2krR3/1pp3bp/42p1/PPNp4/3P1PKP/8/8 w - - 0 1
+depth reached 11 nodes 1567579 time 823
+pv e7d7 c7d7 
+23% of nodes are quiescence nodes
+hash hits: 1106971 (99% valid moves)
+52% of tt hits pruned
+
+===Search Report===
+fen: 1Q6/8/8/8/2k2P2/1p6/1B4K1/8 w - - 3 63
+depth reached 8 nodes 736617 time 527
+pv g2f3 c4c5 b8b7 c5c4 b7c6 
+24% of nodes are quiescence nodes
+hash hits: 931479 (99% valid moves)
+73% of tt hits pruned
+
+===Search Report===
+fen: 3r2k1/pp3ppp/4p3/8/QP6/P1P5/5KPP/7q w - - 0 27
+depth reached 9 nodes 2041041 time 764
+pv a4c2 h1h2 
+57% of nodes are quiescence nodes
+hash hits: 311583 (99% valid moves)
+55% of tt hits pruned

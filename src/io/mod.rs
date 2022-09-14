@@ -47,21 +47,24 @@ pub struct SearchStats {
     depth_reached: u8,
     nodes_to_depth: u64,
     time_to_depth: u64,
-    pv: Vec<u16>
+    pv: Vec<u16>,
+    pwn_hashfull: u64,
 }
 
 impl SearchStats {
-    pub fn new(depth_reached: u8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>) -> Self {
+    pub fn new(depth_reached: u8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>, pwn_hashfull: u64) -> Self {
         Self { 
             depth_reached, 
             nodes_to_depth, 
             time_to_depth,
-            pv
+            pv,
+            pwn_hashfull,
         }
     }
 
     pub fn report(&self) {
         println!("depth reached {} nodes {} time {}", self.depth_reached, self.nodes_to_depth, self.time_to_depth);
         println!("pv {}", self.pv.iter().map(u16_to_uci).collect::<String>());
+        println!("pawn hashull {}", self.pwn_hashfull);
     }
 }

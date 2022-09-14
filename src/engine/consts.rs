@@ -1,3 +1,5 @@
+use kimbo_state::consts::{NORTH, SOUTH, PAWN_ATTACKS};
+
 pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 {
     let indx = match side {
         0 => idx ^ 56,
@@ -10,7 +12,37 @@ pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 
     }
 }
 
-// PeSTO Piece-Square Tables
+/// Pawn eval stuff
+pub const FILES: [u64; 8] = [9259542123273814144, 4629771061636907072, 2314885530818453536, 1157442765409226768, 578721382704613384, 289360691352306692, 144680345676153346, 72340172838076673];
+pub const RAILS: [u64; 8] = [FILES[1], FILES[0] | FILES[2], FILES[1] | FILES[3], FILES[2] | FILES[4], FILES[3] | FILES[5], FILES[4] | FILES[6], FILES[5] | FILES[7], FILES[6]];
+pub const IN_FRONT: [[u64;64];2] = [NORTH, SOUTH];
+pub const CHAINS: [u64; 64] = get_chain_positions();
+
+
+const fn get_chain_positions() -> [u64; 64]{
+    let mut chains = [0;64];
+    let mut idx = 0;
+    while idx < 64 {
+        chains[idx] = PAWN_ATTACKS[0][idx] | PAWN_ATTACKS[1][idx];
+        idx += 1;
+    }
+    chains
+}
+// just guesses, need improvement
+pub const DOUBLED_MG: i16 = -5;
+pub const DOUBLED_EG: i16 = -20;
+pub const ISOLATED_MG: i16 = -15;
+pub const ISOLATED_EG: i16 = -10;
+pub const CHAINED_MG: i16 = 5;
+pub const CHAINED_EG: i16 = 10;
+pub const PASSED_MG: i16 = 5;
+pub const PASSED_EG: i16 = 50;
+
+// PeSTO evaluation values
+pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];
+pub const EG_PC_VALS: [i16; 6] = [94, 281, 297, 512,  936,  0];
+pub const PHASE_VALS: [i16; 7] = [0, 1, 1, 2, 4, 0, 0];
+pub const TOTALPHASE: i32 = 24;
 
 pub const PST_MG: [[i16; 64];6] = [
     [0,   0,   0,   0,   0,   0,  0,   0,
