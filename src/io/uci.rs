@@ -1,16 +1,16 @@
-// 'Tokens' enum inspired by Rustic
+// Tokens enum inspired by Rustic
 // SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
 
 use kimbo_state::Position;
 
 use super::inputs::uci_to_u16;
 use crate::engine::Engine;
-use crate::hash::pawn::PawnHashTable;
+use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
 use crate::search::timings::Times;
 use crate::engine::perft::PerftSearch;
-use crate::hash::{perft::PerftTT, search::HashTable};
+use crate::tables::{perft::PerftTT, search::HashTable};
 use std::io;
 use std::process;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};

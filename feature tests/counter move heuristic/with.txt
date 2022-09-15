@@ -1,0 +1,79 @@
+===Search Report===
+fen: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+depth reached 7 nodes 188212 time 108
+pv g1f3 g8f6 e2e3 d7d5 f1d3 b8c6 e1g1   
+pawn hashull 95
+71% of nodes are quiescence nodes       
+hash hits: 231502 (99% valid moves)     
+0% of tt hits pruned
+77% pawn hash table hit rate
+ 
+===Search Report===
+fen: 8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -
+depth reached 19 nodes 2667523 time 690
+pv a1b2 a7a8 b2a2 a8b7 a2a1 b7a7 a1b2 
+pawn hashull 603
+28% of nodes are quiescence nodes
+hash hits: 3202959 (100% valid moves)
+19% of tt hits pruned
+99% pawn hash table hit rate
+ 
+===Search Report===
+fen: rn5r/pp3kpp/2p1R3/5p2/3P4/2B2N2/PPP3PP/2K4n w - - 1 17
+depth reached 5 nodes 8610 time 7
+pv f3g5 f7f8 c3b4 c6c5 b4c5 f8g8 e6e8 
+pawn hashull 605
+15% of nodes are quiescence nodes
+hash hits: 2460 (100% valid moves)
+2% of tt hits pruned
+86% pawn hash table hit rate
+ 
+===Search Report===
+fen: 4r1rk/pp4pp/2n5/8/6Q1/7R/1qPK1P1P/3R4 w - - 0 28      
+depth reached 3 nodes 942 time 0
+pv h3h7 h8h7 g4h5 
+pawn hashull 605
+81% of nodes are quiescence nodes
+hash hits: 44 (100% valid moves)
+0% of tt hits pruned
+87% pawn hash table hit rate
+ 
+===Search Report===
+fen: 2r1rbk1/1R3R1N/p3p1p1/3pP3/8/q7/P1Q3PP/7K b - - 0 25
+depth reached 4 nodes 1445 time 1
+pv a3c1 c2c1 c8c1 f7f1 c1f1
+pawn hashull 605
+13% of nodes are quiescence nodes
+hash hits: 224 (100% valid moves)
+0% of tt hits pruned
+94% pawn hash table hit rate
+
+===Search Report===
+fen: 8/2krR3/1pp3bp/42p1/PPNp4/3P1PKP/8/8 w - - 0 1
+depth reached 9 nodes 641329 time 399
+pv e7d7 c7d7 c4e5 d7e6 e5g6 e6f6 g6f8 f6e7 f8h7 e7e6 a4a5 
+pawn hashull 655
+19% of nodes are quiescence nodes
+hash hits: 1152473 (99% valid moves)
+4% of tt hits pruned
+92% pawn hash table hit rate
+
+===Search Report===
+fen: 1Q6/8/8/8/2k2P2/1p6/1B4K1/8 w - - 3 63
+depth reached 7 nodes 858241 time 592
+pv b8e5 c4d3 e5d4 d3c2 d4c3 c2b1 c3c1 b1a2 c1a1 
+pawn hashull 693
+23% of nodes are quiescence nodes
+hash hits: 721638 (100% valid moves)
+29% of tt hits pruned
+99% pawn hash table hit rate
+
+===Search Report===
+fen: 3r2k1/pp3ppp/4p3/8/QP6/P1P5/5KPP/7q w - - 0 27
+depth reached 7 nodes 262478 time 130
+pv a4c2 h1h2 f2f3 h2h5 f3f4 e6e5 f4g3 h5g5 g3f3 d8d2 
+pawn hashull 716
+47% of nodes are quiescence nodes
+hash hits: 326998 (99% valid moves)
+6% of tt hits pruned
+89% pawn hash table hit rate

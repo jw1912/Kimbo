@@ -6,7 +6,7 @@ pub mod zobrist;
 pub mod perft;
 
 use eval::*;
-use crate::hash::{pawn::PawnHashTable, search::HashTable};
+use crate::tables::{pawn::PawnHashTable, search::HashTable, countermove::CounterMoveTable};
 use crate::io::errors::UciError;
 use kimbo_state::{Position, MoveContext};
 use std::time::Instant;
@@ -32,6 +32,7 @@ pub struct Engine {
     pub zobrist_vals: Arc<ZobristVals>,
     pub ttable: Arc<HashTable>,
     pub ptable: Arc<PawnHashTable>,
+    pub ctable: Arc<CounterMoveTable>,
     // Search info
     pub stop: Arc<AtomicBool>,
     pub max_move_time: u64,
@@ -43,7 +44,7 @@ pub struct Engine {
 
 /// Extended move context for incrementally updated eval fields
 pub struct EngineMoveContext {
-    ctx: MoveContext,
+    pub ctx: MoveContext,
     mat_mg: [i16; 2],
     mat_eg: [i16; 2],
     pst_mg: [i16; 2],
@@ -87,6 +88,7 @@ impl Engine {
             max_nodes: 0,
             ttable,
             ptable,
+            ctable: Arc::new(CounterMoveTable::default()),
             age: 0,
             stats,
         })
@@ -127,6 +129,7 @@ impl Engine {
             max_nodes,
             ttable,
             ptable,
+            ctable: Arc::new(CounterMoveTable::default()),
             age,
             stats,
         }

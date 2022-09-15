@@ -3,7 +3,7 @@
 /// Evaluation of positions.
 pub mod engine;
 /// Hash tables
-pub mod hash;
+pub mod tables;
 /// Inputs and Outputs
 pub mod io;
 /// Controlling the search

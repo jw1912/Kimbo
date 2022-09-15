@@ -1,4 +1,4 @@
-use crate::{hash::perft::PerftTT, engine::Engine};
+use crate::{tables::perft::PerftTT, engine::Engine};
 use std::sync::Arc;
 use crate::engine::EngineMoveContext;
 use crate::io::outputs::u16_to_uci;

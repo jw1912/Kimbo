@@ -2,8 +2,8 @@ use super::{
     MAX_SCORE,
     update_pv,
     pruning::tt_prune,
-    sorting::{MoveScores, get_next_move}};
-use crate::{hash::search::Bound, engine::Engine};
+    sorting::{MoveScores, get_next_move}, is_capture};
+use crate::{tables::search::Bound, engine::Engine};
 use kimbo_state::{MoveType, Check, MoveList};
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
@@ -21,7 +21,14 @@ impl Engine {
     /// SAFE: will not distort search results to incorrect values
     /// UNSAFE: potential to distort search results to be incorrect
     /// JUSTIFICATION: if SAFE, reason why safe, if UNSAFE, reason why included
-    pub fn negamax<const ROOT: bool, const STATS: bool>(&mut self, mut alpha: i16, mut beta: i16, depth: u8, ply: u8, pv: &mut Vec<u16>,) -> i16 {
+    #[allow(clippy::too_many_arguments)]
+    pub fn negamax<const ROOT: bool, const STATS: bool>(
+        &mut self, 
+        mut alpha: i16, mut beta: i16, 
+        depth: u8, ply: u8, 
+        pv: &mut Vec<u16>, 
+        prev_move: u16,
+    ) -> i16 {
         // UCI: if stop token, abort
         if self.stop.load(Ordering::Relaxed) {
             return 0;
@@ -106,7 +113,7 @@ impl Engine {
         // ESSENTIAL: move scoring for move ordering
         let mut move_hit: bool = false;
         let mut move_scores = MoveScores::default();
-        self.score_moves(&moves, &mut move_scores, hash_move, &mut move_hit);
+        self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, &mut move_hit);
         if STATS && move_hit {
             self.stats.tt_move_hits += 1;
         }
@@ -124,7 +131,7 @@ impl Engine {
 
             // scoring move and getting the pv for it
             let mut sub_pv = Vec::new();
-            let score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv);
+            let score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m);
 
             // unmaking move
             self.unmake_move(ctx);
@@ -145,6 +152,9 @@ impl Engine {
 
             // ESSENTIAL: beta pruning
             if score >= beta {
+                if !is_capture(m) {
+                    self.ctable.set(prev_move, m)
+                }
                 bound = Bound::LOWER;
                 break;
             } 

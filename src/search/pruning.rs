@@ -1,4 +1,4 @@
-use crate::hash::search::{Bound, HashResult};
+use crate::tables::search::{Bound, HashResult};
 
 /// Based on a hash result and given search parameters
 /// returns Some(value) if pruning is appropriate, else None

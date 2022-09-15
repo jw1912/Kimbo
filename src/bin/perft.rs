@@ -1,8 +1,8 @@
 use kimbo::engine::Engine;
-use kimbo::hash::pawn::PawnHashTable;
-use kimbo::hash::search::HashTable;
+use kimbo::tables::pawn::PawnHashTable;
+use kimbo::tables::search::HashTable;
 use kimbo::engine::perft::PerftSearch;
-use kimbo::hash::perft::PerftTT;
+use kimbo::tables::perft::PerftTT;
 use std::sync::Arc;
 use std::time::Instant;
 

@@ -1,6 +1,6 @@
 use kimbo::engine::Engine;
-use kimbo::hash::search::HashTable;
-use kimbo::hash::pawn::PawnHashTable;
+use kimbo::tables::search::HashTable;
+use kimbo::tables::pawn::PawnHashTable;
 use kimbo_state::Position;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
