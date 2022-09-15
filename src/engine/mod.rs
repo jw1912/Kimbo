@@ -8,7 +8,7 @@ pub mod perft;
 use eval::*;
 use crate::hash::{pawn::PawnHashTable, search::HashTable};
 use crate::io::errors::UciError;
-use kimbo_state::*;
+use kimbo_state::{Position, MoveContext};
 use std::time::Instant;
 use std::sync::{Arc, atomic::AtomicBool};
 

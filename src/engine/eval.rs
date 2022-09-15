@@ -1,4 +1,5 @@
 use crate::hash::pawn::PawnHashTable;
+use kimbo_state::ls1b_scan;
 use super::consts::*;
 use super::*;
 
