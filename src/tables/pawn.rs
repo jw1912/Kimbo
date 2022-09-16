@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 
 #[derive(Default)]
 pub struct PawnHashEntry {
@@ -16,7 +16,6 @@ const ENTRY_SIZE: usize = std::mem::size_of::<PawnHashEntry>();
 pub struct PawnHashTable {
     table: Vec<PawnHashEntry>,
     num_entries: usize,
-    filled: AtomicU64,
 }
 
 #[derive(Default)]
@@ -31,16 +30,12 @@ impl PawnHashTable {
         Self {
             table: vec![Default::default(); num_entries],
             num_entries,
-            filled: AtomicU64::new(0),
         }
     }
 
     pub fn push(&self, hash: u64, score: i16) {
         let key = (hash >> 48) as u16;
         let idx = (hash as usize) % self.num_entries;
-        if self.table[idx].data.load(Ordering::Relaxed) as u16 == 0 {
-            self.filled.fetch_add(1, Ordering::Relaxed);
-        }
         self.table[idx].store(key, score);
     }
 
@@ -53,10 +48,6 @@ impl PawnHashTable {
             return Some(data)
         }
         None
-    }
-
-    pub fn hashfull(&self) -> u64 {
-        self.filled.load(Ordering::Relaxed) * 1000 / self.num_entries as u64
     }
 }
 

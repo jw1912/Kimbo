@@ -156,6 +156,7 @@ pub struct Stats {
     pub tt_prunes: u64,
     pub pwn_hits: u64,
     pub pwn_misses: u64,
+    pub countermove_hits: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -169,6 +170,7 @@ impl Default for Stats {
             tt_prunes: 0,
             pwn_hits: 0,
             pwn_misses: 0,
+            countermove_hits: 0,
         } 
     }
 }
@@ -183,5 +185,6 @@ impl Stats {
         println!("hash hits: {} ({}% valid moves)", self.tt_hits, valid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
         println!("{}% pawn hash table hit rate", self.pwn_hits * 100 / (self.pwn_hits + self.pwn_misses));
+        println!("counter move hits : {}", self.countermove_hits);
     }
 }

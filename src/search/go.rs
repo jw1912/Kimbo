@@ -12,7 +12,7 @@ impl Engine {
     pub fn go<const CLI: bool, const STATS: bool>(&mut self) -> u16 {
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
-        let mut stats = SearchStats::new(0, 0, 0, Vec::new(), 0);
+        let mut stats = SearchStats::new(0, 0, 0, Vec::new());
         let mut best_move = 0;
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
@@ -25,7 +25,7 @@ impl Engine {
             best_move = pv[0];
             let time = self.stats.start_time.elapsed().as_millis();
             if STATS { 
-                stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone(), self.ptable.hashfull())
+                stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone())
             }
             if CLI {
                 uci_info(

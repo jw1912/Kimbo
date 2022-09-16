@@ -1,5 +1,4 @@
-use crate::tables::pawn::PawnHashTable;
-use kimbo_state::ls1b_scan;
+use kimbo_state::{ls1b_scan, Piece};
 use super::consts::*;
 use super::*;
 
@@ -51,7 +50,7 @@ pub fn calc_pst<const MG: bool>(pos: &Position) -> [i16; 2] {
 const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
 
 #[inline(always)]
-fn taper(phase: i32, mg: i16, eg: i16) -> i16 {
+const fn taper(phase: i32, mg: i16, eg: i16) -> i16 {
     ((phase * mg as i32 + (TOTALPHASE - phase) * eg as i32) / TOTALPHASE) as i16
 }
 
@@ -64,7 +63,7 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
 
 impl Engine {
     /// static evaluation of position
-    pub fn static_eval<const STATS: bool>(&mut self, table: Arc<PawnHashTable>) -> i16 {
+    pub fn static_eval<const STATS: bool>(&mut self) -> i16 {
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
             phase = TOTALPHASE
@@ -72,15 +71,19 @@ impl Engine {
         let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
         let pwn: i16;
-        if let Some(val) = table.get(self.pawnhash) {
+        if let Some(val) = self.ptable.get(self.pawnhash) {
             if STATS { self.stats.pwn_hits += 1 }
             pwn = val.score;
         } else {
             if STATS { self.stats.pwn_misses += 1 }
             pwn = self.side_pawn_score(0, phase) - self.side_pawn_score(1, phase);
-            table.push(self.pawnhash, pwn);
+            self.ptable.push(self.pawnhash, pwn);
         }
-        SIDE_FACTOR[self.board.side_to_move] * (mat + pst + pwn)
+        let mut eval = mat + pst + pwn;
+        if eval != 0 {
+            eval += self.eg_king_score((eval < 0) as usize, phase)
+        }
+        SIDE_FACTOR[self.board.side_to_move] * eval
     }
 
     fn side_pawn_score(&self, side: usize, phase: i32) -> i16 {
@@ -112,5 +115,16 @@ impl Engine {
         let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG + passed * PASSED_MG + chained * CHAINED_MG;
         let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG + chained * CHAINED_EG;
         taper(phase, mg, eg)
+    }
+
+    fn eg_king_score(&self, winning_side: usize, phase: i32) -> i16 {
+        let losing_side = winning_side ^ 1;
+        let losing_king = ls1b_scan(self.board.pieces[losing_side][Piece::KING]) as i16;
+        let winning_king = ls1b_scan(self.board.pieces[winning_side][Piece::KING]) as i16;
+        let cmd = CMD[losing_king as usize];
+        let md = ((losing_king >> 3) - (winning_king >> 3)).abs() + ((losing_king & 7) - (winning_king & 7)).abs();
+        let mut score = 5 * cmd + 2 * ( 14 - md );
+        score = taper(phase, 0, score);
+        SIDE_FACTOR[winning_side] * score
     }
 }

@@ -51,7 +51,7 @@ fn _search_all() {
 
 fn _search_one(pos: usize) {
     // params
-    let max_time = 10000;
+    let max_time = 20000;
     let max_depth = u8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
@@ -72,5 +72,5 @@ fn _search_one(pos: usize) {
 }
 
 fn main() {
-    _search_all()
+    _search_one(1)
 }

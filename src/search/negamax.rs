@@ -152,6 +152,8 @@ impl Engine {
 
             // ESSENTIAL: beta pruning
             if score >= beta {
+                // SAFE: counter move heuristic
+                // JUSTICIFICATION: move ordering technique
                 if !is_capture(m) {
                     self.ctable.set(prev_move, m)
                 }
