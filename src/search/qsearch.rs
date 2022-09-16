@@ -1,6 +1,5 @@
 use crate::engine::Engine;
 use super::sorting::{MoveScores, get_next_move};
-//use crate::engine::EngineMoveContext;
 use kimbo_state::{MoveType, Check, MoveList};
 
 impl Engine {
@@ -46,13 +45,13 @@ impl Engine {
         // going through captures
         while let Some(m) = get_next_move(&mut captures, &mut move_scores) {
             // making move
-            let ctx = self.make_move(m);
+            self.make_move(m);
 
             // getting score
             let score = -self.quiesce::<STATS>(-beta, -alpha);
 
             // unmaking move
-            self.unmake_move(ctx);
+            self.unmake_move();
 
             // beta pruning
             if score >= beta {

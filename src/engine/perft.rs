@@ -1,6 +1,5 @@
 use crate::{tables::perft::PerftTT, engine::Engine};
 use std::sync::Arc;
-use crate::engine::EngineMoveContext;
 use crate::io::outputs::u16_to_uci;
 use kimbo_state::{MoveType, MoveList};
 
@@ -61,12 +60,11 @@ impl PerftSearch {
         }
         // calculate number of positions
         let mut positions: u64 = 0;
-        let mut ctx: EngineMoveContext;
         for m_idx in 0..moves.len() {
             let m = moves[m_idx];
-            ctx = self.position.make_move(m);
+            self.position.make_move(m);
             positions += self.perft::<TT_ACTIVE>(depth_left - 1);
-            self.position.unmake_move(ctx);
+            self.position.unmake_move();
         }
         // push position info to tt
         if TT_ACTIVE {
@@ -84,13 +82,13 @@ impl PerftSearch {
         let mut new_move_list: Vec<(u16, u64)> = Vec::new();
         let mut moves = MoveList::default();
         self.position.board.gen_moves::<{ MoveType::ALL }>(&mut kimbo_state::Check::None, &mut moves);
-        let mut ctx: EngineMoveContext;
+        //let mut ctx: GameState;
         let mut score: u64;
         for m_idx in 0..moves.len() {
             let m = moves[m_idx];
-            ctx = self.position.make_move(m);
+            self.position.make_move(m);
             score = self.perft::<true>(depth - 1);
-            self.position.unmake_move(ctx);
+            self.position.unmake_move();
             new_move_list.push((m, score));
             println!("{}: {}", u16_to_uci(&m), score);
         }

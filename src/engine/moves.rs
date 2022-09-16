@@ -1,12 +1,12 @@
 use super::consts::*;
-use super::{EngineMoveContext, Engine};
+use super::{GameState, Engine};
 use kimbo_state::{MoveFlags, Side};
 
 impl Engine {
     /// Making move, updates engine's scores as well
-    pub fn make_move(&mut self, m: u16) -> EngineMoveContext {
+    pub fn make_move(&mut self, m: u16) { // -> GameState {
         let ctx = self.board.make_move(m);
-        let ext_ctx = EngineMoveContext {
+        let ext_ctx = GameState {
             ctx,
             mat_mg: self.mat_mg,
             mat_eg: self.mat_eg,
@@ -16,6 +16,7 @@ impl Engine {
             zobrist: self.zobrist,
             pawnhash: self.pawnhash,
         };
+        self.state_stack.push(ext_ctx);
         let from_idx = (ctx.m & 63) as usize;
         let to_idx = ((ctx.m >> 6) & 63) as usize;
         let flag = ctx.m & MoveFlags::ALL;
@@ -176,11 +177,12 @@ impl Engine {
             self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, side, moved_pc);
             self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, side, moved_pc);
         }
-        ext_ctx
+        //ext_ctx
     }
 
     /// Unmaking move, updates engine's scores as well
-    pub fn unmake_move(&mut self, ext_ctx: EngineMoveContext) {
+    pub fn unmake_move(&mut self) {
+        let ext_ctx = self.state_stack.pop().unwrap();
         let ctx = ext_ctx.ctx;
         self.mat_mg = ext_ctx.mat_mg;
         self.mat_eg = ext_ctx.mat_eg;
@@ -193,6 +195,7 @@ impl Engine {
     }
 
     pub fn make_null_move(&mut self) -> (u16, u64) {
+        self.null_counter += 1;
         let mut enp = 0;
         let hash = self.zobrist;
         if self.board.en_passant_sq > 0 {
@@ -207,6 +210,7 @@ impl Engine {
     }
 
     pub fn unmake_null_move(&mut self, (enp, hash): (u16, u64)) {
+        self.null_counter -= 1;
         self.board.fullmove_counter -= (self.board.side_to_move == 0) as u16;
         self.zobrist = hash;
         self.board.en_passant_sq = enp;

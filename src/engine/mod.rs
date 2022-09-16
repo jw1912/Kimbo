@@ -22,15 +22,17 @@ pub struct Engine {
     /// Basic position, for move generation and making moves
     pub board: Position,
     /// Eval stuff
-    mat_mg: [i16; 2],
-    mat_eg: [i16; 2],
-    pst_mg: [i16; 2],
-    pst_eg: [i16; 2],
-    phase: i16,
+    pub mat_mg: [i16; 2],
+    pub mat_eg: [i16; 2],
+    pub pst_mg: [i16; 2],
+    pub pst_eg: [i16; 2],
+    pub phase: i16,
+    pub null_counter: u8, // for draw detection, null moves don't count
     /// Hashing
     pub zobrist: u64,
     pub pawnhash: u64,
-    /// Heap allocated stuff, not all of them need to be!
+    /// Heap allocated stuff
+    pub state_stack: Vec<GameState>, 
     pub zobrist_vals: Arc<ZobristVals>,
     pub ttable: Arc<HashTable>,
     pub ptable: Arc<PawnHashTable>,
@@ -47,7 +49,8 @@ pub struct Engine {
 }
 
 /// Extended move context for incrementally updated eval fields
-pub struct EngineMoveContext {
+#[derive(Clone, Copy)]
+pub struct GameState {
     pub ctx: MoveContext,
     mat_mg: [i16; 2],
     mat_eg: [i16; 2],
@@ -68,37 +71,9 @@ impl Engine {
         zobrist_vals: Arc<ZobristVals>
     ) -> Result<Self, UciError> {
         let board = Position::from_fen(s)?;
-        let mat_mg = calc_material::<true>(&board);
-        let mat_eg = calc_material::<false>(&board);
-        let pst_mg = calc_pst::<true>(&board);
-        let pst_eg = calc_pst::<false>(&board);
-        let phase = calculate_phase(&board);
-        let zobrist = initialise_zobrist(&board, &zobrist_vals);
-        let pawnhash = initialise_pawnhash(&board, &zobrist_vals);
-        let stats = Stats::default();
-        Ok(Self {
-            board,
-            mat_mg,
-            mat_eg,
-            pst_mg,
-            pst_eg,
-            phase,
-            zobrist,
-            zobrist_vals,
-            pawnhash,
-            stop: Arc::new(AtomicBool::new(false)),
-            max_move_time: 0,
-            max_depth: 0,
-            max_nodes: 0,
-            ttable,
-            ptable,
-            ctable: Arc::new(CounterMoveTable::default()),
-            ktable: Arc::new(KillerMoveTable::default()),
-            htable: Arc::new(HistoryTable::default()),
-            age: 0,
-            stats,
-        })
+        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable, zobrist_vals, 0))
     }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         board: Position,
@@ -119,6 +94,17 @@ impl Engine {
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
         let pawnhash = initialise_pawnhash(&board, &zobrist_vals);
         let stats = Stats::default();
+        let mut state_stack = Vec::with_capacity(25);
+        state_stack.push(GameState {
+            ctx: MoveContext { m: 0, moved_pc: 6, captured_pc: 6, castle_rights: board.castle_rights, en_passant_sq: board.en_passant_sq, halfmove_clock: board.halfmove_clock },
+            mat_mg,
+            mat_eg,
+            pst_mg,
+            pst_eg,
+            phase,
+            zobrist,
+            pawnhash,
+        });
         Self {
             board,
             mat_mg,
@@ -133,6 +119,8 @@ impl Engine {
             max_move_time,
             max_depth,
             max_nodes,
+            state_stack,
+            null_counter: 0,
             ttable,
             ptable,
             ctable: Arc::new(CounterMoveTable::default()),
@@ -167,7 +155,7 @@ pub struct Stats {
     pub countermove_hits: u64,
     pub killermove_hits: u64,
     pub history_hits: u64,
-    pub null_prunes: u64,
+    pub draws_detected: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -184,7 +172,7 @@ impl Default for Stats {
             countermove_hits: 0,
             killermove_hits: 0,
             history_hits: 0,
-            null_prunes: 0,
+            draws_detected: 0,
         } 
     }
 }
@@ -202,6 +190,6 @@ impl Stats {
         println!("counter move hits : {}", self.countermove_hits);
         println!("killer move hits : {}", self.killermove_hits);
         println!("history move hits : {}", self.history_hits);
-        println!("null move prunes: {}", self.null_prunes);
+        println!("draws detected: {}", self.draws_detected);
     }
 }

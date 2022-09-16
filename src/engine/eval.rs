@@ -137,4 +137,24 @@ impl Engine {
         score = taper(phase, 0, score);
         SIDE_FACTOR[winning_side] * score
     }
+
+    pub fn is_draw_by_repetition(&self, num: u8 ) -> bool {
+        let l = self.state_stack.len();
+        if l < 6 || self.null_counter > 0 { return false }
+        let mut repetitions_count = 1;
+        let mut from = l.wrapping_sub(self.board.halfmove_clock as usize);
+        let to = l - 1;
+        if from > 1024 { from = 0 }
+        for i in (from..to).rev().step_by(2) {
+            if self.state_stack[i].zobrist == self.zobrist {
+                repetitions_count += 1;
+                if repetitions_count >= num { return true }
+            }
+        }
+        false
+    }
+    
+    pub fn is_draw_by_50(&self) -> bool {
+        self.null_counter == 0 && self.board.halfmove_clock >= 100
+    }
 }

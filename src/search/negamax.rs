@@ -36,14 +36,18 @@ impl Engine {
 
         // UCI: check if nodes or time limits reached
         if self.search_limits_reached() {
-            // checking a boolean is faster than checking elapsed time and node count
-            // so avoids checking this condition again
             self.stop.store(true, Ordering::Relaxed);
             return 0;
         }
 
         // UCI: update seldepth (due to extensions)
         self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
+
+        // ESSENTIAL: draw detection
+        if self.is_draw_by_50() || self.is_draw_by_repetition(2) {
+            if STATS { self.stats.draws_detected += 1 }
+            return 0;
+        }
 
         // SAFE: mate distance pruning
         // JUSTIFICATION: only applies when a mate score is returned in the previous
@@ -127,14 +131,14 @@ impl Engine {
         while let Some(m) = get_next_move(&mut moves, &mut move_scores) {
 
             // making move
-            let ctx = self.make_move(m);
+            self.make_move(m);
 
             // scoring move and getting the pv for it
             let mut sub_pv = Vec::new();
             let score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m);
 
             // unmaking move
-            self.unmake_move(ctx);
+            self.unmake_move();
 
             // ESSENTIAL: alpha improvements
             if score > best_score {
