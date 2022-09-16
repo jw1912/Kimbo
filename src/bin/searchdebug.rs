@@ -7,11 +7,13 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
 
-pub const _POSITIONS: [&str; 10] = [
+pub const _POSITIONS: [&str; 11] = [
     // Start Position
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 
     // Lasker-Reichhelm Position
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1",
+    // Kiwipete Position
+    "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
     // Standard low depth mate puzzles
     "rn5r/pp3kpp/2p1R3/5p2/3P4/2B2N2/PPP3PP/2K4n w - - 1 17",
     "4r1rk/pp4pp/2n5/8/6Q1/7R/1qPK1P1P/3R4 w - - 0 28",
@@ -53,7 +55,7 @@ fn _search_all() {
 
 fn _search_one(pos: usize) {
     // params
-    let max_time = 20000;
+    let max_time = 5000;
     let max_depth = u8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
@@ -74,5 +76,5 @@ fn _search_one(pos: usize) {
 }
 
 fn main() {
-    _search_one(9)
+    _search_one(2)
 }

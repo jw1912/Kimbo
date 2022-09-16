@@ -1,5 +1,4 @@
-use std::sync::atomic::{AtomicU16, Ordering};
-
+use super::Move;
 use crate::search::MAX_PLY;
 
 // Countermove tables
@@ -11,38 +10,16 @@ use crate::search::MAX_PLY;
 // could also have a 6x64 table of move.pc and move.to, 
 // but testing showed it was not effective
 
-pub struct KillerMove {
-    data: AtomicU16
-}
-impl Clone for KillerMove {
-    fn clone(&self) -> Self {
-        Self { data: AtomicU16::new(self.data.load(Ordering::Relaxed)) }
-    }
-}
-impl KillerMove {
-    const fn new() -> Self {
-        Self { data: AtomicU16::new(0) }
-    }
-
-    pub fn set(&self, m: u16) {
-        self.data.store(m, Ordering::Relaxed) 
-    }
-
-    pub fn get(&self) -> u16 {
-        self.data.load(Ordering::Relaxed)
-    }
-}
-
 pub const KILLERS_PER_PLY: usize = 3;
 pub struct KillerMoveTable {
-    pub table: [[KillerMove; KILLERS_PER_PLY]; MAX_PLY as usize]
+    pub table: [[Move; KILLERS_PER_PLY]; MAX_PLY as usize]
 }
 impl Default for KillerMoveTable {
     fn default() -> Self {
         #[allow(clippy::declare_interior_mutable_const)]
-        const ENTRY: KillerMove = KillerMove::new();
+        const ENTRY: Move = Move::new();
         #[allow(clippy::declare_interior_mutable_const)]
-        const ROW: [KillerMove; 3] = [ENTRY; KILLERS_PER_PLY];
+        const ROW: [Move; 3] = [ENTRY; KILLERS_PER_PLY];
         Self { 
             table: [ROW; MAX_PLY as usize] 
         }

@@ -155,8 +155,9 @@ impl Engine {
                 // SAFE: counter move heuristic
                 // JUSTICIFICATION: move ordering technique
                 if !is_capture(m) {
+                    self.ctable.set(prev_move, m);
                     self.ktable.push(m, ply);
-                    self.ctable.set(prev_move, m)
+                    self.htable.set(self.board.side_to_move, m, depth);
                 }
                 bound = Bound::LOWER;
                 break;

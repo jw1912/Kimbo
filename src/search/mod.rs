@@ -3,7 +3,7 @@ mod go;
 #[rustfmt::skip]
 mod negamax;
 mod qsearch;
-mod sorting;
+pub mod sorting;
 mod pruning;
 
 pub const MAX_PLY: u8 = u8::MAX;

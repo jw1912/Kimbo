@@ -1,10 +1,10 @@
 /// This file handles sorting of moves
-/// Moves are scored as follows:
+/// Moves are sorted as follows:
 /// 1. Hash move (from HashTable)
 /// 2. Captures sorted via MMV-LVA
 /// 3. Promotions (Queen -> Knight)
-/// 4. Killer moves (3 moves per ply in a table)
-/// 5. Counter move (from-to table)
+/// 4. Killer moves (3 moves per ply in KillerMoveTable)
+/// 5. Counter move (from-to CounterMoveTable)
 /// 6. Castling
 /// 7. Quiets
 
@@ -16,20 +16,21 @@ use std::mem;
 use std::ptr;
 
 // Move ordering scores
-const HASH_MOVE: i16 = 100;
-const KILLERMOVE: i16 = 5;
-const COUNTERMOVE: i16 = 4;
-const PROMOTIONS: [i16;4] = [6, 7, 8, 9];
-const CASTLE: i16 = 3;
-const QUIET: i16 = 0;
+const HASH_MOVE: i16 = 30000;
+const KILLERMOVE: i16 = 500;
+const COUNTERMOVE: i16 = 400;
+const PROMOTIONS: [i16;4] = [600, 700, 800, 900];
+const CASTLE: i16 = 300;
+pub const HISTORY_MAX: i16 = 200;
+//const QUIET: i16 = 0;
 const MVV_LVA: [[i16; 7]; 7] = [
-    [15, 14, 13, 12, 11, 10, 0], // victim PAWN
-    [25, 24, 23, 22, 21, 20, 0], // victim KNIGHT
-    [35, 34, 33, 32, 31, 30, 0], // victim BISHOP
-    [45, 44, 43, 42, 41, 40, 0], // victim ROOK
-    [55, 54, 53, 52, 51, 50, 0], // victim QUEEN
-    [ 0,  0,  0,  0,  0,  0, 0], // victim KING (will not be referenced)
-    [ 0,  0,  0,  0,  0,  0, 0], // empty square
+    [1500, 1400, 1300, 1200, 1100, 1000,   0], // victim PAWN
+    [2500, 2400, 2300, 2200, 2100, 2000,   0], // victim KNIGHT
+    [3500, 3400, 3300, 3200, 3100, 3000,   0], // victim BISHOP
+    [4500, 4400, 4300, 4200, 4100, 4000,   0], // victim ROOK
+    [5500, 5400, 5300, 5200, 5100, 5000,   0], // victim QUEEN
+    [   0,    0,    0,    0,    0,    0,   0], // victim KING (will not be referenced)
+    [   0,    0,    0,    0,    0,    0,   0], // empty square
 ];
 
 impl Engine {
@@ -59,7 +60,7 @@ impl Engine {
         } else if is_castling(m) {
             CASTLE
         } else {
-            QUIET
+            self.htable.get(self.board.side_to_move, m)
         }
     }
     
