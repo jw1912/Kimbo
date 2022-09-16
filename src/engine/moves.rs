@@ -191,4 +191,25 @@ impl Engine {
         self.pawnhash = ext_ctx.pawnhash;
         self.board.unmake_move(ctx);
     }
+
+    pub fn make_null_move(&mut self) -> (u16, u64) {
+        let mut enp = 0;
+        let hash = self.zobrist;
+        if self.board.en_passant_sq > 0 {
+            enp = self.board.en_passant_sq;
+            self.zobrist ^= self.zobrist_vals.en_passant_hash((self.board.en_passant_sq & 7) as usize);
+            self.board.en_passant_sq = 0;
+        }
+        self.board.fullmove_counter += (self.board.side_to_move == 1) as u16;
+        self.board.side_to_move ^= 1;
+        self.zobrist ^= self.zobrist_vals.side_hash();
+        (enp, hash)
+    }
+
+    pub fn unmake_null_move(&mut self, (enp, hash): (u16, u64)) {
+        self.board.fullmove_counter -= (self.board.side_to_move == 0) as u16;
+        self.zobrist = hash;
+        self.board.en_passant_sq = enp;
+        self.board.side_to_move ^= 1;
+    }
 }

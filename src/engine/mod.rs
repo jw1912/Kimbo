@@ -167,6 +167,7 @@ pub struct Stats {
     pub countermove_hits: u64,
     pub killermove_hits: u64,
     pub history_hits: u64,
+    pub null_prunes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -183,6 +184,7 @@ impl Default for Stats {
             countermove_hits: 0,
             killermove_hits: 0,
             history_hits: 0,
+            null_prunes: 0,
         } 
     }
 }
@@ -200,5 +202,6 @@ impl Stats {
         println!("counter move hits : {}", self.countermove_hits);
         println!("killer move hits : {}", self.killermove_hits);
         println!("history move hits : {}", self.history_hits);
+        println!("null move prunes: {}", self.null_prunes);
     }
 }

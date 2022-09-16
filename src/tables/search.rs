@@ -66,7 +66,7 @@ impl HashTable {
         }
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn push(&self, zobrist: u64, best_move: u16, depth: u8, age: u8, bound: u8, mut score: i16, _ply: u8) {
+    pub fn push(&self, zobrist: u64, best_move: u16, depth: u8, age: u8, bound: u8, mut score: i16, ply: u8) {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
@@ -99,14 +99,14 @@ impl HashTable {
             }
         }
         if score > MATE_THRESHOLD {
-            score += _ply as i16;
+            score += ply as i16;
         } else if score < -MATE_THRESHOLD {
-            score -= _ply as i16;
+            score -= ply as i16;
         }
         bucket.entries[desired_idx].store(key, best_move, depth, age, bound, score);
     }
 
-    pub fn get(&self, zobrist: u64, _ply: u8, search_age: u8) -> Option<HashResult> {
+    pub fn get(&self, zobrist: u64, ply: u8, search_age: u8) -> Option<HashResult> {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
@@ -117,9 +117,9 @@ impl HashTable {
             if entry_key == key && search_age == HashEntry::get_age(data) {
                 let mut entry_data = HashEntry::load(data);
                 if entry_data.score > MATE_THRESHOLD {
-                    entry_data.score -= _ply as i16;
+                    entry_data.score -= ply as i16;
                 } else if entry_data.score < -MATE_THRESHOLD {
-                    entry_data.score += _ply as i16;
+                    entry_data.score += ply as i16;
                 }
                 return Some(entry_data);
             } 

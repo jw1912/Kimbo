@@ -60,7 +60,7 @@ impl Engine {
         } else if is_castling(m) {
             CASTLE
         } else {
-            self.htable.get(self.board.side_to_move, m)
+            self.htable.get(self.board.side_to_move, m, &mut self.stats.history_hits)
         }
     }
     
