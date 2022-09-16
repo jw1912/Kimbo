@@ -30,13 +30,13 @@ pub struct Engine {
     /// Hashing
     pub zobrist: u64,
     pub pawnhash: u64,
-    /// Heap allocated stuff
+    /// Heap allocated stuff, not all of them need to be!
     pub zobrist_vals: Arc<ZobristVals>,
     pub ttable: Arc<HashTable>,
     pub ptable: Arc<PawnHashTable>,
     pub ctable: Arc<CounterMoveTable>,
     pub ktable: Arc<KillerMoveTable>,
-    pub htable: Box<HistoryTable>,
+    pub htable: Arc<HistoryTable>,
     // Search info
     pub stop: Arc<AtomicBool>,
     pub max_move_time: u64,
@@ -65,6 +65,7 @@ impl Engine {
         s: &str,
         ttable: Arc<HashTable>,
         ptable: Arc<PawnHashTable>,
+        zobrist_vals: Arc<ZobristVals>
     ) -> Result<Self, UciError> {
         let board = Position::from_fen(s)?;
         let mat_mg = calc_material::<true>(&board);
@@ -72,7 +73,6 @@ impl Engine {
         let pst_mg = calc_pst::<true>(&board);
         let pst_eg = calc_pst::<false>(&board);
         let phase = calculate_phase(&board);
-        let zobrist_vals = Arc::new(ZobristVals::default());
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
         let pawnhash = initialise_pawnhash(&board, &zobrist_vals);
         let stats = Stats::default();
@@ -94,7 +94,7 @@ impl Engine {
             ptable,
             ctable: Arc::new(CounterMoveTable::default()),
             ktable: Arc::new(KillerMoveTable::default()),
-            htable: Box::new(HistoryTable::default()),
+            htable: Arc::new(HistoryTable::default()),
             age: 0,
             stats,
         })
@@ -108,6 +108,7 @@ impl Engine {
         max_nodes: u64,
         ttable: Arc<HashTable>,
         ptable: Arc<PawnHashTable>,
+        zobrist_vals: Arc<ZobristVals>,
         age: u8,
     ) -> Self {
         let mat_mg = calc_material::<true>(&board);
@@ -115,7 +116,6 @@ impl Engine {
         let pst_mg = calc_pst::<true>(&board);
         let pst_eg = calc_pst::<false>(&board);
         let phase = calculate_phase(&board);
-        let zobrist_vals = Arc::new(ZobristVals::default());
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
         let pawnhash = initialise_pawnhash(&board, &zobrist_vals);
         let stats = Stats::default();
@@ -137,7 +137,7 @@ impl Engine {
             ptable,
             ctable: Arc::new(CounterMoveTable::default()),
             ktable: Arc::new(KillerMoveTable::default()),
-            htable: Box::new(HistoryTable::default()),
+            htable: Arc::new(HistoryTable::default()),
             age,
             stats,
         }

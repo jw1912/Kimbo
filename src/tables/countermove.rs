@@ -1,6 +1,6 @@
 use super::Move;
 
-// Countermove tables
+// Countermove heuristic
 // if a beta cutoff is caused by a quiet move record it
 // in countermove_table[move.from][move.to]
 // then pass the previous move through negamax

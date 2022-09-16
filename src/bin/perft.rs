@@ -2,6 +2,7 @@ use kimbo::engine::Engine;
 use kimbo::tables::pawn::PawnHashTable;
 use kimbo::tables::search::HashTable;
 use kimbo::engine::perft::PerftSearch;
+use kimbo::engine::zobrist::ZobristVals;
 use kimbo::tables::perft::PerftTT;
 use std::sync::Arc;
 use std::time::Instant;
@@ -31,13 +32,14 @@ pub const TESTS_EXPECTED: [&[u64];NUM_TESTS] = [
 fn _perft_tests() {
     let tt = Arc::new(PerftTT::new(1024 * 1024));
     let start = Instant::now();
+    let zvals = Arc::new(ZobristVals::default());
     for (i, expected) in TESTS_EXPECTED.iter().enumerate() {
         let len: usize = expected.len();
         let now = Instant::now();
         let mut total = 0;
         let mut results = Vec::new();
         let pow = Instant::now();
-        let position = Engine::from_fen(TESTS[i], Arc::new(HashTable::new(1024)), Arc::new(PawnHashTable::new(1024))).unwrap();
+        let position = Engine::from_fen(TESTS[i], Arc::new(HashTable::new(1024)), Arc::new(PawnHashTable::new(1024)), zvals.clone()).unwrap();
         println!(" ");
         println!("Time to process fen: {} micros", pow.elapsed().as_micros());
         let mut search: PerftSearch = PerftSearch::new(

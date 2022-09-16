@@ -36,14 +36,14 @@ impl Engine {
 
         // UCI: check if nodes or time limits reached
         if self.search_limits_reached() {
+            // checking a boolean is faster than checking elapsed time and node count
+            // so avoids checking this condition again
             self.stop.store(true, Ordering::Relaxed);
             return 0;
         }
 
         // UCI: update seldepth (due to extensions)
-        if ply > self.stats.seldepth {
-            self.stats.seldepth = ply;
-        }
+        self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
 
         // SAFE: mate distance pruning
         // JUSTIFICATION: only applies when a mate score is returned in the previous
@@ -152,8 +152,8 @@ impl Engine {
 
             // ESSENTIAL: beta pruning
             if score >= beta {
-                // SAFE: counter move heuristic
-                // JUSTICIFICATION: move ordering technique
+                // SAFE: counter move, killer move, history heuristics
+                // JUSTICIFICATION: move ordering techniques
                 if !is_capture(m) {
                     self.ctable.set(prev_move, m);
                     self.ktable.push(m, ply);

@@ -1,14 +1,10 @@
 use super::Move;
 use crate::search::MAX_PLY;
 
-// Countermove tables
-// if a beta cutoff is caused by a quiet move record it
-// in countermove_table[move.from][move.to]
-// then pass the previous move through negamax
-// and if a move in the movelist matches the countermove
-// entry, give it a bonus
-// could also have a 6x64 table of move.pc and move.to, 
-// but testing showed it was not effective
+// Killer move heuristic
+// if a non-capture at ply x causes a beta cutoff
+// record it in a table indexed by ply
+// so sibling nodes in that ply can give it priority
 
 pub const KILLERS_PER_PLY: usize = 3;
 pub struct KillerMoveTable {

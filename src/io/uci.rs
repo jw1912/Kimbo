@@ -5,6 +5,7 @@ use kimbo_state::Position;
 
 use super::inputs::uci_to_u16;
 use crate::engine::Engine;
+use crate::engine::zobrist::ZobristVals;
 use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci};
@@ -25,6 +26,7 @@ struct State {
     ttable_size: usize,
     ttable: Arc<HashTable>,
     ptable: Arc<PawnHashTable>,
+    zvals: Arc<ZobristVals>,
     age: u8,
     move_overhead: u64,
 }
@@ -38,6 +40,7 @@ impl Default for State {
             ttable_size: 1,
             ttable: Arc::new(HashTable::new(1024 * 1024)),
             ptable: Arc::new(PawnHashTable::new(4 * 1024 * 1024)),
+            zvals: Arc::new(ZobristVals::default()),
             age: 0,
             move_overhead: 10,
         }
@@ -249,9 +252,10 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             let position = state_lock.pos;
             let tt = state_lock.ttable.clone();
             let pt = state_lock.ptable.clone();
+            let zvals = state_lock.zvals.clone();
             let ptt = Arc::new(PerftTT::new(state_lock.ttable_size * 1024 * 1024));
             drop(state_lock);
-            let engine = Engine::new(position, Arc::new(AtomicBool::new(false)), 0, 0, 0, tt, pt, 0);
+            let engine = Engine::new(position, Arc::new(AtomicBool::new(false)), 0, 0, 0, tt, pt, zvals, 0);
             let mut search = PerftSearch::new(
                 engine,
                 ptt
@@ -271,6 +275,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let abort_signal = state_lock.stop.clone();
         let tt = state_lock.ttable.clone();
         let pt = state_lock.ptable.clone();
+        let zvals = state_lock.zvals.clone();
         let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
         drop(state_lock);
@@ -285,6 +290,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             max_nodes,
             tt,
             pt,
+            zvals,
             age,
         );
         let best_move = search.go::<true, false>();
