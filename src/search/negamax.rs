@@ -2,7 +2,7 @@ use super::{
     MAX_SCORE,
     update_pv,
     pruning::tt_prune,
-    sorting::{MoveScores, get_next_move}, is_capture};
+    sorting::{MoveScores, get_next_move}, is_capture, MAX_PLY};
 use crate::{tables::search::Bound, engine::Engine};
 use kimbo_state::{MoveType, Check, MoveList};
 use std::sync::atomic::Ordering;
@@ -54,8 +54,8 @@ impl Engine {
             return alpha
         }
 
-        // ESSENTIAL: depth = 0 quiescence search
-        if depth == 0 {
+        // ESSENTIAL: quiescence search at depth = 0 or maximum ply
+        if depth == 0 || ply == MAX_PLY {
             return self.quiesce::<STATS>(alpha, beta);
         }
 
@@ -113,7 +113,7 @@ impl Engine {
         // ESSENTIAL: move scoring for move ordering
         let mut move_hit: bool = false;
         let mut move_scores = MoveScores::default();
-        self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, &mut move_hit);
+        self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, ply, &mut move_hit);
         if STATS && move_hit {
             self.stats.tt_move_hits += 1;
         }
@@ -155,6 +155,7 @@ impl Engine {
                 // SAFE: counter move heuristic
                 // JUSTICIFICATION: move ordering technique
                 if !is_capture(m) {
+                    self.ktable.push(m, ply);
                     self.ctable.set(prev_move, m)
                 }
                 bound = Bound::LOWER;

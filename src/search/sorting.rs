@@ -2,24 +2,25 @@
 /// Moves are scored as follows:
 /// 1. Hash move (from HashTable)
 /// 2. Captures sorted via MMV-LVA
-/// 3. Counter move ([[u16; 64]; 64] table)
-/// 4. Promotions (Queen -> Knight)
-/// 5. Castling
-/// 6. Quiets
+/// 3. Promotions (Queen -> Knight)
+/// 4. Killer moves (3 moves per ply in a table)
+/// 5. Counter move (from-to table)
+/// 6. Castling
+/// 7. Quiets
 
 use kimbo_state::MoveList;
 use crate::engine::Engine;
-use super::is_capture;
-use super::is_castling;
-use super::is_promotion;
+use crate::tables::killer::KILLERS_PER_PLY;
+use super::{is_capture, is_castling, is_promotion};
 use std::mem;
 use std::ptr;
 
 // Move ordering scores
 const HASH_MOVE: i16 = 100;
-const COUNTERMOVE: i16 = 6;
-const PROMOTIONS: [i16;4] = [2, 3, 4, 5];
-const CASTLE: i16 = 1;
+const KILLERMOVE: i16 = 5;
+const COUNTERMOVE: i16 = 4;
+const PROMOTIONS: [i16;4] = [6, 7, 8, 9];
+const CASTLE: i16 = 3;
 const QUIET: i16 = 0;
 const MVV_LVA: [[i16; 7]; 7] = [
     [15, 14, 13, 12, 11, 10, 0], // victim PAWN
@@ -40,8 +41,8 @@ impl Engine {
         MVV_LVA[captured_pc][moved_pc]
     }
 
-    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, move_hit: &mut bool) -> i16 {
-        let mut score = if m == hash_move {
+    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY],move_hit: &mut bool) -> i16 {
+        if m == hash_move {
             *move_hit = true;
             HASH_MOVE
         } else if is_capture(m) {
@@ -49,23 +50,25 @@ impl Engine {
         } else if is_promotion(m) {
             let pc = (m >> 12) & 3;
             PROMOTIONS[pc as usize]
+        } else if killer_moves.contains(&m) {
+            self.stats.killermove_hits += 1;
+            KILLERMOVE
+        } else if !ROOT && m == counter_move {
+            self.stats.countermove_hits += 1;
+            COUNTERMOVE
         } else if is_castling(m) {
             CASTLE
         } else {
             QUIET
-        };
-        if !ROOT && m == counter_move {
-            self.stats.countermove_hits += 1;
-            score += COUNTERMOVE
         }
-        score
     }
     
-    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, move_hit: &mut bool) {
+    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: u8, move_hit: &mut bool) {
         let counter_move = self.ctable.get(prev_move);
+        let killer_moves = self.ktable.get_ply(ply);
         for i in move_scores.start_idx..moves.len() {
             let m = moves[i]; 
-            move_scores.push(self.score_move::<ROOT>(m, hash_move, counter_move,  move_hit));
+            move_scores.push(self.score_move::<ROOT>(m, hash_move, counter_move, killer_moves, move_hit));
         }
     }
 

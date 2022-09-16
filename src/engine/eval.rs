@@ -64,25 +64,35 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
 impl Engine {
     /// static evaluation of position
     pub fn static_eval<const STATS: bool>(&mut self) -> i16 {
+        // phase value for tapered eval
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
             phase = TOTALPHASE
         };
+
+        // material and psts
         let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
+
+        // probing pawn hash table
         let pwn: i16;
         if let Some(val) = self.ptable.get(self.pawnhash) {
             if STATS { self.stats.pwn_hits += 1 }
+            // if result found, use it
             pwn = val.score;
         } else {
             if STATS { self.stats.pwn_misses += 1 }
             pwn = self.side_pawn_score(0, phase) - self.side_pawn_score(1, phase);
             self.ptable.push(self.pawnhash, pwn);
         }
+
+        // endgame "mop-up" eval for king of winning side
         let mut eval = mat + pst + pwn;
         if eval != 0 {
             eval += self.eg_king_score((eval < 0) as usize, phase)
         }
+
+        // relative to side due to negamax framework
         SIDE_FACTOR[self.board.side_to_move] * eval
     }
 

@@ -6,6 +6,8 @@ mod qsearch;
 mod sorting;
 mod pruning;
 
+pub const MAX_PLY: u8 = u8::MAX;
+
 /// Checkmate stuff
 pub const MAX_SCORE: i16 = 30000;
 pub const MATE_THRESHOLD: i16 = MAX_SCORE - u8::MAX as i16;

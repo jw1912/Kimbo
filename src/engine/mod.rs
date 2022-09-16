@@ -6,6 +6,7 @@ pub mod zobrist;
 pub mod perft;
 
 use eval::*;
+use crate::tables::killer::KillerMoveTable;
 use crate::tables::{pawn::PawnHashTable, search::HashTable, countermove::CounterMoveTable};
 use crate::io::errors::UciError;
 use kimbo_state::{Position, MoveContext};
@@ -33,6 +34,7 @@ pub struct Engine {
     pub ttable: Arc<HashTable>,
     pub ptable: Arc<PawnHashTable>,
     pub ctable: Arc<CounterMoveTable>,
+    pub ktable: Arc<KillerMoveTable>,
     // Search info
     pub stop: Arc<AtomicBool>,
     pub max_move_time: u64,
@@ -89,6 +91,7 @@ impl Engine {
             ttable,
             ptable,
             ctable: Arc::new(CounterMoveTable::default()),
+            ktable: Arc::new(KillerMoveTable::default()),
             age: 0,
             stats,
         })
@@ -130,6 +133,7 @@ impl Engine {
             ttable,
             ptable,
             ctable: Arc::new(CounterMoveTable::default()),
+            ktable: Arc::new(KillerMoveTable::default()),
             age,
             stats,
         }
@@ -157,6 +161,7 @@ pub struct Stats {
     pub pwn_hits: u64,
     pub pwn_misses: u64,
     pub countermove_hits: u64,
+    pub killermove_hits: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -171,6 +176,7 @@ impl Default for Stats {
             pwn_hits: 0,
             pwn_misses: 0,
             countermove_hits: 0,
+            killermove_hits: 0,
         } 
     }
 }
@@ -186,5 +192,6 @@ impl Stats {
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
         println!("{}% pawn hash table hit rate", self.pwn_hits * 100 / (self.pwn_hits + self.pwn_misses));
         println!("counter move hits : {}", self.countermove_hits);
+        println!("killer move hits : {}", self.killermove_hits);
     }
 }
