@@ -138,13 +138,13 @@ impl Engine {
         SIDE_FACTOR[winning_side] * score
     }
 
-    pub fn is_draw_by_repetition(&self, num: u8 ) -> bool {
+    pub fn is_draw_by_repetition(&self, num: u8) -> bool {
         let l = self.state_stack.len();
         if l < 6 || self.null_counter > 0 { return false }
-        let mut repetitions_count = 1;
-        let mut from = l.wrapping_sub(self.board.halfmove_clock as usize);
         let to = l - 1;
+        let mut from = l.wrapping_sub(self.board.halfmove_clock as usize);
         if from > 1024 { from = 0 }
+        let mut repetitions_count = 1;
         for i in (from..to).rev().step_by(2) {
             if self.state_stack[i].zobrist == self.zobrist {
                 repetitions_count += 1;

@@ -1,5 +1,5 @@
-use kimbo::engine::Engine;
-use kimbo::engine::zobrist::ZobristVals;
+use kimbo::engine::{Engine, GameState};
+use kimbo::engine::zobrist::{ZobristVals, initialise_zobrist};
 use kimbo::tables::search::HashTable;
 use kimbo::tables::pawn::PawnHashTable;
 use kimbo_state::Position;
@@ -31,8 +31,9 @@ fn main() {
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
     for (i, position ) in _POSITIONS.iter().enumerate() {
+        let pos =  Position::from_fen(*position).unwrap();
         let mut search = Engine::new(
-            Position::from_fen(*position).unwrap(),
+            pos,
             Arc::new(AtomicBool::new(false)),
             max_time,
             max_depth,
@@ -40,6 +41,7 @@ fn main() {
             tt.clone(),
             pt.clone(),
             zvals.clone(),
+            vec![GameState::new(initialise_zobrist(&pos, &zvals))],
             i as u8,
         );
         println!("===Search Report===");

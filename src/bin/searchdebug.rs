@@ -14,7 +14,7 @@ pub const _POSITIONS: [&str; 11] = [
     // Lasker-Reichhelm Position
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1",
     // Kiwipete Position
-    "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
+    "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
     // Standard low depth mate puzzles
     "rn5r/pp3kpp/2p1R3/5p2/3P4/2B2N2/PPP3PP/2K4n w - - 1 17",
     "4r1rk/pp4pp/2n5/8/6Q1/7R/1qPK1P1P/3R4 w - - 0 28",
@@ -35,9 +35,10 @@ fn _search_all() {
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
-    for (i, position ) in _POSITIONS.iter().enumerate() {
+    for (i, pos ) in _POSITIONS.iter().enumerate() {
+        let position =  Position::from_fen(*pos).unwrap();
         let mut search= Engine::new(
-            Position::from_fen(*position).unwrap(),
+            position,
             Arc::new(AtomicBool::new(false)),
             max_time,
             max_depth,
@@ -45,11 +46,12 @@ fn _search_all() {
             tt.clone(),
             pt.clone(),
             zvals.clone(),
+            Vec::new(),
             i as u8,
         );
-        assert_eq!(String::from(*position), search.to_fen());
+        assert_eq!(String::from(*pos), search.to_fen());
         display_board::<true>(&search.board);
-        println!("fen: {}", position);
+        println!("fen: {}", pos);
         search.go::<true, true>();
         println!(" ");
     }
@@ -58,14 +60,14 @@ fn _search_all() {
 
 fn _search_one(pos: usize) {
     // params
-    let max_time = 5000;
+    let max_time = 1000;
     let max_depth = u8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
-    let position = _POSITIONS[pos];
+    let position = Position::from_fen(_POSITIONS[pos]).unwrap();
     let mut search = Engine::new(
-        Position::from_fen(position).unwrap(),
+        position,
         Arc::new(AtomicBool::new(false)),
         max_time,
         max_depth,
@@ -73,13 +75,14 @@ fn _search_one(pos: usize) {
         tt,
         pt,
         zvals,
+        Vec::new(),
         0,
     );
     display_board::<true>(&search.board);
-    println!("fen: {}", position);
+    println!("fen: {}", _POSITIONS[pos]);
     search.go::<true, true>();
 }
 
 fn main() {
-    _search_one(1)
+    _search_one(8)
 }

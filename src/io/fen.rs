@@ -1,6 +1,8 @@
 // Converting position to fen
 // other way is handled in kimbo_state
 
+use kimbo_state::Position;
+
 use crate::engine::Engine;
 
 use super::outputs::idx_to_sq;
@@ -70,4 +72,18 @@ impl Engine {
             self.board.fullmove_counter,
         )
     }
+}
+
+pub fn to_fen(pos: &Position) -> String {
+    format!("{} {} {} {} {} {}",
+        board(pos.squares, pos.sides),
+        SIDES[pos.side_to_move],
+        castle_rights(pos.castle_rights),
+        match pos.en_passant_sq {
+            0 => String::from("-"),
+            _ => idx_to_sq(pos.en_passant_sq),
+        },
+        pos.halfmove_clock,
+        pos.fullmove_counter,
+    )
 }

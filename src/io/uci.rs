@@ -4,11 +4,11 @@
 use kimbo_state::Position;
 
 use super::inputs::uci_to_u16;
-use crate::engine::Engine;
-use crate::engine::zobrist::ZobristVals;
+use crate::engine::{Engine, GameState};
+use crate::engine::zobrist::{ZobristVals, initialise_zobrist};
 use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
-use crate::io::outputs::{display_board, u16_to_uci};
+use crate::io::outputs::{display_board, u16_to_uci, report_stats};
 use crate::search::timings::Times;
 use crate::engine::perft::PerftSearch;
 use crate::tables::{perft::PerftTT, search::HashTable};
@@ -27,6 +27,7 @@ struct State {
     ttable: Arc<HashTable>,
     ptable: Arc<PawnHashTable>,
     zvals: Arc<ZobristVals>,
+    state_stack: Vec<GameState>,
     age: u8,
     move_overhead: u64,
 }
@@ -41,6 +42,7 @@ impl Default for State {
             ttable: Arc::new(HashTable::new(1024 * 1024)),
             ptable: Arc::new(PawnHashTable::new(4 * 1024 * 1024)),
             zvals: Arc::new(ZobristVals::default()),
+            state_stack: Vec::with_capacity(25),
             age: 0,
             move_overhead: 10,
         }
@@ -108,12 +110,14 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
     enum Tokens {
         None,
         Fancy,
+        Stats,
     }
     let mut token: Tokens = Tokens::None;
     for command in commands {
         match command {
             "display" => (),
             "fancy" => token = Tokens::Fancy,
+            "stats" => token = Tokens::Stats,
             _ => {
                 return Err(UciError::Display);
             }
@@ -122,6 +126,13 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
     match token {
         Tokens::None => display_board::<false>(&state.lock().unwrap().pos),
         Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos),
+        Tokens::Stats => {
+            let state_lock = state.lock().unwrap();
+            report_stats(&state_lock.pos);
+            println!("state_stack length: {}", state_lock.state_stack.len());
+            drop(state_lock);
+            
+        }
     }
     Ok(())
 }
@@ -165,8 +176,12 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
     if !fen.is_empty() && !skip_fen {
         state_lock.pos = Position::from_fen(&fen)?;
     }
-
+    state_lock.state_stack = Vec::with_capacity(25);
     for m in moves {
+        let zobrist = initialise_zobrist(&state_lock.pos, &state_lock.zvals);
+        state_lock.state_stack.push(
+            GameState::new(zobrist)
+        );
         let mo = uci_to_u16(&state_lock.pos, &m)?;
         state_lock.pos.make_move(mo);
     }
@@ -219,21 +234,17 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
                 Tokens::Perft
             },
             _ => {
-                let mut parse: u64 = 0;
-                if token != Tokens::Ponder {
-                    parse = command.parse::<u64>()?;
-                }
                 match token {
                     Tokens::Ponder => return Err(UciError::Go),
-                    Tokens::Depth => max_depth = parse as u8,
-                    Tokens::Nodes => max_nodes = parse,
-                    Tokens::MoveTime => max_move_time = parse,
-                    Tokens::WTime => times.wtime = parse,
-                    Tokens::BTime => times.btime = parse,
-                    Tokens::WInc => times.winc = parse,
-                    Tokens::BInc => times.binc = parse,
-                    Tokens::MovesToGo => times.moves_to_go = Some(parse as u8),
-                    Tokens::Perft => perft_depth = parse as u8,
+                    Tokens::Depth => max_depth = command.parse::<u8>()?,
+                    Tokens::Nodes => max_nodes = command.parse::<u64>()?,
+                    Tokens::MoveTime => max_move_time = command.parse::<u64>()?,
+                    Tokens::WTime => times.wtime = std::cmp::max(command.parse::<i64>()?, 0) as u64,
+                    Tokens::BTime => times.btime = std::cmp::max(command.parse::<i64>()?, 0) as u64,
+                    Tokens::WInc => times.winc = command.parse::<u64>()?,
+                    Tokens::BInc => times.binc = command.parse::<u64>()?,
+                    Tokens::MovesToGo => times.moves_to_go = Some(command.parse::<u8>()?),
+                    Tokens::Perft => perft_depth = command.parse::<u8>()?,
                 }
             },
         }
@@ -254,8 +265,9 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             let pt = state_lock.ptable.clone();
             let zvals = state_lock.zvals.clone();
             let ptt = Arc::new(PerftTT::new(state_lock.ttable_size * 1024 * 1024));
+            let state_stack = state_lock.state_stack.clone();
             drop(state_lock);
-            let engine = Engine::new(position, Arc::new(AtomicBool::new(false)), 0, 0, 0, tt, pt, zvals, 0);
+            let engine = Engine::new(position, Arc::new(AtomicBool::new(false)), 0, 0, 0, tt, pt, zvals, state_stack, 0);
             let mut search = PerftSearch::new(
                 engine,
                 ptt
@@ -278,6 +290,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let zvals = state_lock.zvals.clone();
         let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
+        let state_stack = state_lock.state_stack.clone();
         drop(state_lock);
 
         let move_time = max_move_time - move_overhead * (max_move_time > move_overhead) as u64; 
@@ -291,6 +304,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             tt,
             pt,
             zvals,
+            state_stack,
             age,
         );
         let best_move = search.go::<true, false>();

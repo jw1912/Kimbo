@@ -44,7 +44,9 @@ impl Engine {
         self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
 
         // ESSENTIAL: draw detection
-        if self.is_draw_by_50() || self.is_draw_by_repetition(2) {
+        // the if ROOT is needed in case engine is given a position
+        // where a draw by repetition is already about to happen
+        if self.is_draw_by_50() || self.is_draw_by_repetition(2 + ROOT as u8) {
             if STATS { self.stats.draws_detected += 1 }
             return 0;
         }

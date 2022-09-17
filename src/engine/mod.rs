@@ -57,8 +57,21 @@ pub struct GameState {
     pst_mg: [i16; 2],
     pst_eg: [i16; 2],
     phase: i16,
-    zobrist: u64,
+    pub zobrist: u64,
     pawnhash: u64
+}
+impl GameState {
+    pub fn new(zobrist: u64) -> Self {
+        Self { 
+            ctx: MoveContext { m: 0, moved_pc: 0, captured_pc: 0, castle_rights: 0, en_passant_sq: 0, halfmove_clock: 0 }, 
+            mat_mg: [0,0], 
+            mat_eg: [0,0], 
+            pst_mg: [0,0], 
+            pst_eg: [0,0], 
+            phase: 0, 
+            zobrist, 
+            pawnhash: 0 }
+    }
 }
 
 impl Engine {
@@ -71,7 +84,9 @@ impl Engine {
         zobrist_vals: Arc<ZobristVals>
     ) -> Result<Self, UciError> {
         let board = Position::from_fen(s)?;
-        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable, zobrist_vals, 0))
+        let mut state_stack = Vec::with_capacity(25);
+        state_stack.push(GameState::new(initialise_zobrist(&board, &zobrist_vals)));
+        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable, zobrist_vals, state_stack, 0))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -84,6 +99,7 @@ impl Engine {
         ttable: Arc<HashTable>,
         ptable: Arc<PawnHashTable>,
         zobrist_vals: Arc<ZobristVals>,
+        state_stack: Vec<GameState>,
         age: u8,
     ) -> Self {
         let mat_mg = calc_material::<true>(&board);
@@ -94,17 +110,6 @@ impl Engine {
         let zobrist = initialise_zobrist(&board, &zobrist_vals);
         let pawnhash = initialise_pawnhash(&board, &zobrist_vals);
         let stats = Stats::default();
-        let mut state_stack = Vec::with_capacity(25);
-        state_stack.push(GameState {
-            ctx: MoveContext { m: 0, moved_pc: 6, captured_pc: 6, castle_rights: board.castle_rights, en_passant_sq: board.en_passant_sq, halfmove_clock: board.halfmove_clock },
-            mat_mg,
-            mat_eg,
-            pst_mg,
-            pst_eg,
-            phase,
-            zobrist,
-            pawnhash,
-        });
         Self {
             board,
             mat_mg,

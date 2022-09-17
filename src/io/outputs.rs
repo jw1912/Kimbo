@@ -1,6 +1,6 @@
 use kimbo_state::{Position, MoveList};
 use crate::search::{MAX_SCORE, is_mate_score};
-use super::FILES;
+use super::{FILES, fen::to_fen};
 
 /// board idx to square
 pub fn idx_to_sq(idx: u16) -> String {
@@ -31,7 +31,11 @@ pub fn uci_info(depth: u8, seldepth: u8, nodes: u64, time: u128, pv: Vec<u16>, e
         score_type = "mate";
         score = if eval < 0 { eval.abs() - MAX_SCORE } else { MAX_SCORE - eval + 1 } / 2;
     }
-    let nps = ((nodes as f64) / ((time as f64) / 1000.0)) as u32;
+    let nps = if time != 0 {
+        ((nodes as f64) / ((time as f64) / 1000.0)) as u32
+    } else {
+        nodes as u32 * 1000
+    };
     println!(
         "info depth {} seldepth {} score {} {} time {} nodes {} nps {} hashfull {} pv {}",
         depth, seldepth, score_type, score, time, nodes, nps, hashfull, pv_str
@@ -71,4 +75,10 @@ pub fn display_movelist(moves: &MoveList) {
     for i in 0..moves.len() {
         println!("{}", u16_to_uci(&moves[i]))
     }
+}
+
+pub fn report_stats(pos: &Position) {
+    println!("fen: {}", to_fen(pos));
+    println!("halfmove counter: {}", pos.halfmove_clock);
+    println!("fullmove counter: {}", pos.fullmove_counter);
 }
