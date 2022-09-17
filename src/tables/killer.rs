@@ -48,19 +48,4 @@ impl KillerMoveTable {
         }
         moves
     }
-
-    // shifts all moves 2 ply up
-    pub fn age(&self) {
-        for ply in 2..MAX_PLY as usize {
-            for slot_index in 0..KILLERS_PER_PLY {
-                let entry = self.table[ply][slot_index].get();
-                self.table[ply - 2][slot_index].set(entry);
-            }
-        }
-        for ply in MAX_PLY as usize - 2..MAX_PLY as usize {
-            for entry in &self.table[ply] {
-                entry.set(Default::default());
-            }
-        }
-    }
 }

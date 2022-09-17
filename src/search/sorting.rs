@@ -117,13 +117,14 @@ impl MoveScores {
 /// Move sort function
 /// O(n^2), however with pruning this is actually marginally faster
 /// because usually <30% of the moves have to be picked
-pub fn get_next_move(moves: &mut MoveList, move_scores: &mut MoveScores) -> Option<u16> {
-    if move_scores.start_idx == move_scores.len {
+pub fn get_next_move(moves: &mut MoveList, move_scores: &mut MoveScores) -> Option<(u16, usize, i16)> {
+    let m_idx = move_scores.start_idx;
+    if m_idx == move_scores.len {
         return None
     }
     let mut best_idx = 0;
     let mut best_score = i16::MIN;
-    for i in move_scores.start_idx..move_scores.len {
+    for i in m_idx..move_scores.len {
         let score = move_scores.list[i];
         if score > best_score {
             best_score = score;
@@ -132,8 +133,8 @@ pub fn get_next_move(moves: &mut MoveList, move_scores: &mut MoveScores) -> Opti
     }
     let m = moves[best_idx];
     // swap the found element with the last element in the list
-    move_scores.swap_unchecked(best_idx, move_scores.start_idx);
-    moves.swap_unchecked(best_idx, move_scores.start_idx);
+    move_scores.swap_unchecked(best_idx, m_idx);
+    moves.swap_unchecked(best_idx, m_idx);
     move_scores.start_idx += 1;
-    Some(m)
+    Some((m, m_idx, best_score))
 }

@@ -43,7 +43,7 @@ impl Engine {
         self.score_captures(&captures, &mut move_scores);
 
         // going through captures
-        while let Some(m) = get_next_move(&mut captures, &mut move_scores) {
+        while let Some((m, _, _)) = get_next_move(&mut captures, &mut move_scores) {
             // making move
             self.make_move(m);
 

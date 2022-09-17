@@ -8,8 +8,7 @@ use kimbo_state::{MoveType, Check, MoveList};
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
 
-impl Engine {
-    /// Main search
+/// Main search
     /// 
     /// Constant parameters:
     /// ROOT - is this a root (ply = 0) node?
@@ -21,14 +20,20 @@ impl Engine {
     /// SAFE: will not distort search results to incorrect values
     /// UNSAFE: potential to distort search results to be incorrect
     /// JUSTIFICATION: if SAFE, reason why safe, if UNSAFE, reason why included
-    #[allow(clippy::too_many_arguments)]
+    /// SOURCE: source of the technique
+
+impl Engine {
+    // SOURCE: https://www.chessprogramming.org/Alpha-Beta
     pub fn negamax<const ROOT: bool, const STATS: bool>(
         &mut self, 
-        mut alpha: i16, mut beta: i16, 
-        depth: u8, ply: u8, 
+        mut alpha: i16, 
+        mut beta: i16, 
+        depth: u8, 
+        ply: u8, 
         pv: &mut Vec<u16>, 
         prev_move: u16,
     ) -> i16 {
+        
         // UCI: if stop token, abort
         if self.stop.load(Ordering::Relaxed) {
             return 0;
@@ -44,6 +49,7 @@ impl Engine {
         self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
 
         // ESSENTIAL: draw detection
+        // SOURCE: https://www.chessprogramming.org/Draw
         // the if ROOT is needed in case engine is given a position
         // where a draw by repetition is already about to happen
         if self.is_draw_by_50() || self.is_draw_by_repetition(2 + ROOT as u8) {
@@ -52,6 +58,7 @@ impl Engine {
         }
 
         // SAFE: mate distance pruning
+        // SOURCE: https://www.chessprogramming.org/Mate_Distance_Pruning
         // JUSTIFICATION: only applies when a mate score is returned in the previous
         // child node of the parent node, and the cutoff would be caused later anyway
         alpha = max(alpha, -MAX_SCORE + ply as i16);
@@ -61,6 +68,7 @@ impl Engine {
         }
 
         // ESSENTIAL: quiescence search at depth = 0 or maximum ply
+        // SOURCE: https://www.chessprogramming.org/Quiescence_Search
         if depth == 0 || ply == MAX_PLY {
             return self.quiesce::<STATS>(alpha, beta);
         }
@@ -74,6 +82,7 @@ impl Engine {
         let mut write_to_hash = true;
 
         // probing hash table
+        // SOURCE: https://www.chessprogramming.org/Transposition_Table
         if let Some(res) = self.ttable.get(zobrist, ply, self.age) {
             if STATS { self.stats.tt_hits += 1; }
 
@@ -111,6 +120,7 @@ impl Engine {
         }
 
         // SAFE: check extensions
+        // SOURCE: https://www.chessprogramming.org/Check_Extensions
         // JUSTIFICATION: not given higher priority than any other searches at this
         // depth (recorded in hash table as same depth as other nodes at this ply)
         // so acts like a more accurate qsearch
@@ -120,9 +130,7 @@ impl Engine {
         let mut move_hit: bool = false;
         let mut move_scores = MoveScores::default();
         self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, ply, &mut move_hit);
-        if STATS && move_hit {
-            self.stats.tt_move_hits += 1;
-        }
+        if STATS && move_hit { self.stats.tt_move_hits += 1 }
         
         // initialising stuff for going through moves
         let mut best_move = 0;
@@ -130,14 +138,34 @@ impl Engine {
         let mut bound: u8 = Bound::UPPER;
 
         // going through moves
-        while let Some(m) = get_next_move(&mut moves, &mut move_scores) {
+        while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
 
             // making move
             self.make_move(m);
 
+            // UNSAFE: late move reductions
+            // SOURCE: https://www.chessprogramming.org/Late_Move_Reductions
+            // JUSTIFICATION: reduction is 1 ply, only on non-killer, 
+            // counter quiet moves and searches with lmr are done as pvs
+            let do_lmr = self.can_do_lmr::<ROOT>(ext, depth, m_idx, m_score);
+            let reduce = do_lmr as u8;
+
             // scoring move and getting the pv for it
+            // reduced moves are done witihn a pvs framework
+            // other moves are searched normally, with extensions if relevant
             let mut sub_pv = Vec::new();
-            let score = -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m);
+            let score = if do_lmr {
+                if STATS { self.stats.lmr_attempts += 1 }
+                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m);
+                if lmr_score > alpha {
+                    -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m)
+                } else {
+                    if STATS { self.stats.lmr_successes += 1 }
+                    lmr_score
+                }
+            } else {
+                -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m)
+            };
 
             // unmaking move
             self.unmake_move();
@@ -161,8 +189,11 @@ impl Engine {
                 // SAFE: counter move, killer move, history heuristics
                 // JUSTICIFICATION: move ordering techniques
                 if !is_capture(m) {
+                    // SOURCE: https://www.chessprogramming.org/Countermove_Heuristic
                     self.ctable.set(prev_move, m);
+                    // SOURCE: https://www.chessprogramming.org/Killer_Heuristic
                     self.ktable.push(m, ply);
+                    // SOURCE: https://www.chessprogramming.org/History_Heuristic
                     self.htable.set(self.board.side_to_move, m, depth);
                 }
                 bound = Bound::LOWER;

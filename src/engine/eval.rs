@@ -157,4 +157,9 @@ impl Engine {
     pub fn is_draw_by_50(&self) -> bool {
         self.null_counter == 0 && self.board.halfmove_clock >= 100
     }
+
+    pub fn is_in_check(&self) -> bool {
+        let king_idx = ls1b_scan(self.board.pieces[self.board.side_to_move][Piece::KING]) as usize;
+        self.board.is_square_attacked(king_idx, self.board.side_to_move, self.board.occupied)
+    }
 }

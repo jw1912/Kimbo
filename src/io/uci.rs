@@ -10,13 +10,14 @@ use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci, report_stats};
 use crate::search::timings::Times;
-use crate::engine::perft::PerftSearch;
-use crate::tables::{perft::PerftTT, search::HashTable};
+use crate::engine::perft::perft;
+use crate::tables::search::HashTable;
 use std::io;
 use std::process;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
+use std::time::Instant;
 use super::info::*;
 
 struct State {
@@ -214,7 +215,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     let mut max_move_time: u64 = u64::MAX;
     let mut max_nodes: u64 = u64::MAX;
     let mut times: Times = Times::default();
-    let mut perft = false;
+    let mut do_perft = false;
     let mut perft_depth = 0;
 
     for command in commands {
@@ -230,7 +231,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             "binc" => token = Tokens::BInc,
             "movestogo" => token = Tokens::MovesToGo,
             "perft" => token = {
-                perft = true;
+                do_perft = true;
                 Tokens::Perft
             },
             _ => {
@@ -256,24 +257,17 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         drop(state_lock);
     }
 
-    if perft {
+    if do_perft {
         let state_2 = state.clone();
         let search_thread = thread::spawn(move || {
             let state_lock = state_2.lock().unwrap();
-            let position = state_lock.pos;
-            let tt = state_lock.ttable.clone();
-            let pt = state_lock.ptable.clone();
-            let zvals = state_lock.zvals.clone();
-            let ptt = Arc::new(PerftTT::new(state_lock.ttable_size * 1024 * 1024));
-            let state_stack = state_lock.state_stack.clone();
+            let mut position = state_lock.pos;
             drop(state_lock);
-            let engine = Engine::new(position, Arc::new(AtomicBool::new(false)), 0, 0, 0, tt, pt, zvals, state_stack, 0);
-            let mut search = PerftSearch::new(
-                engine,
-                ptt
-            );
-            let count = search.go(perft_depth);
-            println!("Move count: {count}");
+
+            let now = Instant::now();
+            let count = perft::<true>(&mut position, perft_depth);
+            let elapsed = now.elapsed().as_micros();
+            println!("Leaf count: {count} ({:.2} ML/sec)", count as f64 / elapsed as f64);
         });
         state.lock().unwrap().search_handle = Some(search_thread);
         return Ok(());

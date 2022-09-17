@@ -161,6 +161,8 @@ pub struct Stats {
     pub killermove_hits: u64,
     pub history_hits: u64,
     pub draws_detected: u64,
+    pub lmr_attempts: u64,
+    pub lmr_successes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -178,6 +180,8 @@ impl Default for Stats {
             killermove_hits: 0,
             history_hits: 0,
             draws_detected: 0,
+            lmr_attempts: 0,
+            lmr_successes: 0,
         } 
     }
 }
@@ -196,5 +200,6 @@ impl Stats {
         println!("killer move hits : {}", self.killermove_hits);
         println!("history move hits : {}", self.history_hits);
         println!("draws detected: {}", self.draws_detected);
+        println!("lmr attempts: {}, successes: {}", self.lmr_attempts, self.lmr_successes);
     }
 }
