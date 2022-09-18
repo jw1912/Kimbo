@@ -45,7 +45,7 @@ impl Default for HistoryTable {
     }
 }
 impl HistoryTable {
-    pub fn set(&self, side: usize, m: u16, depth: u8) {
+    pub fn set(&self, side: usize, m: u16, depth: i8) {
         let locale = &self.table[side][(m & 63) as usize][((m >> 6) & 63) as usize];
         let new = locale.get() + (depth as u32) * (depth as u32);
         if new > self.max.load(Ordering::Relaxed) {

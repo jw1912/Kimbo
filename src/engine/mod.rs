@@ -42,7 +42,7 @@ pub struct Engine {
     // Search info
     pub stop: Arc<AtomicBool>,
     pub max_move_time: u64,
-    pub max_depth: u8,
+    pub max_depth: i8,
     pub max_nodes: u64,
     pub age: u8,
     pub stats: Stats,
@@ -94,7 +94,7 @@ impl Engine {
         board: Position,
         stop: Arc<AtomicBool>,
         max_move_time: u64,
-        max_depth: u8,
+        max_depth: i8,
         max_nodes: u64,
         ttable: Arc<HashTable>,
         ptable: Arc<PawnHashTable>,
@@ -149,7 +149,7 @@ pub struct Stats {
     /// Always tracked
     pub node_count: u64,
     pub start_time: Instant,
-    pub seldepth: u8,
+    pub seldepth: i8,
     // Debugging only
     pub qnode_count: u64,
     pub tt_hits: u64,
@@ -163,6 +163,11 @@ pub struct Stats {
     pub draws_detected: u64,
     pub lmr_attempts: u64,
     pub lmr_successes: u64,
+    pub null_attempts: u64,
+    pub null_successes: u64,
+    pub null_possibility: u64,
+    pub rfp_attempts: u64,
+    pub rfp_successes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -182,6 +187,11 @@ impl Default for Stats {
             draws_detected: 0,
             lmr_attempts: 0,
             lmr_successes: 0,
+            null_attempts: 0,
+            null_successes: 0,
+            null_possibility: 0,
+            rfp_attempts: 0,
+            rfp_successes: 0,
         } 
     }
 }
@@ -201,5 +211,7 @@ impl Stats {
         println!("history move hits : {}", self.history_hits);
         println!("draws detected: {}", self.draws_detected);
         println!("lmr attempts: {}, successes: {}", self.lmr_attempts, self.lmr_successes);
+        println!("nmp posibilities: {}, attempts: {}, successes: {}", self.null_possibility, self.null_attempts, self.null_successes);
+        println!("lmr attempts: {}, successes: {}", self.rfp_attempts, self.rfp_successes);
     }
 }

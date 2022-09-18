@@ -62,6 +62,21 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
 }
 
 impl Engine {
+    /// eval taking only material and psts into account
+    pub fn lazy_eval(&self) -> i16 {
+        let mut phase = self.phase as i32;
+        if phase > TOTALPHASE {
+            phase = TOTALPHASE
+        };
+
+        // material and psts
+        let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
+        let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
+
+        // relative to side due to negamax framework
+        SIDE_FACTOR[self.board.side_to_move] * (mat + pst)
+    }
+
     /// static evaluation of position
     pub fn static_eval<const STATS: bool>(&mut self) -> i16 {
         // phase value for tapered eval

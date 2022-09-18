@@ -1,37 +1,41 @@
 use super::{
     MAX_SCORE,
     update_pv,
-    pruning::tt_prune,
+    pruning::{tt_prune, get_lmr_reduction},
     sorting::{MoveScores, get_next_move}, is_capture, MAX_PLY};
 use crate::{tables::search::Bound, engine::Engine};
 use kimbo_state::{MoveType, Check, MoveList};
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
 
-/// Main search
-    /// 
-    /// Constant parameters:
-    /// ROOT - is this a root (ply = 0) node?
-    /// STATS - are debug stats required?
-    /// 
-    /// Comments:
-    /// UCI: implemented for the uci protocol / debug stats
-    /// ESSENTIAL: core feature of any engine, also SAFE, no need for ELO testing
-    /// SAFE: will not distort search results to incorrect values
-    /// UNSAFE: potential to distort search results to be incorrect
-    /// JUSTIFICATION: if SAFE, reason why safe, if UNSAFE, reason why included
-    /// SOURCE: source of the technique
+
+/// 
+/// Comments:
+/// UCI: implemented for the uci protocol / debug stats
+/// ESSENTIAL: core feature of any engine, also SAFE, no need for ELO testing
+/// SAFE: will not distort search results to incorrect values
+/// UNSAFE: potential to distort search results to be incorrect
+/// JUSTIFICATION: if SAFE, reason why safe, if UNSAFE, reason why included
+/// SOURCE: source of the technique
 
 impl Engine {
-    // SOURCE: https://www.chessprogramming.org/Alpha-Beta
+    /// Main alpha-beta minimax search
+    /// 
+    /// Constant parameters:
+    ///  - ROOT - is this a root (ply = 0) node?
+    ///  - STATS - are debug stats required?
+    /// 
+    /// SOURCE: https://www.chessprogramming.org/Alpha-Beta
+    #[allow(clippy::too_many_arguments)]
     pub fn negamax<const ROOT: bool, const STATS: bool>(
         &mut self, 
         mut alpha: i16, 
         mut beta: i16, 
-        depth: u8, 
-        ply: u8, 
+        depth: i8, 
+        ply: i8, 
         pv: &mut Vec<u16>, 
         prev_move: u16,
+        king_in_check: bool,
     ) -> i16 {
         
         // UCI: if stop token, abort
@@ -45,6 +49,9 @@ impl Engine {
             return 0;
         }
 
+        // UCI: count node
+        self.stats.node_count += 1;
+
         // UCI: update seldepth (due to extensions)
         self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
 
@@ -52,9 +59,14 @@ impl Engine {
         // SOURCE: https://www.chessprogramming.org/Draw
         // the if ROOT is needed in case engine is given a position
         // where a draw by repetition is already about to happen
+        // to avoid returning immediately at the root with no best move
         if self.is_draw_by_50() || self.is_draw_by_repetition(2 + ROOT as u8) {
             if STATS { self.stats.draws_detected += 1 }
-            return 0;
+            // we return 20 - ply to discourage immediately going for draws
+            // and to prevent, say, a -5cp evaluation causing the engine
+            // to try and force a draw (which definitely did not happen
+            // and cause this change in the first place)
+            return 20 - (ply as i16);
         }
 
         // SAFE: mate distance pruning
@@ -67,9 +79,9 @@ impl Engine {
             return alpha
         }
 
-        // ESSENTIAL: quiescence search at depth = 0 or maximum ply
+        // ESSENTIAL: quiescence search at depth <= 0 or maximum ply
         // SOURCE: https://www.chessprogramming.org/Quiescence_Search
-        if depth == 0 || ply == MAX_PLY {
+        if depth <= 0 || ply == MAX_PLY {
             return self.quiesce::<STATS>(alpha, beta);
         }
 
@@ -97,7 +109,7 @@ impl Engine {
             // JUSTIFICATION: >99% of hash moves are valid moves on average
             // so unlikely to effect search results too much
             if !ROOT {
-                if let Some(score) = tt_prune(res, depth, alpha, beta) {
+                if let Some(score) = tt_prune(&res, depth, alpha, beta) {
                     if STATS { self.stats.tt_prunes += 1 }
                     pv.push(hash_move);
                     return score;
@@ -105,26 +117,21 @@ impl Engine {
             }
         }
 
-        // UCI: now will be generating moves, so this node is counted as visited
-        self.stats.node_count += 1;
+        // SAFE: check extensions
+        // SOURCE: https://www.chessprogramming.org/Check_Extensions
+        // JUSTIFICATION: not given higher priority than any other searches at this
+        // depth (recorded in hash table at same depth as other nodes at this ply)
+        let ext = king_in_check as i8;
 
         // generating moves
         let mut king_checked = Check::None;
         let mut moves = MoveList::default();
         self.board.gen_moves::<{ MoveType::ALL }>(&mut king_checked, &mut moves);
-        let king_in_check = king_checked != Check::None;
 
         // ESSENTIAL: checking for checkmate/stalemate
         if moves.is_empty() {
             return king_in_check as i16 * (-MAX_SCORE + ply as i16);
         }
-
-        // SAFE: check extensions
-        // SOURCE: https://www.chessprogramming.org/Check_Extensions
-        // JUSTIFICATION: not given higher priority than any other searches at this
-        // depth (recorded in hash table as same depth as other nodes at this ply)
-        // so acts like a more accurate qsearch
-        let ext = king_in_check as u8;
 
         // ESSENTIAL: move scoring for move ordering
         let mut move_hit: bool = false;
@@ -145,26 +152,27 @@ impl Engine {
 
             // UNSAFE: late move reductions
             // SOURCE: https://www.chessprogramming.org/Late_Move_Reductions
-            // JUSTIFICATION: reduction is 1 ply, only on non-killer, 
-            // counter quiet moves and searches with lmr are done as pvs
-            let do_lmr = self.can_do_lmr::<ROOT>(ext, depth, m_idx, m_score);
-            let reduce = do_lmr as u8;
+            // JUSTIFICATION: reduction is 1 ply, only on non-killer or
+            // counter quiet moves, and searches with lmr are done as pvs
+            let check = self.is_in_check();
+            let do_lmr = self.can_do_lmr::<ROOT>(ext, depth, m_idx, m_score, check);
 
             // scoring move and getting the pv for it
             // reduced moves are done witihn a pvs framework
             // other moves are searched normally, with extensions if relevant
             let mut sub_pv = Vec::new();
             let score = if do_lmr {
+                let reduce = get_lmr_reduction(m_idx);
                 if STATS { self.stats.lmr_attempts += 1 }
-                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m);
+                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m, check);
                 if lmr_score > alpha {
-                    -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m)
+                    -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check)
                 } else {
                     if STATS { self.stats.lmr_successes += 1 }
                     lmr_score
                 }
             } else {
-                -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m)
+                -self.negamax::<false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m, check)
             };
 
             // unmaking move

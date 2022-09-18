@@ -64,7 +64,7 @@ impl Engine {
         }
     }
     
-    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: u8, move_hit: &mut bool) {
+    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8, move_hit: &mut bool) {
         let counter_move = self.ctable.get(prev_move);
         let killer_moves = self.ktable.get_ply(ply);
         for i in move_scores.start_idx..moves.len() {

@@ -2,15 +2,19 @@ use crate::engine::Engine;
 use super::sorting::{MoveScores, get_next_move};
 use kimbo_state::{MoveType, Check, MoveList};
 
+/// Comments:
+/// UCI: implemented for the uci protocol / debug stats
+
 impl Engine {
     /// Quiescence search
     /// 
     /// Constant parameters:
-    /// STATS - are debug stats required?
-    /// 
-    /// Comments:
-    /// UCI: implemented for the uci protocol / debug stats
+    ///  - STATS - are debug stats required?
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
+        // UCI: count all quiescence nodes as visited
+        self.stats.node_count += 1;
+        if STATS { self.stats.qnode_count += 1; }
+        
         // static eval
         let stand_pat = self.static_eval::<STATS>();
 
@@ -28,10 +32,6 @@ impl Engine {
         if alpha < stand_pat {
             alpha = stand_pat;
         }
-
-        // UCI: now will be generating moves, so this node is counted as visited
-        self.stats.node_count += 1;
-        if STATS { self.stats.qnode_count += 1; }
 
         // generating captures
         let mut king_checked = Check::None;

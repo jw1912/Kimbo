@@ -44,14 +44,14 @@ pub fn main_loop() {
 
 // Stats for a full iterative deepening search
 pub struct SearchStats {
-    depth_reached: u8,
+    depth_reached: i8,
     nodes_to_depth: u64,
     time_to_depth: u64,
     pv: Vec<u16>,
 }
 
 impl SearchStats {
-    pub fn new(depth_reached: u8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>) -> Self {
+    pub fn new(depth_reached: i8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>) -> Self {
         Self { 
             depth_reached, 
             nodes_to_depth, 

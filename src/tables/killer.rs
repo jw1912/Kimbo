@@ -26,7 +26,7 @@ impl KillerMoveTable {
     // puts new move at first index
     // unless the move is already in the table
     // in that case it acts as a wrapping shift
-    pub fn push(&self, m: u16, ply: u8) {
+    pub fn push(&self, m: u16, ply: i8) {
         let lost_move = self.table[ply as usize][KILLERS_PER_PLY - 1].get();
         let mut copy_found = false;
         for idx in (1..KILLERS_PER_PLY).rev() {
@@ -41,7 +41,7 @@ impl KillerMoveTable {
         }
     }
 
-    pub fn get_ply(&self, ply: u8) -> [u16; KILLERS_PER_PLY] {
+    pub fn get_ply(&self, ply: i8) -> [u16; KILLERS_PER_PLY] {
         let mut moves = [0; KILLERS_PER_PLY];
         for (i, m) in self.table[ply as usize].iter().enumerate() {
             moves[i] = m.get();

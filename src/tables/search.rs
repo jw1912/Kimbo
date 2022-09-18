@@ -49,7 +49,7 @@ pub struct HashResult {
     pub key: u16,
     pub best_move: u16,
     pub score: i16,
-    pub depth: u8,
+    pub depth: i8,
     pub age: u8,
     pub bound: u8,
 }
@@ -66,12 +66,12 @@ impl HashTable {
         }
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn push(&self, zobrist: u64, best_move: u16, depth: u8, age: u8, bound: u8, mut score: i16, ply: u8) {
+    pub fn push(&self, zobrist: u64, best_move: u16, depth: i8, age: u8, bound: u8, mut score: i16, ply: i8) {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
         let mut desired_idx = usize::MAX;
-        let mut smallest_depth = u8::MAX;
+        let mut smallest_depth = i8::MAX;
         for (entry_idx, entry) in bucket.entries.iter().enumerate() {
             let data = entry.data.load(Ordering::Relaxed);
             let entry_data = HashEntry::load(data);
@@ -106,7 +106,7 @@ impl HashTable {
         bucket.entries[desired_idx].store(key, best_move, depth, age, bound, score);
     }
 
-    pub fn get(&self, zobrist: u64, ply: u8, search_age: u8) -> Option<HashResult> {
+    pub fn get(&self, zobrist: u64, ply: i8, search_age: u8) -> Option<HashResult> {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
@@ -133,7 +133,7 @@ impl HashTable {
 }
 
 impl HashEntry {
-    fn store(&self, key: u16, best_move: u16, depth: u8, age: u8, bound: u8, score: i16) {
+    fn store(&self, key: u16, best_move: u16, depth: i8, age: u8, bound: u8, score: i16) {
         let data = (key as u64)
             | ((best_move as u64) << 16)
             | (((score as u16) as u64) << 32)
@@ -156,7 +156,7 @@ impl HashEntry {
             key: data as u16,
             best_move: (data >> 16) as u16,
             score: (data >> 32) as i16,
-            depth: (data >> 48) as u8,
+            depth: (data >> 48) as i8,
             age: (data >> 58) as u8,
             bound: ((data >> 56) & 3) as u8,
         }

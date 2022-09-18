@@ -211,7 +211,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
 
     // fields to be set
     let mut token = Tokens::Ponder;
-    let mut max_depth: u8 = u8::MAX;
+    let mut max_depth: i8 = i8::MAX;
     let mut max_move_time: u64 = u64::MAX;
     let mut max_nodes: u64 = u64::MAX;
     let mut times: Times = Times::default();
@@ -237,7 +237,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             _ => {
                 match token {
                     Tokens::Ponder => return Err(UciError::Go),
-                    Tokens::Depth => max_depth = command.parse::<u8>()?,
+                    Tokens::Depth => max_depth = command.parse::<i8>()?,
                     Tokens::Nodes => max_nodes = command.parse::<u64>()?,
                     Tokens::MoveTime => max_move_time = command.parse::<u64>()?,
                     Tokens::WTime => times.wtime = std::cmp::max(command.parse::<i64>()?, 0) as u64,

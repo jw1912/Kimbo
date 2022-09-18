@@ -23,7 +23,7 @@ pub fn u16_to_uci(m: &u16) -> String {
 }
 
 /// returns info on the search
-pub fn uci_info(depth: u8, seldepth: u8, nodes: u64, time: u128, pv: Vec<u16>, eval: i16, hashfull: u64) {
+pub fn uci_info(depth: i8, seldepth: i8, nodes: u64, time: u128, pv: Vec<u16>, eval: i16, hashfull: u64) {
     let pv_str: String = pv.iter().map(u16_to_uci).collect();
     let mut score_type = "cp";
     let mut score = eval;

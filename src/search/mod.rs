@@ -6,7 +6,7 @@ mod qsearch;
 pub mod sorting;
 mod pruning;
 
-pub const MAX_PLY: u8 = u8::MAX;
+pub const MAX_PLY: i8 = i8::MAX;
 
 /// Checkmate stuff
 pub const MAX_SCORE: i16 = 30000;
@@ -32,6 +32,5 @@ fn is_promotion(m: u16) -> bool {
 }
 
 fn is_castling(m: u16) -> bool {
-    let flags = m & 0b1111_0000_0000_0000;
-    flags == 0b0011_0000_0000_0000 || flags == 0b0010_0000_0000_0000
+    m & 0b1110_0000_0000_0000 == 0b0010_0000_0000_0000
 }
