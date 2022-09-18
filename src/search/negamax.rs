@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{tt_prune, get_lmr_reduction},
+    pruning::tt_prune,
     sorting::{MoveScores, get_next_move}, is_capture, MAX_PLY};
 use crate::tables::search::Bound;
 use crate::position::{MoveType, Check, MoveList}; 
@@ -73,11 +73,7 @@ impl Engine {
         // to avoid returning immediately at the root with no best move
         if self.board.is_draw_by_50() || self.board.is_draw_by_repetition(2 + ROOT as u8) {
             if STATS { self.stats.draws_detected += 1 }
-            // we return 20 - ply to discourage immediately going for draws
-            // and to prevent, say, a -5cp evaluation causing the engine
-            // to try and force a draw (which definitely did not happen
-            // and cause this change in the first place)
-            return 20 - (ply as i16);
+            return 0;
         }
 
         // SAFE: mate distance pruning
@@ -173,9 +169,8 @@ impl Engine {
             // other moves are searched normally, with extensions if relevant
             let mut sub_pv = Vec::new();
             let score = if do_lmr {
-                let reduce = get_lmr_reduction(m_idx);
                 if STATS { self.stats.lmr_attempts += 1 }
-                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m, check);
+                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 2, ply + 1, &mut sub_pv, m, check);
                 if lmr_score > alpha {
                     -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check)
                 } else {

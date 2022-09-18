@@ -50,10 +50,3 @@ impl Engine {
         && !check
     }
 }
-
-/// SOURCE: https://www.chessprogramming.org/Senpai
-pub fn get_lmr_reduction(m_idx: usize) -> i8 {
-    if m_idx < 6 {1} else {m_idx as i8 / 3}
-}
-
-

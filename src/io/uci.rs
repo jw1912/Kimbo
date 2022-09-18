@@ -155,7 +155,7 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
             "position" => (),
             "startpos" => {
                 skip_fen = true;
-                state_lock.pos = Position::default();
+                state_lock.pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", state_lock.zvals.clone()).unwrap();
             }
             "fen" => {
                 if !skip_fen {
