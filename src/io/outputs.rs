@@ -1,6 +1,6 @@
-use kimbo_state::{Position, MoveList};
+use crate::position::{Position, MoveList};
 use crate::search::{MAX_SCORE, is_mate_score};
-use super::{FILES, fen::to_fen};
+use super::FILES;
 
 /// board idx to square
 pub fn idx_to_sq(idx: u16) -> String {
@@ -78,7 +78,7 @@ pub fn display_movelist(moves: &MoveList) {
 }
 
 pub fn report_stats(pos: &Position) {
-    println!("fen: {}", to_fen(pos));
+    println!("fen: {}", pos.to_fen());
     println!("halfmove counter: {}", pos.halfmove_clock);
     println!("fullmove counter: {}", pos.fullmove_counter);
 }

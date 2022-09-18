@@ -8,10 +8,9 @@
 /// 6. Castling
 /// 7. Quiets
 
-use kimbo_state::MoveList;
-use crate::engine::Engine;
+use crate::position::MoveList;
 use crate::tables::killer::KILLERS_PER_PLY;
-use super::{is_capture, is_castling, is_promotion};
+use super::{Engine, is_capture, is_castling, is_promotion};
 use std::mem;
 use std::ptr;
 

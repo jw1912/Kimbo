@@ -4,7 +4,7 @@
 // initialise_zobrist function is my own
 
 use fastrand;
-use kimbo_state::{ls1b_scan, Position};
+use super::{ls1b_scan, Position};
 
 pub struct ZobristVals {
     pieces: [[[u64; 64]; 6]; 2],
@@ -66,14 +66,14 @@ impl Default for ZobristVals {
     }
 }
 
-pub fn initialise_zobrist(pos: &Position, zvals: &ZobristVals) -> u64 {
+pub fn initialise_zobrist(pos: &Position) -> u64 {
     let mut zobrist = 0;
     for (i, side) in pos.pieces.iter().enumerate() {
         for (j, &pc) in side.iter().enumerate() {
             let mut piece = pc;
             while piece > 0 {
                 let idx = ls1b_scan(piece) as usize;
-                zobrist ^= zvals.piece_hash(idx, i, j);
+                zobrist ^= pos.zobrist_vals.piece_hash(idx, i, j);
                 piece &= piece - 1
             }
         }
@@ -81,26 +81,26 @@ pub fn initialise_zobrist(pos: &Position, zvals: &ZobristVals) -> u64 {
     let mut castle_rights = pos.castle_rights;
     while castle_rights > 0 {
         let ls1b = castle_rights & castle_rights.wrapping_neg();
-        zobrist ^= zvals.castle_hash(0b1111, ls1b);
+        zobrist ^= pos.zobrist_vals.castle_hash(0b1111, ls1b);
         castle_rights &= castle_rights - 1
     }
     if pos.en_passant_sq > 0 {
-        zobrist ^= zvals.en_passant_hash((pos.en_passant_sq & 7) as usize);
+        zobrist ^= pos.zobrist_vals.en_passant_hash((pos.en_passant_sq & 7) as usize);
     }
     if pos.side_to_move == 0 {
-        zobrist ^= zvals.side_hash();
+        zobrist ^= pos.zobrist_vals.side_hash();
     }
     zobrist
 }
 
-pub fn initialise_pawnhash(pos: &Position, zvals: &ZobristVals) -> u64 {
+pub fn initialise_pawnhash(pos: &Position) -> u64 {
     let mut hash = 0;
     for side in 0..2 {
         for pc in [0, 5] {
             let mut piece = pos.pieces[side][pc];
             while piece > 0 {
                 let idx = ls1b_scan(piece) as usize;
-                hash ^= zvals.piece_hash(idx, side, pc);
+                hash ^= pos.zobrist_vals.piece_hash(idx, side, pc);
                 piece &= piece - 1
             }
         }

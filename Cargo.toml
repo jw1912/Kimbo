@@ -1,12 +1,11 @@
 [package]
 name = "kimbo"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Jamie Whiting"]
 edition = "2021"
 description = "Kimbo, a chess engine written in rust."
 
 [dependencies]
-kimbo_state = { git = "https://github.com/JacquesRW/kimbo_state" }
 fastrand = "1.8.0"
 
 [profile.release.build-override]

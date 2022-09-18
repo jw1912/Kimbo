@@ -1,7 +1,7 @@
-//! Kimbo, a work-in-progress chess engine.
+//! Kimbo, a chess engine writte in Rust.
 
 /// Evaluation of positions.
-pub mod engine;
+pub mod position;
 /// Hash tables
 pub mod tables;
 /// Inputs and Outputs

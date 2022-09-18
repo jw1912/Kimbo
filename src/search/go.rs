@@ -1,5 +1,4 @@
 use super::*;
-use crate::engine::Engine;
 use crate::io::SearchStats;
 use crate::io::outputs::uci_info;
 use std::sync::atomic::Ordering;
@@ -17,7 +16,7 @@ impl Engine {
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
-            let check = self.is_in_check();
+            let check = self.board.is_in_check();
             let score = self.negamax::<true, STATS>(-MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv, 0, check);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {

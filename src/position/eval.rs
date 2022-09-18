@@ -1,4 +1,5 @@
-use kimbo_state::{ls1b_scan, Piece};
+use crate::tables::pawn::PawnHashTable;
+use super::{ls1b_scan, Piece};
 use super::consts::*;
 use super::*;
 
@@ -61,7 +62,7 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
     taper(phase, eval_mg, eval_eg)
 }
 
-impl Engine {
+impl Position {
     /// eval taking only material and psts into account
     pub fn lazy_eval(&self) -> i16 {
         let mut phase = self.phase as i32;
@@ -74,11 +75,11 @@ impl Engine {
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
 
         // relative to side due to negamax framework
-        SIDE_FACTOR[self.board.side_to_move] * (mat + pst)
+        SIDE_FACTOR[self.side_to_move] * (mat + pst)
     }
 
     /// static evaluation of position
-    pub fn static_eval<const STATS: bool>(&mut self) -> i16 {
+    pub fn static_eval<const STATS: bool>(&mut self, ptable: &PawnHashTable) -> i16 {
         // phase value for tapered eval
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
@@ -91,14 +92,12 @@ impl Engine {
 
         // probing pawn hash table
         let pwn: i16;
-        if let Some(val) = self.ptable.get(self.pawnhash) {
-            if STATS { self.stats.pwn_hits += 1 }
+        if let Some(val) = ptable.get(self.pawnhash) {
             // if result found, use it
             pwn = val.score;
         } else {
-            if STATS { self.stats.pwn_misses += 1 }
             pwn = self.side_pawn_score(0, phase) - self.side_pawn_score(1, phase);
-            self.ptable.push(self.pawnhash, pwn);
+            ptable.push(self.pawnhash, pwn);
         }
 
         // endgame "mop-up" eval for king of winning side
@@ -108,7 +107,7 @@ impl Engine {
         }
 
         // relative to side due to negamax framework
-        SIDE_FACTOR[self.board.side_to_move] * eval
+        SIDE_FACTOR[self.side_to_move] * eval
     }
 
     fn side_pawn_score(&self, side: usize, phase: i32) -> i16 {
@@ -116,7 +115,7 @@ impl Engine {
         let mut isolated = 0;
         let mut passed = 0;
         let mut chained = 0;
-        let mut pawns = self.board.pieces[side][0];
+        let mut pawns = self.pieces[side][0];
         // doubled and isolated pawns
         for file in 0..8 {
             let count = (FILES[file] & pawns).count_ones();
@@ -127,11 +126,11 @@ impl Engine {
             }
         }
         // chained and passed pawns
-        let enemies = self.board.pieces[side ^ 1][0];
+        let enemies = self.pieces[side ^ 1][0];
         while pawns > 0 {
             let ls1b = pawns & pawns.wrapping_neg();
             let pawn = ls1b_scan(ls1b) as usize;
-            chained += (CHAINS[pawn] & self.board.pieces[side][0]).count_ones() as i16;
+            chained += (CHAINS[pawn] & self.pieces[side][0]).count_ones() as i16;
             let enemies_ahead = (IN_FRONT[side][pawn] & enemies).count_ones();
             passed += (enemies_ahead == 0) as i16;
             pawns &= pawns - 1
@@ -144,8 +143,8 @@ impl Engine {
 
     fn eg_king_score(&self, winning_side: usize, phase: i32) -> i16 {
         let losing_side = winning_side ^ 1;
-        let losing_king = ls1b_scan(self.board.pieces[losing_side][Piece::KING]) as i16;
-        let winning_king = ls1b_scan(self.board.pieces[winning_side][Piece::KING]) as i16;
+        let losing_king = ls1b_scan(self.pieces[losing_side][Piece::KING]) as i16;
+        let winning_king = ls1b_scan(self.pieces[winning_side][Piece::KING]) as i16;
         let cmd = CMD[losing_king as usize];
         let md = ((losing_king >> 3) - (winning_king >> 3)).abs() + ((losing_king & 7) - (winning_king & 7)).abs();
         let mut score = 5 * cmd + 2 * ( 14 - md );
@@ -157,7 +156,7 @@ impl Engine {
         let l = self.state_stack.len();
         if l < 6 || self.null_counter > 0 { return false }
         let to = l - 1;
-        let mut from = l.wrapping_sub(self.board.halfmove_clock as usize);
+        let mut from = l.wrapping_sub(self.halfmove_clock as usize);
         if from > 1024 { from = 0 }
         let mut repetitions_count = 1;
         for i in (from..to).rev().step_by(2) {
@@ -170,11 +169,11 @@ impl Engine {
     }
     
     pub fn is_draw_by_50(&self) -> bool {
-        self.null_counter == 0 && self.board.halfmove_clock >= 100
+        self.null_counter == 0 && self.halfmove_clock >= 100
     }
 
     pub fn is_in_check(&self) -> bool {
-        let king_idx = ls1b_scan(self.board.pieces[self.board.side_to_move][Piece::KING]) as usize;
-        self.board.is_square_attacked(king_idx, self.board.side_to_move, self.board.occupied)
+        let king_idx = ls1b_scan(self.pieces[self.side_to_move][Piece::KING]) as usize;
+        self.is_square_attacked(king_idx, self.side_to_move, self.occupied)
     }
 }

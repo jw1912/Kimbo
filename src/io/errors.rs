@@ -1,5 +1,5 @@
 use std::{fmt, num::ParseIntError};
-use kimbo_state::fen::FenError;
+use super::fen::FenError;
 
 #[derive(Debug)]
 pub enum UciError {

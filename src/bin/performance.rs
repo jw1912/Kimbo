@@ -1,8 +1,8 @@
-use kimbo::engine::{Engine, GameState};
-use kimbo::engine::zobrist::{ZobristVals, initialise_zobrist};
+use kimbo::search::Engine;
+use kimbo::position::zobrist::ZobristVals;
 use kimbo::tables::search::HashTable;
 use kimbo::tables::pawn::PawnHashTable;
-use kimbo_state::Position;
+use kimbo::position::Position;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
@@ -36,7 +36,7 @@ fn main() {
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
     for (i, position ) in _POSITIONS.iter().enumerate() {
-        let pos =  Position::from_fen(*position).unwrap();
+        let pos =  Position::from_fen(*position, zvals.clone()).unwrap();
         let mut search = Engine::new(
             pos,
             Arc::new(AtomicBool::new(false)),
@@ -45,8 +45,6 @@ fn main() {
             u64::MAX,
             tt.clone(),
             pt.clone(),
-            zvals.clone(),
-            vec![GameState::new(initialise_zobrist(&pos, &zvals))],
             i as u8,
         );
         println!("===Search Report===");

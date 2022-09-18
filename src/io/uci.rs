@@ -1,16 +1,16 @@
 // Tokens enum inspired by Rustic
 // SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
 
-use kimbo_state::Position;
-
+use crate::position::Position;
+use crate::search::Engine;
 use super::inputs::uci_to_u16;
-use crate::engine::{Engine, GameState};
-use crate::engine::zobrist::{ZobristVals, initialise_zobrist};
+use crate::position::GameState;
+use crate::position::zobrist::ZobristVals;
 use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
 use crate::io::outputs::{display_board, u16_to_uci, report_stats};
 use crate::search::timings::Times;
-use crate::engine::perft::perft;
+use crate::position::perft::perft;
 use crate::tables::search::HashTable;
 use std::io;
 use std::process;
@@ -175,14 +175,10 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
     }
 
     if !fen.is_empty() && !skip_fen {
-        state_lock.pos = Position::from_fen(&fen)?;
+        state_lock.pos = Position::from_fen(&fen, state_lock.zvals.clone())?;
     }
     state_lock.state_stack = Vec::with_capacity(25);
     for m in moves {
-        let zobrist = initialise_zobrist(&state_lock.pos, &state_lock.zvals);
-        state_lock.state_stack.push(
-            GameState::new(zobrist)
-        );
         let mo = uci_to_u16(&state_lock.pos, &m)?;
         state_lock.pos.make_move(mo);
     }
@@ -261,11 +257,11 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let state_2 = state.clone();
         let search_thread = thread::spawn(move || {
             let state_lock = state_2.lock().unwrap();
-            let mut position = state_lock.pos;
+            let mut position = state_lock.pos.clone();
             drop(state_lock);
 
             let now = Instant::now();
-            let count = perft::<true>(&mut position, perft_depth);
+            let count = perft::<true, false>(&mut position, perft_depth);
             let elapsed = now.elapsed().as_micros();
             println!("Leaf count: {count} ({:.2} ML/sec)", count as f64 / elapsed as f64);
         });
@@ -277,14 +273,12 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     let state_2 = state.clone();
     let search_thread = thread::spawn(move || {
         let state_lock = state_2.lock().unwrap();
-        let position = state_lock.pos;
+        let position = state_lock.pos.clone();
         let abort_signal = state_lock.stop.clone();
         let tt = state_lock.ttable.clone();
         let pt = state_lock.ptable.clone();
-        let zvals = state_lock.zvals.clone();
         let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
-        let state_stack = state_lock.state_stack.clone();
         drop(state_lock);
 
         let move_time = max_move_time - move_overhead * (max_move_time > move_overhead) as u64; 
@@ -297,8 +291,6 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             max_nodes,
             tt,
             pt,
-            zvals,
-            state_stack,
             age,
         );
         let best_move = search.go::<true, false>();

@@ -1,9 +1,9 @@
-use kimbo::engine::Engine;
+use kimbo::search::Engine;
 use kimbo::tables::search::HashTable;
 use kimbo::tables::pawn::PawnHashTable;
-use kimbo::engine::zobrist::ZobristVals;
+use kimbo::position::zobrist::ZobristVals;
 use kimbo::io::outputs::display_board;
-use kimbo_state::Position;
+use kimbo::position::Position;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
@@ -37,7 +37,7 @@ fn _search_all() {
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
     for (i, pos ) in _POSITIONS.iter().enumerate() {
-        let position =  Position::from_fen(*pos).unwrap();
+        let position =  Position::from_fen(*pos, zvals.clone()).unwrap();
         let mut search= Engine::new(
             position,
             Arc::new(AtomicBool::new(false)),
@@ -46,11 +46,9 @@ fn _search_all() {
             u64::MAX,
             tt.clone(),
             pt.clone(),
-            zvals.clone(),
-            Vec::new(),
             i as u8,
         );
-        assert_eq!(String::from(*pos), search.to_fen());
+        assert_eq!(String::from(*pos), search.board.to_fen());
         display_board::<true>(&search.board);
         println!("fen: {}", pos);
         search.go::<true, true>();
@@ -66,7 +64,7 @@ fn _search_one(pos: usize) {
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
-    let position = Position::from_fen(_POSITIONS[pos]).unwrap();
+    let position = Position::from_fen(_POSITIONS[pos], zvals).unwrap();
     let mut search = Engine::new(
         position,
         Arc::new(AtomicBool::new(false)),
@@ -75,8 +73,6 @@ fn _search_one(pos: usize) {
         u64::MAX,
         tt,
         pt,
-        zvals,
-        Vec::new(),
         0,
     );
     display_board::<true>(&search.board);

@@ -1,12 +1,15 @@
 use super::{
+    Engine,
     MAX_SCORE,
     update_pv,
     pruning::{tt_prune, get_lmr_reduction},
     sorting::{MoveScores, get_next_move}, is_capture, MAX_PLY};
-use crate::{tables::search::Bound, engine::Engine};
-use kimbo_state::{MoveType, Check, MoveList};
+use crate::tables::search::Bound;
+use crate::position::{MoveType, Check, MoveList}; 
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
+
+//use crate::position::zobrist::{initialise_zobrist, initialise_pawnhash}, eval::{calc_pst, calc_material}};
 
 
 /// 
@@ -49,6 +52,14 @@ impl Engine {
             return 0;
         }
 
+        // diagnostics to use when changing things
+        //assert_eq!(self.board.zobrist, initialise_zobrist(&self.board));
+        //assert_eq!(self.board.pawnhash, initialise_pawnhash(&self.board));
+        //assert_eq!(self.board.pst_mg, calc_pst::<true>(&self.board));
+        //assert_eq!(self.board.pst_eg, calc_pst::<false>(&self.board));
+        //assert_eq!(self.board.mat_mg, calc_material::<true>(&self.board));
+        //assert_eq!(self.board.mat_eg, calc_material::<false>(&self.board));
+
         // UCI: count node
         self.stats.node_count += 1;
 
@@ -60,7 +71,7 @@ impl Engine {
         // the if ROOT is needed in case engine is given a position
         // where a draw by repetition is already about to happen
         // to avoid returning immediately at the root with no best move
-        if self.is_draw_by_50() || self.is_draw_by_repetition(2 + ROOT as u8) {
+        if self.board.is_draw_by_50() || self.board.is_draw_by_repetition(2 + ROOT as u8) {
             if STATS { self.stats.draws_detected += 1 }
             // we return 20 - ply to discourage immediately going for draws
             // and to prevent, say, a -5cp evaluation causing the engine
@@ -86,7 +97,7 @@ impl Engine {
         }
 
         // hash table stuff
-        let zobrist = self.zobrist;
+        let zobrist = self.board.zobrist;
         let mut hash_move = 0;
 
         // dictates if hash table will be written to at end of this node
@@ -148,13 +159,13 @@ impl Engine {
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
 
             // making move
-            self.make_move(m);
+            self.board.make_move(m);
 
             // UNSAFE: late move reductions
             // SOURCE: https://www.chessprogramming.org/Late_Move_Reductions
             // JUSTIFICATION: reduction is 1 ply, only on non-killer or
             // counter quiet moves, and searches with lmr are done as pvs
-            let check = self.is_in_check();
+            let check = self.board.is_in_check();
             let do_lmr = self.can_do_lmr::<ROOT>(ext, depth, m_idx, m_score, check);
 
             // scoring move and getting the pv for it
@@ -176,7 +187,7 @@ impl Engine {
             };
 
             // unmaking move
-            self.unmake_move();
+            self.board.unmake_move(m);
 
             // ESSENTIAL: alpha improvements
             if score > best_score {

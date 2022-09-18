@@ -1,4 +1,5 @@
-use crate::{tables::search::{Bound, HashResult}, engine::Engine};
+use crate::tables::search::{Bound, HashResult};
+use super::Engine;
 
 const LMR_MIN_IDX: usize = 2;
 const LMR_MAX_SCORE: i16 = 300;
