@@ -103,7 +103,6 @@ impl Engine {
             if !ROOT {
                 if let Some(score) = tt_prune(&res, depth, alpha, beta) {
                     if STATS { self.stats.tt_prunes += 1 }
-                    pv.push(hash_move);
                     return score;
                 }
             }
