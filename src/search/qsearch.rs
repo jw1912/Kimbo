@@ -15,7 +15,7 @@ impl Engine {
         if STATS { self.stats.qnode_count += 1; }
         
         // static eval
-        let stand_pat = self.board.static_eval::<STATS>(&self.ptable);
+        let stand_pat = self.board.static_eval::<STATS>();
 
         // beta pruning
         if stand_pat >= beta {
