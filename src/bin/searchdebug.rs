@@ -81,5 +81,5 @@ fn _search_one(pos: usize) {
 }
 
 fn main() {
-    _search_one(2)
+    _search_all()
 }

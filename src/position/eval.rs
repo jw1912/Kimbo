@@ -51,7 +51,7 @@ pub fn calc_pst<const MG: bool>(pos: &Position) -> [i16; 2] {
 const SIDE_FACTOR: [i16; 3] = [1, -1, 0];
 
 #[inline(always)]
-const fn taper(phase: i32, mg: i16, eg: i16) -> i16 {
+pub const fn taper(phase: i32, mg: i16, eg: i16) -> i16 {
     ((phase * mg as i32 + (TOTALPHASE - phase) * eg as i32) / TOTALPHASE) as i16
 }
 
@@ -60,6 +60,12 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
     let eval_mg = mg[0] - mg[1];
     let eval_eg = eg[0] - eg[1];
     taper(phase, eval_mg, eval_eg)
+}
+#[inline(always)]
+fn king_safety(phase: i32, king_danger: u32) -> i16 {
+    let mg = king_danger as i16 * MG_KING_DANGER;
+    let eg = king_danger as i16 * EG_KING_DANGER;
+    taper(phase, mg, eg)
 }
 
 impl Position {
@@ -90,6 +96,14 @@ impl Position {
         let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
 
+        // mobility
+        let mut white_king_danger: u32 = 0;
+        let mut black_king_danger: u32 = 0;
+        let mob = self.side_mobility::<{ Side::WHITE }>(phase, &mut black_king_danger) - self.side_mobility::<{ Side::BLACK }>(phase, &mut white_king_danger);
+
+        // king safety
+        let saf = king_safety(phase, white_king_danger) - king_safety(phase, black_king_danger);
+
         // probing pawn hash table
         let pwn: i16;
         if let Some(val) = ptable.get(self.pawnhash) {
@@ -101,7 +115,7 @@ impl Position {
         }
 
         // endgame "mop-up" eval for king of winning side
-        let mut eval = mat + pst + pwn;
+        let mut eval = mat + pst + pwn + mob + saf;
         if eval != 0 {
             eval += self.eg_king_score((eval < 0) as usize, phase)
         }
@@ -120,24 +134,31 @@ impl Position {
         for file in 0..8 {
             let count = (FILES[file] & pawns).count_ones();
             doubled += (count > 1) as i16 * count as i16;
-            if count > 0 {
-                let rail_count = (RAILS[file] & pawns).count_ones();
-                isolated += (rail_count == 0) as i16;
-            }
+            isolated += (count > 0 && RAILS[file] & pawns == 0) as i16;
         }
         // chained and passed pawns
         let enemies = self.pieces[side ^ 1][0];
         while pawns > 0 {
-            let ls1b = pawns & pawns.wrapping_neg();
-            let pawn = ls1b_scan(ls1b) as usize;
-            chained += (CHAINS[pawn] & self.pieces[side][0]).count_ones() as i16;
-            let enemies_ahead = (IN_FRONT[side][pawn] & enemies).count_ones();
-            passed += (enemies_ahead == 0) as i16;
+            let pawn = ls1b_scan(pawns) as usize;
+            chained += (CHAINS[pawn] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
+            passed += (IN_FRONT[side][pawn] & enemies == 0) as i16;
             pawns &= pawns - 1
         }
+        // a *very* primitive king safety eval
+        let king_idx = ls1b_scan(self.pieces[side][Piece::KING]);
+        let king_file = (king_idx & 7) as i8;
+        let protecting_pawns = (KING_ATTACKS[king_idx as usize] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
+        let mut open_files = 0;
+        for file in std::cmp::max(0, king_file - 1)..=std::cmp::min(7, king_file + 1) {
+            open_files += (FILES[file as usize] & self.pieces[side][Piece::PAWN] == 0) as i16
+        }
         // score
-        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG + passed * PASSED_MG + chained * CHAINED_MG;
-        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG + chained * CHAINED_EG;
+        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG 
+                    + passed * PASSED_MG + chained * CHAINED_MG 
+                    + protecting_pawns * PAWN_SHIELD_MG + open_files * PAWN_OPEN_FILE_MG;
+        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG 
+                    + passed * PASSED_EG + chained * CHAINED_EG
+                    + protecting_pawns * PAWN_SHIELD_EG + open_files * PAWN_OPEN_FILE_EG;
         taper(phase, mg, eg)
     }
 

@@ -5,6 +5,7 @@ pub mod movegen;
 pub mod eval;
 pub mod zobrist;
 pub mod perft;
+pub mod mobility;
 
 use self::zobrist::ZobristVals;
 use std::sync::Arc;
