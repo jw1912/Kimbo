@@ -179,8 +179,49 @@ impl Position {
         self.null_counter == 0 && self.halfmove_clock >= 100
     }
 
+    /// is the game drawn by insufficient material?
+    /// 
+    /// SOURCE: https://www.chessprogramming.org/Draw_Evaluation
+    /// 
+    /// can claim draw by FIDE rules:
+    ///  - KvK
+    ///  - KvKN or KvKB
+    ///  - KBvKB and both bishops same colour
+    pub fn is_draw_by_material(&self) -> bool {
+        let pawns = self.pieces[0][Piece::PAWN] | self.pieces[1][Piece::PAWN];
+        // pawns left? not draw. more than one minor piece on either side? not draw.
+        if pawns == 0 && self.mat_eg[0] <= EG_PC_VALS[Piece::BISHOP] && self.mat_eg[1] <= EG_PC_VALS[Piece::BISHOP] {
+            let total_mat = self.mat_eg[0] + self.mat_eg[1];
+            // two minor pieces left
+            if total_mat >= 2 * EG_PC_VALS[Piece::KNIGHT] {
+                // its two bishops
+                if total_mat == 2 * EG_PC_VALS[Piece::BISHOP] {
+                    let bishops = self.pieces[0][Piece::BISHOP] | self.pieces[1][Piece::BISHOP];
+                    // are bishops on opposite or same colour squares
+                    if bishops & SQ1 == bishops || bishops & SQ2 == bishops {
+                        return true
+                    }
+                }
+                return false
+            }
+            // 1 or zero minor pieces is a draw
+            return true
+        }
+        false
+    }
+
     pub fn is_in_check(&self) -> bool {
         let king_idx = ls1b_scan(self.pieces[self.side_to_move][Piece::KING]) as usize;
         self.is_square_attacked(king_idx, self.side_to_move, self.occupied)
     }
+}
+
+const SQ1: u64 = 0x55AA55AA55AA55AA;
+const SQ2: u64 = 0xAA55AA55AA55AA55;
+
+#[test]
+fn t() {
+    bitboard_out(&SQ1);
+    println!(" ");
+    bitboard_out(&SQ2);
 }

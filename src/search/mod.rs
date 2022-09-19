@@ -128,11 +128,6 @@ pub struct Stats {
     pub draws_detected: u64,
     pub lmr_attempts: u64,
     pub lmr_successes: u64,
-    pub null_attempts: u64,
-    pub null_successes: u64,
-    pub null_possibility: u64,
-    pub rfp_attempts: u64,
-    pub rfp_successes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -150,11 +145,6 @@ impl Default for Stats {
             draws_detected: 0,
             lmr_attempts: 0,
             lmr_successes: 0,
-            null_attempts: 0,
-            null_successes: 0,
-            null_possibility: 0,
-            rfp_attempts: 0,
-            rfp_successes: 0,
         } 
     }
 }
@@ -165,6 +155,7 @@ impl Stats {
     }
     pub fn report(&self) {
         let valid = self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes);
+        let lmr = self.lmr_successes * 100 / self.lmr_attempts;
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
         println!("hash hits: {} ({}% valid moves)", self.tt_hits, valid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
@@ -172,8 +163,6 @@ impl Stats {
         println!("killer move hits : {}", self.killermove_hits);
         println!("history move hits : {}", self.history_hits);
         println!("draws detected: {}", self.draws_detected);
-        println!("lmr attempts: {}, successes: {}", self.lmr_attempts, self.lmr_successes);
-        println!("nmp posibilities: {}, attempts: {}, successes: {}", self.null_possibility, self.null_attempts, self.null_successes);
-        println!("lmr attempts: {}, successes: {}", self.rfp_attempts, self.rfp_successes);
+        println!("lmr attempts: {}, successes: {} ({}%)", self.lmr_attempts, self.lmr_successes, lmr);
     }
 }

@@ -22,7 +22,9 @@ impl Engine {
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;
             }
-            best_move = pv[0];
+            if !pv.is_empty() {
+                best_move = pv[0];
+            }
             let time = self.stats.start_time.elapsed().as_millis();
             if STATS { 
                 stats = SearchStats::new(d + 1, time as u64, self.stats.node_count, pv.clone())

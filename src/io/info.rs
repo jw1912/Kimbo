@@ -2,28 +2,29 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 pub const FEATURES: &str = "
-\nMove Generation:\n
- - separate repo\n
- - hyperbola quintessence bitboard approach\n
- - fully-legal\n
+Move Generation:
+ - fully-legal
+ - bitboard based
+ - classical/hyperbola quintessence sliding attacks
  - move list on stack\n
-Search:\n
- - negamax search\n
- - quiescence search\n
- - iterative deepening\n
- - check extensions\n
+Search:
+ - negamax search
+ - quiescence search
+ - iterative deepening
+ - check extensions
+ - late move reductions (searched by PVS)
  - hash score and mate pruning\n
-Move Ordering:\n
- - hash move\n
- - captures sorted by mvv-lva\n
- - promotions\n
- - killer moves\n
- - counter moves\n
- - castling\n
+Move Ordering:
+ - hash move
+ - captures sorted by mvv-lva
+ - promotions
+ - killer moves
+ - counter moves
+ - castling
  - quiets\n
-Evaluation:\n
- - tapered midgame to endgame\n
- - material\n
- - piece-square tables\n
+Evaluation:
+ - tapered midgame to endgame
+ - material
+ - piece-square tables
  - pawn structure (w/ basic king safety)\n
 ";
