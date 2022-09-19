@@ -3,7 +3,10 @@ use super::{
     MAX_SCORE,
     update_pv,
     pruning::tt_prune,
-    sorting::{MoveScores, get_next_move}, is_capture, MAX_PLY};
+    sorting::{MoveScores, get_next_move}, 
+    is_capture, 
+    MAX_PLY
+};
 use crate::tables::search::Bound;
 use crate::position::{MoveType, Check, MoveList}; 
 use std::sync::atomic::Ordering;
