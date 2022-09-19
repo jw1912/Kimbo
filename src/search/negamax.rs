@@ -153,8 +153,8 @@ impl Engine {
             let mut sub_pv = Vec::new();
             let score = if do_lmr {
                 if STATS { self.stats.lmr_attempts += 1 }
-                let reduce = if m_idx < 6 {1} else {m_idx / 3} as i8;
-                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m, check);
+                //let reduce = if m_idx < 6 {1} else {m_idx / 3} as i8;
+                let lmr_score = -self.negamax::<false, STATS>(-alpha-1, -alpha, depth - 2, ply + 1, &mut sub_pv, m, check);
                 if lmr_score > alpha {
                     -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check)
                 } else {
