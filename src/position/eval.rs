@@ -61,12 +61,6 @@ fn eval_factor(phase: i32, mg: [i16; 2], eg: [i16; 2]) -> i16 {
     let eval_eg = eg[0] - eg[1];
     taper(phase, eval_mg, eval_eg)
 }
-#[inline(always)]
-fn king_safety(phase: i32, king_danger: u32) -> i16 {
-    let mg = king_danger as i16 * MG_KING_DANGER;
-    let eg = king_danger as i16 * EG_KING_DANGER;
-    taper(phase, mg, eg)
-}
 
 impl Position {
     /// eval taking only material and psts into account
@@ -96,14 +90,6 @@ impl Position {
         let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
 
-        // mobility
-        let mut white_king_danger: u32 = 0;
-        let mut black_king_danger: u32 = 0;
-        let mob = self.side_mobility::<{ Side::WHITE }>(phase, &mut black_king_danger) - self.side_mobility::<{ Side::BLACK }>(phase, &mut white_king_danger);
-
-        // king safety
-        let saf = king_safety(phase, white_king_danger) - king_safety(phase, black_king_danger);
-
         // probing pawn hash table
         let pwn: i16;
         if let Some(val) = ptable.get(self.pawnhash) {
@@ -115,7 +101,7 @@ impl Position {
         }
 
         // endgame "mop-up" eval for king of winning side
-        let mut eval = mat + pst + pwn + mob + saf;
+        let mut eval = mat + pst + pwn;
         if eval != 0 {
             eval += self.eg_king_score((eval < 0) as usize, phase)
         }

@@ -1,4 +1,4 @@
-use super::{CastleRights, bitboard_out};
+use super::CastleRights;
 
 pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 {
     let indx = match side {
@@ -29,14 +29,6 @@ pub const FILES: [u64; 8] = [72340172838076673, 144680345676153346, 289360691352
 pub const RAILS: [u64; 8] = [FILES[1], FILES[0] | FILES[2], FILES[1] | FILES[3], FILES[2] | FILES[4], FILES[3] | FILES[5], FILES[4] | FILES[6], FILES[5] | FILES[7], FILES[6]];
 pub const IN_FRONT: [[u64;64];2] = init_in_front();
 pub const CHAINS: [u64; 64] = init_chains();
-
-#[test]
-fn t() {
-    for file in RAILS {
-        bitboard_out(&file);
-        println!(" ")
-    }
-}
 
 const fn init_in_front() -> [[u64;64];2] {
     let mut in_front = [[0;64];2];
