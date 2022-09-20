@@ -79,7 +79,7 @@ impl Engine {
             // is deeper than the depth of the hash entry
             write_to_hash = depth > res.depth;
 
-            // hash move
+            // hash move for move ordering
             hash_move = res.best_move;
 
             // hash score pruning (no pruning on root)
@@ -123,13 +123,12 @@ impl Engine {
             let check = self.board.is_in_check();
             let do_lmr = self.can_do_lmr::<ROOT>(king_in_check, depth, m_idx, m_score, check);
 
-            // scoring move and getting the pv for it
+            // scoring move
             // reduced moves are done witihn a pvs framework
-            // other moves are searched normally, with extensions if relevant
+            // source: https://www.chessprogramming.org/Principal_Variation_Search
             let mut sub_pv = Vec::new();
             let score = if do_lmr {
                 if STATS { self.stats.lmr_attempts += 1 }
-                //let reduce = if m_idx < 6 {1} else {m_idx / 3} as i8;
                 let reduce = 1;
                 let lmr_score = -self.negamax::<false, STATS>(-alpha - 1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m, check);
                 if lmr_score > alpha {

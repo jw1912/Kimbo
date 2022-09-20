@@ -35,10 +35,10 @@ impl Engine {
     /// source: https://www.chessprogramming.org/Late_Move_Reductions
     /// 
     /// cannot reduce:
-    ///  - extended moves (if in check before making the move),
+    ///  - when friendly king is in check before the move,
     ///  - the first [LMR_MIN_IDX] moves,
     ///  - moves sorted with score higher than [LMR_MAX_SCORE],
-    ///  - depth >= [LMR_MIN_DEPTH],
+    ///  - depth <= [LMR_MIN_DEPTH],
     ///  - moves which cause check
     pub fn can_do_lmr<const ROOT: bool>(&self, king_in_check: bool, depth: i8, m_idx: usize, m_score: i16, check: bool) -> bool {
         !ROOT
