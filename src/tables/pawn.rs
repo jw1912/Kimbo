@@ -1,10 +1,7 @@
-#![allow(unused)]
-/// this is here for when i re-add pawn structure evaluation
-
 use std::sync::atomic::{AtomicU32, Ordering};
 
 #[derive(Default)]
-struct PawnHashEntry {
+pub struct PawnHashEntry {
     data: AtomicU32,
 }
 impl Clone for PawnHashEntry {
@@ -16,13 +13,13 @@ impl Clone for PawnHashEntry {
 }
 const ENTRY_SIZE: usize = std::mem::size_of::<PawnHashEntry>();
 
-struct PawnHashTable {
+pub struct PawnHashTable {
     table: Vec<PawnHashEntry>,
     num_entries: usize,
 }
 
 #[derive(Default)]
-struct PawnHashResult {
+pub struct PawnHashResult {
     pub key: u16,
     pub score: i16,
 }

@@ -1,6 +1,7 @@
 use kimbo::search::Engine;
 use kimbo::position::zobrist::ZobristVals;
 use kimbo::tables::search::HashTable;
+use kimbo::tables::pawn::PawnHashTable;
 use kimbo::position::Position;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -31,6 +32,7 @@ fn main() {
     let max_time = 1000;
     let max_depth = i8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
+    let pt = Arc::new(PawnHashTable::new(4 * 1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
     for (i, position ) in _POSITIONS.iter().enumerate() {
@@ -42,6 +44,7 @@ fn main() {
             max_depth,
             u64::MAX,
             tt.clone(),
+            pt.clone(),
             i as u8,
         );
         println!("===Search Report===");

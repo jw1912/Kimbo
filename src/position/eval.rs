@@ -1,3 +1,4 @@
+use crate::tables::pawn::PawnHashTable;
 use super::{ls1b_scan, Piece};
 use super::consts::*;
 use super::*;
@@ -78,7 +79,7 @@ impl Position {
     }
 
     /// static evaluation of position
-    pub fn static_eval<const STATS: bool>(&mut self) -> i16 {
+    pub fn static_eval<const STATS: bool>(&mut self, ptable: &PawnHashTable) -> i16 {
         // phase value for tapered eval
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {
@@ -89,14 +90,62 @@ impl Position {
         let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
 
+        // probing pawn hash table
+        let pwn: i16;
+        if let Some(val) = ptable.get(self.pawnhash) {
+            // if result found, use it
+            pwn = val.score;
+        } else {
+            pwn = self.side_pawn_score(0, phase) - self.side_pawn_score(1, phase);
+            ptable.push(self.pawnhash, pwn);
+        }
+
         // endgame "mop-up" eval for king of winning side
-        let mut eval = mat + pst; // + pwn;
+        let mut eval = mat + pst + pwn;
         if eval != 0 {
             eval += self.eg_king_score((eval < 0) as usize, phase)
         }
 
         // relative to side due to negamax framework
         SIDE_FACTOR[self.side_to_move] * eval
+    }
+
+    fn side_pawn_score(&self, side: usize, phase: i32) -> i16 {
+        let mut doubled = 0;
+        let mut isolated = 0;
+        let mut passed = 0;
+        let mut chained = 0;
+        let mut pawns = self.pieces[side][0];
+        // doubled and isolated pawns
+        for file in 0..8 {
+            let count = (FILES[file] & pawns).count_ones();
+            doubled += (count > 1) as i16 * count as i16;
+            isolated += (count > 0 && RAILS[file] & pawns == 0) as i16;
+        }
+        // chained and passed pawns
+        let enemies = self.pieces[side ^ 1][0];
+        while pawns > 0 {
+            let pawn = ls1b_scan(pawns) as usize;
+            chained += (CHAINS[pawn] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
+            passed += (IN_FRONT[side][pawn] & enemies == 0) as i16;
+            pawns &= pawns - 1
+        }
+        // a *very* primitive king safety eval
+        let king_idx = ls1b_scan(self.pieces[side][Piece::KING]);
+        let king_file = (king_idx & 7) as i8;
+        let protecting_pawns = (KING_ATTACKS[king_idx as usize] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
+        let mut open_files = 0;
+        for file in std::cmp::max(0, king_file - 1)..=std::cmp::min(7, king_file + 1) {
+            open_files += (FILES[file as usize] & self.pieces[side][Piece::PAWN] == 0) as i16
+        }
+        // score
+        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG 
+                    + passed * PASSED_MG + chained * CHAINED_MG 
+                    + protecting_pawns * PAWN_SHIELD_MG + open_files * PAWN_OPEN_FILE_MG;
+        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG 
+                    + passed * PASSED_EG + chained * CHAINED_EG
+                    + protecting_pawns * PAWN_SHIELD_EG + open_files * PAWN_OPEN_FILE_EG;
+        taper(phase, mg, eg)
     }
 
     fn eg_king_score(&self, winning_side: usize, phase: i32) -> i16 {
@@ -169,3 +218,10 @@ impl Position {
 
 const SQ1: u64 = 0x55AA55AA55AA55AA;
 const SQ2: u64 = 0xAA55AA55AA55AA55;
+
+#[test]
+fn t() {
+    bitboard_out(&SQ1);
+    println!(" ");
+    bitboard_out(&SQ2);
+}

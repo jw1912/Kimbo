@@ -1,5 +1,6 @@
 use kimbo::search::Engine;
 use kimbo::tables::search::HashTable;
+use kimbo::tables::pawn::PawnHashTable;
 use kimbo::position::zobrist::ZobristVals;
 use kimbo::io::outputs::display_board;
 use kimbo::position::Position;
@@ -32,6 +33,7 @@ fn _search_all() {
     let max_time = 1000;
     let max_depth = i8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
+    let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
     for (i, pos ) in _POSITIONS.iter().enumerate() {
@@ -43,6 +45,7 @@ fn _search_all() {
             max_depth,
             u64::MAX,
             tt.clone(),
+            pt.clone(),
             i as u8,
         );
         assert_eq!(String::from(*pos), search.board.to_fen());
@@ -59,6 +62,7 @@ fn _search_one(pos: usize) {
     let max_time = 5000;
     let max_depth = i8::MAX;
     let tt = Arc::new(HashTable::new(32 * 1024 * 1024));
+    let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
     let position = Position::from_fen(_POSITIONS[pos], zvals).unwrap();
     let mut search = Engine::new(
@@ -68,6 +72,7 @@ fn _search_one(pos: usize) {
         max_depth,
         u64::MAX,
         tt,
+        pt,
         0,
     );
     display_board::<true>(&search.board);

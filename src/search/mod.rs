@@ -8,7 +8,7 @@ mod pruning;
 
 use crate::tables::history::HistoryTable;
 use crate::tables::killer::KillerMoveTable;
-use crate::tables::{search::HashTable, countermove::CounterMoveTable};
+use crate::tables::{pawn::PawnHashTable, search::HashTable, countermove::CounterMoveTable};
 use crate::position::{Position, zobrist::ZobristVals};
 use std::sync::{Arc, atomic::AtomicBool};
 use std::time::Instant;
@@ -49,6 +49,7 @@ pub struct Engine {
     pub board: Position,
     // tables
     pub ttable: Arc<HashTable>,
+    pub ptable: Arc<PawnHashTable>,
     pub ctable: Arc<CounterMoveTable>,
     pub ktable: Arc<KillerMoveTable>,
     pub htable: Arc<HistoryTable>,
@@ -67,10 +68,11 @@ impl Engine {
     pub fn from_fen(
         s: &str,
         ttable: Arc<HashTable>,
+        ptable: Arc<PawnHashTable>,
         zobrist_vals: Arc<ZobristVals>
     ) -> Result<Self, UciError> {
         let board = Position::from_fen(s, zobrist_vals)?;
-        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, 0))
+        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable, 0))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -81,6 +83,7 @@ impl Engine {
         max_depth: i8,
         max_nodes: u64,
         ttable: Arc<HashTable>,
+        ptable: Arc<PawnHashTable>,
         age: u8,
     ) -> Self {
         let stats = Stats::default();
@@ -91,6 +94,7 @@ impl Engine {
             max_depth,
             max_nodes,
             ttable,
+            ptable,
             ctable: Arc::new(CounterMoveTable::default()),
             ktable: Arc::new(KillerMoveTable::default()),
             htable: Arc::new(HistoryTable::default()),
