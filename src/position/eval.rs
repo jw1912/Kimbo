@@ -219,9 +219,48 @@ impl Position {
 const SQ1: u64 = 0x55AA55AA55AA55AA;
 const SQ2: u64 = 0xAA55AA55AA55AA55;
 
-#[test]
-fn t() {
-    bitboard_out(&SQ1);
-    println!(" ");
-    bitboard_out(&SQ2);
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::super::bitboard_out;
+
+    #[test]
+    fn t1() {
+        println!("FILES");
+        for f in FILES {
+            bitboard_out(&f);
+            println!(" ");
+        }
+    }
+
+    #[test]
+    fn t2() {
+        println!("CHAINS");
+        for f in CHAINS {
+            bitboard_out(&f);
+            println!(" ");
+        }
+    }
+
+    #[test]
+    fn t3() {
+        println!("IN front");
+        for f in IN_FRONT[0] {
+            bitboard_out(&f);
+            println!(" ");
+        }
+        for f in IN_FRONT[1] {
+            bitboard_out(&f);
+            println!(" ");
+        }
+    }
+
+    #[test]
+    fn t4() {
+        println!("Rails");
+        for f in RAILS {
+            bitboard_out(&f);
+            println!(" ");
+        }
+    }
 }

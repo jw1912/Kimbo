@@ -125,7 +125,6 @@ pub struct Stats {
     pub countermove_hits: u64,
     pub killermove_hits: u64,
     pub history_hits: u64,
-    pub draws_detected: u64,
     pub lmr_attempts: u64,
     pub lmr_successes: u64,
 }
@@ -142,7 +141,6 @@ impl Default for Stats {
             countermove_hits: 0,
             killermove_hits: 0,
             history_hits: 0,
-            draws_detected: 0,
             lmr_attempts: 0,
             lmr_successes: 0,
         } 
@@ -155,14 +153,13 @@ impl Stats {
     }
     pub fn report(&self) {
         let valid = self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes);
-        let lmr = self.lmr_successes * 100 / self.lmr_attempts;
+        let lmr = self.lmr_successes * 100 / (self.lmr_attempts + (self.lmr_attempts == 0) as u64);
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
         println!("hash hits: {} ({}% valid moves)", self.tt_hits, valid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
         println!("counter move hits : {}", self.countermove_hits);
         println!("killer move hits : {}", self.killermove_hits);
         println!("history move hits : {}", self.history_hits);
-        println!("draws detected: {}", self.draws_detected);
         println!("lmr attempts: {}, successes: {} ({}%)", self.lmr_attempts, self.lmr_successes, lmr);
     }
 }
