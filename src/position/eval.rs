@@ -73,11 +73,8 @@ impl Position {
         let mat = eval_factor(phase, self.mat_mg, self.mat_eg);
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
 
-        // passed pawn eval for endgame
-        let pwn = self.passed_pawns(0, phase) - self.passed_pawns(1, phase);
-
         // relative to side due to negamax framework
-        SIDE_FACTOR[self.side_to_move] * (mat + pst + pwn)
+        SIDE_FACTOR[self.side_to_move] * (mat + pst)
     }
 
     /// static evaluation of position
@@ -93,7 +90,7 @@ impl Position {
         let pst = eval_factor(phase, self.pst_mg, self.pst_eg);
 
         // endgame "mop-up" eval for king of winning side
-        let mut eval = mat + pst;
+        let mut eval = mat + pst; // + pwn;
         if eval != 0 {
             eval += self.eg_king_score((eval < 0) as usize, phase)
         }
@@ -102,25 +99,13 @@ impl Position {
         SIDE_FACTOR[self.side_to_move] * eval
     }
 
-    fn passed_pawns(&self, side: usize, phase: i32) -> i16 {
-        let mut pawns = self.pieces[side][0];
-        let enemies = self.pieces[side^1][0];
-        let mut passers = 0;
-        while pawns > 0 {
-            let pawn = ls1b_scan(pawns) as usize;
-            pawns &= pawns - 1;
-            passers += (IN_FRONT[side][pawn] & enemies == 0) as i16
-        }
-        taper(phase, 0, passers * PASSED_EG)
-    }
-
     fn eg_king_score(&self, winning_side: usize, phase: i32) -> i16 {
         let losing_side = winning_side ^ 1;
         let losing_king = ls1b_scan(self.pieces[losing_side][Piece::KING]) as i16;
         let winning_king = ls1b_scan(self.pieces[winning_side][Piece::KING]) as i16;
         let cmd = CMD[losing_king as usize];
         let md = ((losing_king >> 3) - (winning_king >> 3)).abs() + ((losing_king & 7) - (winning_king & 7)).abs();
-        let mut score = 5 * cmd + 4 * ( 14 - md );
+        let mut score = 5 * cmd + 2 * ( 14 - md );
         score = taper(phase, 0, score);
         SIDE_FACTOR[winning_side] * score
     }
