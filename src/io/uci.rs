@@ -54,7 +54,7 @@ impl Default for State {
 pub fn uci_run() {
     println!("id name Kimbo {}", VERSION);
     println!("id author {}", AUTHOR);
-    println!("option name Hash type spin default 32 min 1 max 256");
+    println!("option name Hash type spin default 128 min 1 max 512");
     println!("option name Clear Hash type button");
     println!("option name Move Overhead type spin default 10 min 0 max 500");
     println!("uciok");
@@ -334,7 +334,7 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErr
         "Hash" => {
             let size = value_token[0].parse::<usize>()?;
             let mut state_lock = state.lock().unwrap();
-            state_lock.ttable_size = size;
+            state_lock.ttable_size = std::cmp::max(1, size as i16 - 4) as usize;
             state_lock.ttable = Arc::new(HashTable::new(state_lock.ttable_size * 1024 * 1024));
             state_lock.age = 0;
             drop(state_lock)
