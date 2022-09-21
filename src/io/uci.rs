@@ -249,7 +249,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
 
     if !times.is_default() {
         let state_lock = state.lock().unwrap();
-        max_move_time = times.to_movetime(state_lock.pos.side_to_move);
+        max_move_time = times.to_movetime(state_lock.pos.side_to_move, state_lock.pos.phase);
         drop(state_lock);
     }
 

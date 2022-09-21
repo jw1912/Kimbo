@@ -19,7 +19,7 @@ impl Times {
         *self == Self::default()
     }
     /// Calculates a movetime
-    pub fn to_movetime(&self, side: usize) -> u64 {
+    pub fn to_movetime(&self, side: usize, phase: i16) -> u64 {
         let available = match side {
             0 => self.wtime,
             1 => self.btime,
@@ -29,6 +29,6 @@ impl Times {
         if self.moves_to_go.is_some() {
             return available / self.moves_to_go.unwrap() as u64;
         }
-        available / 40
+        available / (2 * (phase as u64 + 1))
     }
 }
