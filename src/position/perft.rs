@@ -38,7 +38,7 @@ pub fn perft<const ROOT: bool, const DEBUG: bool>(position: &mut Position, depth
         positions += score;
 
         // unmake move
-        position.unmake_move(m);
+        position.unmake_move();
 
         // print positions from this move if root
         if ROOT {

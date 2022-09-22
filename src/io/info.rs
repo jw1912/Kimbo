@@ -12,6 +12,7 @@ Search:
  - quiescence search
  - iterative deepening
  - check extensions
+ - null move pruning
  - late move reductions (searched by PVS)
  - hash score and mate pruning\n
 Move Ordering:

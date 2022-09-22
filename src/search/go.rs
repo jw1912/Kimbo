@@ -13,11 +13,15 @@ impl Engine {
         self.stats.start_time = Instant::now();
         let mut stats = SearchStats::new(0, 0, 0, Vec::new());
         let mut best_move = 0;
+        let mut prev_m = 0;
+        if !self.board.state_stack.is_empty() {
+            prev_m = self.board.state_stack.last().unwrap().m;
+        }
         for d in 0..self.max_depth {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
             let check = self.board.is_in_check();
-            let score = self.negamax::<true, STATS>(-MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv, 0, check);
+            let score = self.negamax::<true, STATS>(-MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv, prev_m, check, false);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;

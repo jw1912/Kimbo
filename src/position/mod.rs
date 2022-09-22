@@ -43,6 +43,7 @@ pub struct Position {
 /// Extended move context for incrementally updated eval fields
 #[derive(Clone, Copy)]
 pub struct GameState {
+    pub m: u16,
     pub moved_pc: u8,
     pub captured_pc: u8,
     pub castle_rights: u8,

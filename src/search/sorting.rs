@@ -82,7 +82,7 @@ impl Engine {
 }
 
 pub struct MoveScores {
-    list: [i16; 255],
+    pub list: [i16; 255],
     len: usize,
     start_idx: usize,
 }

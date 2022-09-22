@@ -4,7 +4,6 @@
 use crate::position::Position;
 use crate::search::Engine;
 use super::inputs::uci_to_u16;
-use crate::position::GameState;
 use crate::position::zobrist::ZobristVals;
 use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
@@ -28,7 +27,6 @@ struct State {
     ttable: Arc<HashTable>,
     ptable: Arc<PawnHashTable>,
     zvals: Arc<ZobristVals>,
-    state_stack: Vec<GameState>,
     age: u8,
     move_overhead: u64,
 }
@@ -43,7 +41,6 @@ impl Default for State {
             ttable: Arc::new(HashTable::new(1024 * 1024)),
             ptable: Arc::new(PawnHashTable::new(4 * 1024 * 1024)),
             zvals: Arc::new(ZobristVals::default()),
-            state_stack: Vec::with_capacity(25),
             age: 0,
             move_overhead: 10,
         }
@@ -130,7 +127,6 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
         Tokens::Stats => {
             let state_lock = state.lock().unwrap();
             report_stats(&state_lock.pos);
-            println!("state_stack length: {}", state_lock.state_stack.len());
             drop(state_lock);
             
         }
@@ -177,7 +173,6 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
     if !fen.is_empty() && !skip_fen {
         state_lock.pos = Position::from_fen(&fen, state_lock.zvals.clone())?;
     }
-    state_lock.state_stack = Vec::with_capacity(25);
     for m in moves {
         let mo = uci_to_u16(&state_lock.pos, &m)?;
         state_lock.pos.make_move(mo);

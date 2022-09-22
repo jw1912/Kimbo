@@ -81,4 +81,19 @@ pub fn report_stats(pos: &Position) {
     println!("fen: {}", pos.to_fen());
     println!("halfmove counter: {}", pos.halfmove_clock);
     println!("fullmove counter: {}", pos.fullmove_counter);
+    println!("state stack length: {}", pos.state_stack.len());
+}
+
+pub fn output_move_and_score(m: u16, s: i16, eval: i16) {
+    let score_type = match s {
+        30000 => "hash move",
+        1000..=5500 => "capture",
+        600..=900 => "promotion",
+        500 => "killer move",
+        400 => "counter move",
+        300 => "castle",
+        0 => "quiet",
+        _ => "history",
+    };
+    println!("{}: {} ({}), eval: {}", u16_to_uci(&m), s, score_type, eval)
 }

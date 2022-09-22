@@ -127,6 +127,12 @@ pub struct Stats {
     pub history_hits: u64,
     pub lmr_attempts: u64,
     pub lmr_successes: u64,
+    pub nmp_attempts: u64,
+    pub nmp_successes: u64,
+    pub rfp_attempts: u64,
+    pub rfp_successes: u64,
+    pub razor_attempts: u64,
+    pub razor_successes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -143,6 +149,12 @@ impl Default for Stats {
             history_hits: 0,
             lmr_attempts: 0,
             lmr_successes: 0,
+            nmp_attempts: 0,
+            nmp_successes: 0,
+            razor_attempts: 0,
+            razor_successes: 0,
+            rfp_attempts: 0,
+            rfp_successes: 0,
         } 
     }
 }
@@ -152,14 +164,17 @@ impl Stats {
         *self = Self::default();
     }
     pub fn report(&self) {
-        let valid = self.tt_move_hits * 100 / (self.tt_hits - self.tt_prunes);
-        let lmr = self.lmr_successes * 100 / (self.lmr_attempts + (self.lmr_attempts == 0) as u64);
+        let valid = self.tt_move_hits as f64 * 100.0 / (self.tt_hits as f64 - self.tt_prunes as f64);
+        let lmr = self.lmr_successes as f64 * 100.0 / (self.lmr_attempts as f64);
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
-        println!("hash hits: {} ({}% valid moves)", self.tt_hits, valid);
+        println!("hash hits: {} ({:.2}% valid moves)", self.tt_hits, valid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
         println!("counter move hits : {}", self.countermove_hits);
         println!("killer move hits : {}", self.killermove_hits);
         println!("history move hits : {}", self.history_hits);
-        println!("lmr attempts: {}, successes: {} ({}%)", self.lmr_attempts, self.lmr_successes, lmr);
+        println!("lmr attempts: {}, successes: {} ({:.2}%)", self.lmr_attempts, self.lmr_successes, lmr);
+        println!("nmp attempts: {}, successes: {}", self.nmp_attempts, self.nmp_successes);
+        println!("rfp attempts: {}, successes: {}", self.rfp_attempts, self.rfp_successes);
+        println!("razor attempts: {}, successes: {}", self.razor_attempts, self.razor_successes);
     }
 }

@@ -14,6 +14,7 @@ impl Position {
         let to = 1u64 << to_idx;
         let moved_pc = self.squares[from_idx];
         let mut ctx = GameState { 
+            m,
             moved_pc,
             captured_pc: Piece::NONE as u8, 
             castle_rights: self.castle_rights, 
@@ -252,8 +253,9 @@ impl Position {
     }
 
     /// Unmakes a move given the move context
-    pub fn unmake_move(&mut self, m: u16) {
+    pub fn unmake_move(&mut self) {
         let ctx = self.state_stack.pop().unwrap();
+        let m = ctx.m;
         self.mat_mg = ctx.mat_mg;
         self.mat_eg = ctx.mat_eg;
         self.pst_mg = ctx.pst_mg;
@@ -379,5 +381,30 @@ impl Position {
         }
         self.side_to_move ^= 1;
         self.occupied = self.sides[0] | self.sides[1];
+    }
+
+    pub fn make_null_move(&mut self) -> (u16, u64) {
+        self.null_counter += 1;
+        // save previous hash and en passant square
+        let enp = self.en_passant_sq;
+        let hash = self.zobrist;
+        // update en passant
+        if self.en_passant_sq > 0 {
+            self.zobrist ^= self.zobrist_vals.en_passant_hash((self.en_passant_sq & 7) as usize);
+            self.en_passant_sq = 0;
+        }
+        // update fullmove counter, side and side hash
+        self.fullmove_counter += (self.side_to_move == 1) as u16;
+        self.side_to_move ^= 1;
+        self.zobrist ^= self.zobrist_vals.side_hash();
+        (enp, hash)
+    }
+
+    pub fn unmake_null_move(&mut self, (enp, hash): (u16, u64)) {
+        self.null_counter -= 1;
+        self.fullmove_counter -= (self.side_to_move == 0) as u16;
+        self.zobrist = hash;
+        self.en_passant_sq = enp;
+        self.side_to_move ^= 1;
     }
 }

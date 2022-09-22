@@ -28,7 +28,7 @@ impl HistoryScore {
 
 pub struct HistoryTable {
     pub table: [[[HistoryScore; 64]; 64]; 2],
-    max: AtomicU32,
+    pub max: AtomicU32,
 }
 impl Default for HistoryTable {
     fn default() -> Self {

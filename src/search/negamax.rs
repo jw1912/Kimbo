@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::tt_prune,
+    pruning::{can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
     sorting::{MoveScores, get_next_move}, 
     is_capture, 
     MAX_PLY
@@ -30,6 +30,7 @@ impl Engine {
         pv: &mut Vec<u16>, 
         prev_move: u16,
         king_in_check: bool,
+        mut allow_null: bool,
     ) -> i16 {
         
         // UCI stuff
@@ -84,10 +85,63 @@ impl Engine {
 
             // hash score pruning (no pruning on root)
             if !ROOT {
-                if let Some(score) = tt_prune(&res, depth, alpha, beta) {
+                if let Some(score) = tt_prune(&res, depth, alpha, beta, self.board.halfmove_clock) {
                     if STATS { self.stats.tt_prunes += 1 }
                     return score;
                 }
+            }
+
+            // we only null move prune when we expect a beta cutoff
+            if res.bound != Bound::LOWER && res.score < beta {
+                allow_null = false
+            }
+        }
+
+        let lazy_eval = self.board.lazy_eval();
+
+        // razoring
+        // https://www.chessprogramming.org/Razoring
+        if can_razor::<ROOT>(king_in_check, depth, alpha) {
+            let margin = RAZOR_MARGIN_PER_DEPTH * depth as i16;
+            if lazy_eval + margin < alpha {
+                if STATS { self.stats.razor_attempts += 1 }
+                let score = self.quiesce::<STATS>(alpha, beta);
+                if score <= alpha {
+                    if STATS { self.stats.razor_successes += 1 }
+                    return alpha
+                }
+            }
+        }
+
+        // reverse futility pruning (static null move pruning)
+        // source: https://www.chessprogramming.org/Reverse_Futility_Pruning
+        if can_do_rfp::<ROOT>(king_in_check, depth, beta) {
+            if STATS { self.stats.rfp_attempts += 1 }
+            let margin = RFP_MARGIN_PER_DEPTH * depth as i16;
+            if lazy_eval - margin >= beta {
+                if STATS { self.stats.rfp_successes += 1 }
+                return beta
+            }
+        }
+
+        // null move pruning
+        // source: https://www.chessprogramming.org/Null_Move_Pruning
+        if self.can_do_nmp::<ROOT>(king_in_check, allow_null, depth, beta) && lazy_eval >= beta - 50 {
+            if STATS { self.stats.nmp_attempts += 1 }
+            // make null move
+            let ctx = self.board.make_null_move();
+            // get a score
+            let score = -self.negamax::<false, STATS>(-beta, 1 - beta, depth - 3, ply + 1, &mut Vec::new(), 0, false, false);
+            // unmake null move
+            self.board.unmake_null_move(ctx);
+            // prune
+            if score >= beta {
+                // this was a cause of much pain, forgetting that the tt_hit is never used is pruned here
+                if STATS { 
+                    self.stats.nmp_successes += 1;
+                    if hash_move > 0 { self.stats.tt_hits -= 1 }
+                }
+                return beta
             }
         }
 
@@ -129,20 +183,20 @@ impl Engine {
             let mut sub_pv = Vec::new();
             let score = if do_lmr {
                 if STATS { self.stats.lmr_attempts += 1 }
-                let reduce = 1;
-                let lmr_score = -self.negamax::<false, STATS>(-alpha - 1, -alpha, depth - 1 - reduce, ply + 1, &mut sub_pv, m, check);
+                let reduction = 1 + (m_idx >= 6) as i8;
+                let lmr_score = -self.negamax::<false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
                 if lmr_score > alpha {
-                    -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check)
+                    -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
                     if STATS { self.stats.lmr_successes += 1 }
                     lmr_score
                 }
             } else {
-                -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check)
+                -self.negamax::<false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, m_idx > 0)
             };
 
             // unmaking move
-            self.board.unmake_move(m);
+            self.board.unmake_move();
 
             // alpha improvements
             if score > best_score {

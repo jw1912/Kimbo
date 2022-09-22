@@ -50,7 +50,7 @@ impl Engine {
             let score = -self.quiesce::<STATS>(-beta, -alpha);
 
             // unmaking move
-            self.board.unmake_move(m);
+            self.board.unmake_move();
 
             // beta pruning
             if score >= beta {
