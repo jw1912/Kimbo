@@ -10,10 +10,6 @@ impl Engine {
     /// Constant parameters:
     ///  - STATS - are debug stats required?
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
-        // UCI: count all quiescence nodes as visited
-        self.stats.node_count += 1;
-        if STATS { self.stats.qnode_count += 1; }
-        
         // static eval
         let stand_pat = self.board.static_eval::<STATS>(&self.ptable);
 
@@ -31,6 +27,10 @@ impl Engine {
         if alpha < stand_pat {
             alpha = stand_pat;
         }
+        
+        // UCI: count qnodes now, as no early prune
+        self.stats.node_count += 1;
+        if STATS { self.stats.qnode_count += 1; }
 
         // generating captures
         let mut king_checked = Check::None;

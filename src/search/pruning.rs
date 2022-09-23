@@ -14,6 +14,11 @@ pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
 const RAZOR_MAX_DEPTH: i8 = 3;
 pub const RAZOR_MARGIN_PER_DEPTH: i16 = 150;
 
+const HLP_MAX_DEPTH: i8 = 4;
+const HLP_MIN_DEPTH: i8 = 1;
+const HLP_MAX_SCORE: i16 = 0;
+const HLP_MIN_IDX: usize = 6;
+
 /// Based on a hash result and given search parameters
 /// returns Some(value) if pruning is appropriate, else None
 pub fn tt_prune(res: &HashResult, depth: i8, alpha: i16, beta: i16, halfmove_clock: u8) -> Option<i16> {
@@ -83,7 +88,11 @@ impl Engine {
 /// 
 /// source: https://www.chessprogramming.org/Reverse_Futility_Pruning
 /// 
-/// 
+/// cannot prune:
+///  - non-root nodes
+///  - when in check
+///  - nodes not near frontier
+///  - when beta is near mate score
 pub fn can_do_rfp<const ROOT: bool>(king_in_check: bool, depth: i8, beta: i16) -> bool {
     !ROOT
     && !king_in_check
@@ -91,9 +100,27 @@ pub fn can_do_rfp<const ROOT: bool>(king_in_check: bool, depth: i8, beta: i16) -
     && !is_mate_score(beta)
 }
 
+/// can we safely do razoring?
+/// 
+/// source: 
+/// 
+/// cannot prune: 
+///  - when in check
+///  - nodes not near frontier
+///  - root nodes
+///  - when alpha is a mate score
 pub fn can_razor<const ROOT: bool>(king_in_check: bool, depth: i8, alpha: i16) -> bool {
     !ROOT
     && !king_in_check
     && depth <= RAZOR_MAX_DEPTH
     && !is_mate_score(alpha)
+}
+
+pub fn can_do_hlp<const ROOT: bool>(king_in_check: bool, depth: i8, m_idx: usize, m_score: i16, check: bool) -> bool {
+    !ROOT
+    && !king_in_check
+    && m_idx >= HLP_MIN_IDX
+    && (HLP_MIN_DEPTH..=HLP_MAX_DEPTH).contains(&depth)
+    && m_score <= HLP_MAX_SCORE
+    && !check
 }

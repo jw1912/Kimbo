@@ -2,8 +2,8 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
-    sorting::{MoveScores, get_next_move}, 
+    pruning::{can_do_hlp, can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
+    sorting::{MoveScores, get_next_move, HISTORY_MAX}, 
     is_capture, 
     MAX_PLY
 };
@@ -137,10 +137,7 @@ impl Engine {
             // prune
             if score >= beta {
                 // this was a cause of much pain, forgetting that the tt_hit is never used is pruned here
-                if STATS { 
-                    self.stats.nmp_successes += 1;
-                    if hash_move > 0 { self.stats.tt_hits -= 1 }
-                }
+                if STATS { self.stats.nmp_successes += 1 }
                 return beta
             }
         }
@@ -159,22 +156,39 @@ impl Engine {
         let mut move_hit: bool = false;
         let mut move_scores = MoveScores::default();
         self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, ply, &mut move_hit);
-        if STATS && move_hit { self.stats.tt_move_hits += 1 }
+        if STATS { 
+            if hash_move > 0 { self.stats.tt_move_tries += 1 }
+            if move_hit { 
+                self.stats.tt_move_hits += 1 
+            } else if hash_move > 0 { 
+                self.stats.tt_move_misses += 1 
+            }
+        }
         
         // initialising stuff for going through moves
         let mut best_move = 0;
+        let mut num_quiets = 0;
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
-
+            if m_score <= HISTORY_MAX {
+                num_quiets += 1;
+            }
             // making move
             self.board.make_move(m);
+            let check = self.board.is_in_check();
+
+            // history leaf pruning
+            // source: https://www.chessprogramming.org/History_Leaf_Pruning
+            if can_do_hlp::<ROOT>(king_in_check, depth, num_quiets, m_score, check) {
+                self.board.unmake_move();
+                continue;
+            }
 
             // late move reductions
             // source: https://www.chessprogramming.org/Late_Move_Reductions
-            let check = self.board.is_in_check();
             let do_lmr = self.can_do_lmr::<ROOT>(king_in_check, depth, m_idx, m_score, check);
 
             // scoring move
@@ -224,7 +238,9 @@ impl Engine {
                 }
                 bound = Bound::LOWER;
                 break;
-            } 
+            } else if !is_capture(m) {
+                self.htable.reduce(self.board.side_to_move, m);
+            }
         }
 
         // writing to hash table

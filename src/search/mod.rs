@@ -120,7 +120,9 @@ pub struct Stats {
     // Debugging only
     pub qnode_count: u64,
     pub tt_hits: u64,
+    pub tt_move_tries: u64,
     pub tt_move_hits: u64,
+    pub tt_move_misses: u64,
     pub tt_prunes: u64,
     pub countermove_hits: u64,
     pub killermove_hits: u64,
@@ -142,7 +144,9 @@ impl Default for Stats {
             start_time: Instant::now(),
             qnode_count: 0,
             tt_hits: 0,
+            tt_move_tries: 0,
             tt_move_hits: 0,
+            tt_move_misses: 0,
             tt_prunes: 0,
             countermove_hits: 0,
             killermove_hits: 0,
@@ -164,10 +168,11 @@ impl Stats {
         *self = Self::default();
     }
     pub fn report(&self) {
-        let valid = self.tt_move_hits as f64 * 100.0 / (self.tt_hits as f64 - self.tt_prunes as f64);
+        let valid = self.tt_move_hits as f64 * 100.0 / (self.tt_move_tries as f64);
+        let invalid = self.tt_move_misses as f64 * 100.0 / (self.tt_move_tries as f64);
         let lmr = self.lmr_successes as f64 * 100.0 / (self.lmr_attempts as f64);
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
-        println!("hash hits: {} ({:.2}% valid moves)", self.tt_hits, valid);
+        println!("hash hits: {}, moves tries: {} ({:.2}% valid moves, {:.2}% invalid)", self.tt_hits, self.tt_move_tries, valid, invalid);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
         println!("counter move hits : {}", self.countermove_hits);
         println!("killer move hits : {}", self.killermove_hits);

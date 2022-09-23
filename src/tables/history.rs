@@ -53,6 +53,15 @@ impl HistoryTable {
         }
         locale.data.store(new, Ordering::Relaxed)
     }
+
+    pub fn reduce(&self, side: usize, m: u16) {
+        let locale = &self.table[side][(m & 63) as usize][((m >> 6) & 63) as usize];
+        let val = locale.get();
+        if val > 0 {
+            locale.data.store(val - 1, Ordering::Relaxed)
+        }
+    }
+
     pub fn get(&self, side: usize, m: u16, count: &mut u64) -> i16 {
         let val = self.table[side][(m & 63) as usize][((m >> 6) & 63) as usize].get();
         *count += (val > 0) as u64;

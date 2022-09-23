@@ -41,7 +41,7 @@ impl Engine {
         MVV_LVA[captured_pc][moved_pc]
     }
 
-    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY],move_hit: &mut bool) -> i16 {
+    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY], move_hit: &mut bool) -> i16 {
         if m == hash_move {
             *move_hit = true;
             HASH_MOVE
