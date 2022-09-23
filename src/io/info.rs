@@ -12,7 +12,10 @@ Search:
  - quiescence search
  - iterative deepening
  - check extensions
+ - razoring
+ - reverse futility pruning
  - null move pruning
+ - history leaf pruning
  - late move reductions (searched by PVS)
  - hash score and mate pruning\n
 Move Ordering:
