@@ -1,6 +1,6 @@
 [package]
 name = "kimbo"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["Jamie Whiting"]
 edition = "2021"
 description = "Kimbo, a chess engine written in rust."
