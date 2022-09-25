@@ -21,7 +21,7 @@ impl Engine {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
             let check = self.board.is_in_check();
-            let score = self.negamax::<true, STATS>(-MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv, prev_m, check, false);
+            let score = self.negamax::<true, true, STATS>(-MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv, prev_m, check, false);
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;

@@ -9,9 +9,9 @@ const NMP_MIN_PHASE: i16 = 6;
 const NMP_MIN_DEPTH: i8 = 3;
 
 const RFP_MAX_DEPTH: i8 = 8;
-pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
+pub const RFP_MARGIN_PER_DEPTH: i16 = 150;
 
-const RAZOR_MAX_DEPTH: i8 = 3;
+const RAZOR_MAX_DEPTH: i8 = 4;
 pub const RAZOR_MARGIN_PER_DEPTH: i16 = 150;
 
 const HLP_MAX_DEPTH: i8 = 4;
@@ -74,12 +74,10 @@ impl Engine {
     ///  - in the endgame
     ///  - phase > [NMP_MIN_PHASE]
     ///  - depth < [NMP_MIN_DEPTH]
-    pub fn can_do_nmp<const ROOT: bool>(&self, king_in_check: bool, allow_null: bool, depth: i8, beta: i16) -> bool {
-        !ROOT
-        && self.board.phase >= NMP_MIN_PHASE
+    pub fn can_do_nmp(&self, allow_null: bool, depth: i8, beta: i16) -> bool {
+        self.board.phase >= NMP_MIN_PHASE
         && depth >= NMP_MIN_DEPTH
         && allow_null
-        && !king_in_check
         && !is_mate_score(beta)
     }
 }
@@ -93,11 +91,8 @@ impl Engine {
 ///  - when in check
 ///  - nodes not near frontier
 ///  - when beta is near mate score
-pub fn can_do_rfp<const ROOT: bool>(king_in_check: bool, depth: i8, beta: i16) -> bool {
-    !ROOT
-    && !king_in_check
-    && depth <= RFP_MAX_DEPTH
-    && !is_mate_score(beta)
+pub fn can_do_rfp(depth: i8, beta: i16) -> bool {
+    depth <= RFP_MAX_DEPTH && !is_mate_score(beta)
 }
 
 /// can we safely do razoring?
@@ -109,15 +104,13 @@ pub fn can_do_rfp<const ROOT: bool>(king_in_check: bool, depth: i8, beta: i16) -
 ///  - nodes not near frontier
 ///  - root nodes
 ///  - when alpha is a mate score
-pub fn can_razor<const ROOT: bool>(king_in_check: bool, depth: i8, alpha: i16) -> bool {
-    !ROOT
-    && !king_in_check
-    && depth <= RAZOR_MAX_DEPTH
+pub fn can_razor(depth: i8, alpha: i16) -> bool {
+    depth <= RAZOR_MAX_DEPTH
     && !is_mate_score(alpha)
 }
 
-pub fn can_do_hlp<const ROOT: bool>(king_in_check: bool, depth: i8, m_idx: usize, m_score: i16, check: bool) -> bool {
-    !ROOT
+pub fn can_do_hlp<const PV: bool>(king_in_check: bool, depth: i8, m_idx: usize, m_score: i16, check: bool) -> bool {
+    !PV
     && !king_in_check
     && m_idx >= HLP_MIN_IDX
     && (HLP_MIN_DEPTH..=HLP_MAX_DEPTH).contains(&depth)
