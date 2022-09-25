@@ -3,7 +3,7 @@ use super::{
     MAX_SCORE,
     update_pv,
     pruning::{can_do_hlp, can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
-    sorting::{MoveScores, get_next_move, HISTORY_MAX}, 
+    sorting::{MoveScores, get_next_move}, 
     is_capture, 
     MAX_PLY
 };
@@ -172,23 +172,20 @@ impl Engine {
         
         // initialising stuff for going through moves
         let mut best_move = 0;
-        let mut num_quiets = 0;
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
         let mut do_pvs = false;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
-            if m_score <= HISTORY_MAX {
-                num_quiets += 1;
-            }
+
             // making move
             self.board.make_move(m);
             let check = self.board.is_in_check();
 
             // history leaf pruning
             // source: https://www.chessprogramming.org/History_Leaf_Pruning
-            if can_do_hlp::<PV>(king_in_check, depth, num_quiets, m_score, check) {
+            if can_do_hlp::<PV>(king_in_check, depth, m_idx, m_score, check) {
                 self.board.unmake_move();
                 continue;
             }
