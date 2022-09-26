@@ -302,18 +302,18 @@ impl Position {
         }
     }
 
-    pub fn gen_moves<const MOVETYPE: u8>(&self, check_status: &mut Check, move_list: &mut MoveList) {
+    pub fn gen_moves<const MOVETYPE: u8>(&self, move_list: &mut MoveList) {
         // Working out whether in check or not
         let king = self.pieces[self.side_to_move][Piece::KING];
         let king_idx = ls1b_scan(king) as usize;
         let (checks, pinned) = self.checkers_pinned_pieces(self.side_to_move, king_idx);
-        *check_status = if checks == 0 {
+        let check_status = if checks == 0 {
             Check::None
         } else if checks & (checks - 1) > 0 {
             Check::Double
         } else {
             Check::Single
         };
-        self.gen_moves_staged::<MOVETYPE>(move_list, *check_status, king_idx, checks, pinned, king)
+        self.gen_moves_staged::<MOVETYPE>(move_list, check_status, king_idx, checks, pinned, king)
     }
 }

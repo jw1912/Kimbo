@@ -1,5 +1,5 @@
 use crate::{io::outputs::u16_to_uci, position::{zobrist::{initialise_zobrist, initialise_pawnhash}, eval::{calc_pst, calc_material}}};
-use super::{MoveType, MoveList, Position, Check};
+use super::{MoveType, MoveList, Position};
 
 pub fn perft<const ROOT: bool, const DEBUG: bool>(position: &mut Position, depth_left: u8) -> u64 {
     if DEBUG {
@@ -17,7 +17,7 @@ pub fn perft<const ROOT: bool, const DEBUG: bool>(position: &mut Position, depth
 
     // generate moves
     let mut moves = MoveList::default();
-    position.gen_moves::<{ MoveType::ALL }>(&mut Check::None, &mut moves);
+    position.gen_moves::<{ MoveType::ALL }>(&mut moves);
 
     // bulk counting on depth 1
     if depth_left == 1 {

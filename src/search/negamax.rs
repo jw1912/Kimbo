@@ -8,7 +8,7 @@ use super::{
     MAX_PLY
 };
 use crate::tables::search::Bound;
-use crate::position::{MoveType, Check, MoveList}; 
+use crate::position::{MoveType, MoveList}; 
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
 
@@ -148,9 +148,8 @@ impl Engine {
         }
 
         // generating moves
-        let mut king_checked = Check::None;
         let mut moves = MoveList::default();
-        self.board.gen_moves::<{ MoveType::ALL }>(&mut king_checked, &mut moves);
+        self.board.gen_moves::<{ MoveType::ALL }>(&mut moves);
 
         // checking for checkmate/stalemate
         if moves.is_empty() {

@@ -1,5 +1,5 @@
 use super::{Engine, sorting::{MoveScores, get_next_move}};
-use crate::position::{MoveType, Check, MoveList};
+use crate::position::{MoveType, MoveList};
 
 /// Comments:
 /// UCI: implemented for the uci protocol / debug stats
@@ -33,9 +33,8 @@ impl Engine {
         if STATS { self.stats.qnode_count += 1; }
 
         // generating captures
-        let mut king_checked = Check::None;
         let mut captures = MoveList::default();
-        self.board.gen_moves::<{ MoveType::CAPTURES }>(&mut king_checked, &mut captures);
+        self.board.gen_moves::<{ MoveType::CAPTURES }>(&mut captures);
 
         // scoring captures
         let mut move_scores = MoveScores::default();
