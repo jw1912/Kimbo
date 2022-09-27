@@ -1,2 +1,0 @@
-res.depth > bound - (bound == Bound::EXACT) as u8 for correctness
-relaxing the bound to >= leads to more pruning, but poorer checkmate finding

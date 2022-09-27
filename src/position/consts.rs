@@ -71,8 +71,6 @@ pub const PAWN_SHIELD_MG: i16 = 5;
 pub const PAWN_SHIELD_EG: i16 = 2;
 pub const PAWN_OPEN_FILE_MG: i16 = -10;
 pub const PAWN_OPEN_FILE_EG: i16 = 5;
-pub const MG_KING_DANGER: i16 = -10;
-pub const EG_KING_DANGER: i16 = 5;
 
 // PeSTO evaluation values
 pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];

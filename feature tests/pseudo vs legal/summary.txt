@@ -1,3 +1,0 @@
-completely indistuinguishable performance
-will revisit when engine is more developed
-for now will stick with kimbo_state as makes for easier development

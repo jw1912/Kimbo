@@ -1,5 +1,0 @@
-PVS v2 is equivalent to v1 but faster.
-No PVS has the advantage in the Fine#70 position, because there are a larger number of researches.
-
-Playing games shows that PVS is a disadvantage currently.
-Revisit when better move ordering and pruning techniques have been implemented.

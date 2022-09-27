@@ -1,8 +1,0 @@
-The performance in quiescence search is essentially random, 
-some positions allow for almost no beta cutoffs, others many.
-
-Overall performance is marginally quicker on average with the
-iteration instead of pre-sorting.
-Big benefit for iteration is finer control in the future for staging
-move generation and more performance intensive move ordering techniques.
-

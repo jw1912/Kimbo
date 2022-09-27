@@ -1,4 +1,0 @@
-tests are done through self play
-i include reference results of searches of a small number off positions
-they are searched for 1 second each
-they do not correspond to elo gain
