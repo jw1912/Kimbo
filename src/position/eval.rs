@@ -114,7 +114,6 @@ impl Position {
         let mut doubled = 0;
         let mut isolated = 0;
         let mut passed = 0;
-        let mut chained = 0;
         let mut pawns = self.pieces[side][0];
         // doubled and isolated pawns
         for file in 0..8 {
@@ -126,7 +125,6 @@ impl Position {
         let enemies = self.pieces[side ^ 1][0];
         while pawns > 0 {
             let pawn = ls1b_scan(pawns) as usize;
-            chained += (CHAINS[pawn] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
             passed += (IN_FRONT[side][pawn] & enemies == 0) as i16;
             pawns &= pawns - 1
         }
@@ -139,11 +137,9 @@ impl Position {
             open_files += (FILES[file as usize] & self.pieces[side][Piece::PAWN] == 0) as i16
         }
         // score
-        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG 
-                    + passed * PASSED_MG + chained * CHAINED_MG 
+        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG + passed * PASSED_MG
                     + protecting_pawns * PAWN_SHIELD_MG + open_files * PAWN_OPEN_FILE_MG;
-        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG 
-                    + passed * PASSED_EG + chained * CHAINED_EG
+        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG
                     + protecting_pawns * PAWN_SHIELD_EG + open_files * PAWN_OPEN_FILE_EG;
         taper(phase, mg, eg)
     }

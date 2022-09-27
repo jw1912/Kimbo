@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_hlp, can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
+    pruning::{can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
     sorting::{MoveScores, get_next_move}, 
     is_capture, 
     MAX_PLY
@@ -177,19 +177,11 @@ impl Engine {
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
+            let mut sub_pv = Vec::new();
 
             // making move
             self.board.make_move(m);
             let check = self.board.is_in_check();
-
-            // history leaf pruning
-            // source: https://www.chessprogramming.org/History_Leaf_Pruning
-            if can_do_hlp::<PV>(king_in_check, depth, m_idx, m_score, check) {
-                self.board.unmake_move();
-                continue;
-            }
-
-            let mut sub_pv = Vec::new();
 
             // late move reductions
             // source: https://www.chessprogramming.org/Late_Move_Reductions

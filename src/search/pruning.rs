@@ -12,10 +12,7 @@ const RFP_MAX_DEPTH: i8 = 8;
 pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
 
 const RAZOR_MAX_DEPTH: i8 = 4;
-pub const RAZOR_MARGIN_PER_DEPTH: i16 = 120;
-
-const HLP_MAX_DEPTH: i8 = 4;
-const HLP_MAX_SCORE: i16 = 0;
+pub const RAZOR_MARGIN_PER_DEPTH: i16 = 180;
 
 /// Based on a hash result and given search parameters
 /// returns Some(value) if pruning is appropriate, else None
@@ -98,21 +95,4 @@ pub fn can_do_rfp(depth: i8, beta: i16) -> bool {
 ///  - when alpha is a mate score
 pub fn can_razor(depth: i8, alpha: i16) -> bool {
     depth <= RAZOR_MAX_DEPTH && !is_mate_score(alpha)
-}
-
-/// can we safely do history leaf pruning?
-/// 
-/// source: 
-/// 
-/// cannot prune:
-///  - PV nodes
-///  - when in check or giving check
-///  - non-quiet, highest sorted moves
-pub fn can_do_hlp<const PV: bool>(king_in_check: bool, depth: i8, m_idx: usize, m_score: i16, check: bool) -> bool {
-    !PV
-    && !king_in_check
-    && m_idx >= 2 + depth as usize * 4
-    && depth <= HLP_MAX_DEPTH
-    && m_score <= HLP_MAX_SCORE
-    && !check
 }
