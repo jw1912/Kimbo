@@ -8,3 +8,5 @@ pub mod tables;
 pub mod io;
 /// Controlling the search
 pub mod search;
+/// Evaluation stuff
+pub mod eval;

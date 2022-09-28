@@ -1,7 +1,8 @@
 // Converting position to fen
 // other way is handled in kimbo_state
 
-use crate::position::{*, zobrist::{ZobristVals, initialise_pawnhash, initialise_zobrist}, eval::{calculate_phase, calc_pst, calc_material}};
+use crate::position::{*, zobrist::{ZobristVals, initialise_pawnhash, initialise_zobrist}};
+use crate::eval::{calculate_phase, calc_pst, calc_material};
 use std::{fmt, num::ParseIntError};
 use std::sync::Arc;
 use super::outputs::idx_to_sq;

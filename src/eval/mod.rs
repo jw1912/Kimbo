@@ -1,7 +1,11 @@
+pub mod tuner_eval;
+pub mod tuner;
+pub mod vals;
+
 use crate::tables::pawn::PawnHashTable;
-use super::{ls1b_scan, Piece};
-use super::consts::*;
-use super::*;
+use crate::position::{ls1b_scan, Piece};
+use crate::position::consts::*;
+use crate::position::*;
 
 /// Calculating phase
 pub fn calculate_phase(pos: &Position) -> i16 {
@@ -79,7 +83,7 @@ impl Position {
     }
 
     /// static evaluation of position
-    pub fn static_eval<const STATS: bool>(&mut self, ptable: &PawnHashTable) -> i16 {
+    pub fn static_eval(&self, ptable: &PawnHashTable) -> i16 {
         // phase value for tapered eval
         let mut phase = self.phase as i32;
         if phase > TOTALPHASE {

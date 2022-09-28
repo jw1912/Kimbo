@@ -14,16 +14,39 @@ use info::*;
 use std::io;
 use std::process;
 
+use crate::eval::tuner::optimise;
+use crate::eval::tuner_eval::ParamContainer;
+
 // used in inputs/outputs
 const FILES: [char; 8] = ['a','b','c','d','e','f','g','h'];
 
-/// description of of version
+/// description of version
 fn description() {
     println!("{}", DESCRIPTION);
 }
 /// output listed features
 fn features() {
     println!("{}", FEATURES);
+}
+
+/// run Texel tuner
+fn run_tuner(commands: Vec<&str>) {
+    if !(2..=3).contains(&commands.len()) {
+        println!("invalid command");
+        return;
+    }
+    let initial_params = if commands.len() == 3 {
+        match commands[2] {
+            "new" => ParamContainer::new(),
+            "zero" => ParamContainer::default(),
+            _ => ParamContainer::old(),
+        }
+    } else {
+        ParamContainer::old()
+    };
+    let best = optimise::<true>(commands[1], initial_params);
+    println!("Best parameters:");
+    println!("{:#?}", best);
 }
 
 pub fn main_loop() {
@@ -37,6 +60,7 @@ pub fn main_loop() {
             "quit" => process::exit(0),
             "description" => description(),
             "features" => features(),
+            "tune" => run_tuner(commands),
             _ => println!("Unknown command!"),
         }
     }

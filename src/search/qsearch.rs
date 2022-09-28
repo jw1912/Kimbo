@@ -11,7 +11,7 @@ impl Engine {
     ///  - STATS - are debug stats required?
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // static eval
-        let stand_pat = self.board.static_eval::<STATS>(&self.ptable);
+        let stand_pat = self.board.static_eval(&self.ptable);
 
         // beta pruning
         if stand_pat >= beta {

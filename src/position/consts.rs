@@ -60,15 +60,15 @@ const fn init_chains() -> [u64; 64]{
 }
 // just guesses, need improvement
 pub const DOUBLED_MG: i16 = 0;
-pub const DOUBLED_EG: i16 = -5;
-pub const ISOLATED_MG: i16 = -20;
-pub const ISOLATED_EG: i16 = -5;
-pub const PASSED_MG: i16 = -5;
-pub const PASSED_EG: i16 = 70;
-pub const PAWN_SHIELD_MG: i16 = 5;
-pub const PAWN_SHIELD_EG: i16 = 2;
-pub const PAWN_OPEN_FILE_MG: i16 = -10;
-pub const PAWN_OPEN_FILE_EG: i16 = 5;
+pub const DOUBLED_EG: i16 = -15;
+pub const ISOLATED_MG: i16 = -7;
+pub const ISOLATED_EG: i16 = -7;
+pub const PASSED_MG: i16 = -7;
+pub const PASSED_EG: i16 = 30;
+pub const PAWN_SHIELD_MG: i16 = 0;
+pub const PAWN_SHIELD_EG: i16 = 4;
+pub const PAWN_OPEN_FILE_MG: i16 = -25;
+pub const PAWN_OPEN_FILE_EG: i16 = 11;
 
 // PeSTO evaluation values
 pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];

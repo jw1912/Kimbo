@@ -2,7 +2,6 @@ pub mod attacks;
 pub mod consts;
 pub mod makemove;
 pub mod movegen;
-pub mod eval;
 pub mod zobrist;
 pub mod perft;
 
