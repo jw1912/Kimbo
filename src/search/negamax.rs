@@ -82,7 +82,7 @@ impl Engine {
 
             // hash score pruning (no pruning on root)
             if !ROOT {
-                if let Some(score) = tt_prune(&res, depth, alpha, beta, self.board.halfmove_clock) {
+                if let Some(score) = tt_prune::<PV>(&res, depth, alpha, beta, self.board.halfmove_clock) {
                     if STATS { self.stats.tt_prunes += 1 }
                     return score;
                 }

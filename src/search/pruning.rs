@@ -12,11 +12,13 @@ pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
 
 /// can we safely prune based off hash score?
 #[inline]
-pub fn tt_prune(res: &HashResult, depth: i8, alpha: i16, beta: i16, halfmove_clock: u8) -> Option<i16> {
+pub fn tt_prune<const PV: bool>(res: &HashResult, depth: i8, alpha: i16, beta: i16, halfmove_clock: u8) -> Option<i16> {
     if res.depth > depth - (res.bound == Bound::EXACT) as i8 && halfmove_clock <= 90 {
         match res.bound {
             Bound::EXACT => {
-                return Some(res.score);
+                if !PV {
+                    return Some(res.score);
+                }
             },
             Bound::LOWER => {
                 if res.score >= beta {
