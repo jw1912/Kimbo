@@ -131,7 +131,7 @@ impl Engine {
 
         // scoring moves
         let mut move_scores = MoveScores::default();
-        self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, ply);
+        self.score_moves(&moves, &mut move_scores, hash_move, prev_move, ply);
         
         // stuff for going through moves
         let mut best_move = 0;

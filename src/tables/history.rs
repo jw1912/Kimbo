@@ -54,9 +54,8 @@ impl HistoryTable {
         locale.data.store(new, Ordering::Relaxed)
     }
 
-    pub fn get(&self, side: usize, m: u16, count: &mut u64) -> i16 {
+    pub fn get(&self, side: usize, m: u16) -> i16 {
         let val = self.table[side][(m & 63) as usize][((m >> 6) & 63) as usize].get();
-        *count += (val > 0) as u64;
         let max = self.max.load(Ordering::Relaxed);
         ((val * HISTORY_MAX as u32 + max - 1) / max) as i16
     }

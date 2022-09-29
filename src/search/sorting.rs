@@ -1,12 +1,12 @@
 /// This file handles sorting of moves
 /// Moves are sorted as follows:
 /// 1. Hash move (from HashTable)
-/// 2. Captures sorted via MMV-LVA
+/// 2. Captures sorted via MVV-LVA
 /// 3. Promotions (Queen -> Knight)
 /// 4. Killer moves (3 moves per ply in KillerMoveTable)
 /// 5. Counter move (from-to CounterMoveTable)
 /// 6. Castling
-/// 7. Quiets
+/// 7. QuietsS
 
 use crate::position::MoveList;
 use crate::tables::killer::KILLERS_PER_PLY;
@@ -41,7 +41,7 @@ impl Engine {
         MVV_LVA[captured_pc][moved_pc]
     }
 
-    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY]) -> i16 {
+    pub fn score_move(&self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY]) -> i16 {
         if m == hash_move {
             HASH_MOVE
         } else if is_capture(m) {
@@ -50,24 +50,22 @@ impl Engine {
             let pc = (m >> 12) & 3;
             PROMOTIONS[pc as usize]
         } else if killer_moves.contains(&m) {
-            self.stats.killermove_hits += 1;
             KILLERMOVE
-        } else if !ROOT && m == counter_move {
-            self.stats.countermove_hits += 1;
+        } else if m == counter_move {
             COUNTERMOVE
         } else if is_castling(m) {
             CASTLE
         } else {
-            self.htable.get(self.board.side_to_move, m, &mut self.stats.history_hits)
+            self.htable.get(self.board.side_to_move, m)
         }
     }
     
-    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8) {
+    pub fn score_moves(&self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8) {
         let counter_move = self.ctable.get(prev_move);
         let killer_moves = self.ktable.get_ply(ply);
         for i in move_scores.start_idx..moves.len() {
             let m = moves[i]; 
-            move_scores.push(self.score_move::<ROOT>(m, hash_move, counter_move, killer_moves));
+            move_scores.push(self.score_move(m, hash_move, counter_move, killer_moves));
         }
     }
 
