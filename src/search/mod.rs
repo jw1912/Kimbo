@@ -161,12 +161,13 @@ impl Stats {
     }
     pub fn report(&self) {
         let pvs = self.pvs_successes as f64 * 100.0 / (self.pvs_attempts as f64);
+        let nmp = self.nmp_successes as f64 * 100.0 / (self.nmp_attempts as f64);
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
         println!("hash hits: {}", self.tt_hits);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
         println!("movetype hits, killer: {}, counter: {}, history: {}", self.killermove_hits, self.countermove_hits, self.history_hits);
         println!("pvs attempts: {}, successes: {} ({:.2}%)", self.pvs_attempts, self.pvs_successes, pvs);
-        println!("nmp attempts: {}, successes: {}", self.nmp_attempts, self.nmp_successes);
+        println!("nmp attempts: {}, successes: {} ({:.2}%)", self.nmp_attempts, self.nmp_successes, nmp);
         println!("rfp prunes: {}", self.rfp_prunes);
         println!("razor attempts: {}, successes: {}", self.razor_attempts, self.razor_successes);
     }

@@ -1,5 +1,5 @@
 use crate::tables::search::{Bound, HashResult};
-use super::{Engine, is_mate_score};
+use super::is_mate_score;
 
 const LMR_MIN_IDX: usize = 2;
 const LMR_MAX_SCORE: i16 = 300;
@@ -10,12 +10,10 @@ const NMP_MIN_DEPTH: i8 = 3;
 const RFP_MAX_DEPTH: i8 = 8;
 pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
 
-const RAZOR_MAX_DEPTH: i8 = 4;
-pub const RAZOR_MARGIN_PER_DEPTH: i16 = 240;
-
 /// can we safely prune based off hash score?
+#[inline]
 pub fn tt_prune(res: &HashResult, depth: i8, alpha: i16, beta: i16, halfmove_clock: u8) -> Option<i16> {
-    if res.depth > depth - (res.bound == Bound::EXACT) as i8 && halfmove_clock <= 80 {
+    if res.depth > depth - (res.bound == Bound::EXACT) as i8 && halfmove_clock <= 90 {
         match res.bound {
             Bound::EXACT => {
                 return Some(res.score);
@@ -36,39 +34,41 @@ pub fn tt_prune(res: &HashResult, depth: i8, alpha: i16, beta: i16, halfmove_clo
     None
 }
 
-impl Engine {
-    /// can we safely do null move pruning?
-    /// 
-    /// source: https://www.chessprogramming.org/Null_Move_Pruning
-    pub fn can_do_nmp(&self, allow_null: bool, depth: i8, beta: i16) -> bool {
-        self.board.phase >= NMP_MIN_PHASE
-        && depth >= NMP_MIN_DEPTH
-        && allow_null
-        && !is_mate_score(beta)
-    }
+/// can we safely try pruning?
+pub fn can_do_pruning<const PV: bool>(king_in_check: bool, beta: i16) -> bool {
+    !PV 
+    && !king_in_check
+    && !is_mate_score(beta)
+}
+
+/// can we safely do null move pruning?
+/// 
+/// source: https://www.chessprogramming.org/Null_Move_Pruning
+#[inline]
+pub fn can_do_nmp(allow_null: bool, phase: i16, depth: i8, beta: i16, lazy_eval: i16) -> bool {
+    allow_null
+    && phase >= NMP_MIN_PHASE
+    && depth >= NMP_MIN_DEPTH
+    && lazy_eval >= beta
 }
 
 /// can we safely do reverse futility pruning?
 /// 
 /// source: https://www.chessprogramming.org/Reverse_Futility_Pruning
-pub fn can_do_rfp(depth: i8, beta: i16) -> bool {
-    depth <= RFP_MAX_DEPTH && !is_mate_score(beta)
+#[inline]
+pub fn can_do_rfp(depth: i8, beta: i16, lazy_eval: i16) -> bool {
+    depth <= RFP_MAX_DEPTH
+    && lazy_eval >= beta + RFP_MARGIN_PER_DEPTH * depth as i16
 }
 
 /// can we safely do late move reductions?
 /// 
 /// source: https://www.chessprogramming.org/Late_Move_Reductions
+#[inline]
 pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: i16, check: bool) -> bool {
     !ROOT
     && !king_in_check
     && m_idx >= LMR_MIN_IDX
     && m_score <= LMR_MAX_SCORE
     && !check
-}
-
-/// can we safely do razoring?
-/// 
-/// source: 
-pub fn can_razor(depth: i8, alpha: i16) -> bool {
-    depth <= RAZOR_MAX_DEPTH && !is_mate_score(alpha)
 }

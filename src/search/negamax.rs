@@ -2,9 +2,9 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_lmr, can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
+    pruning::{can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move}, 
-    is_capture, 
+    is_capture,
     MAX_PLY
 };
 use crate::tables::search::Bound;
@@ -68,10 +68,9 @@ impl Engine {
 
         // probing hash table
         // source: https://www.chessprogramming.org/Transposition_Table
-        let zobrist = self.board.zobrist;
         let mut hash_move = 0;
         let mut write_to_hash = true;
-        if let Some(res) = self.ttable.get(zobrist, ply, self.age) {
+        if let Some(res) = self.ttable.get(self.board.zobrist, ply, self.age) {
             if STATS { self.stats.tt_hits += 1; }
 
             // hash entry found, only write to hash table if this depth search  
@@ -96,44 +95,25 @@ impl Engine {
         }
 
         // pruning
-        if !PV && !king_in_check {
+        if can_do_pruning::<PV>(king_in_check, beta) {
             // just psts and material
             let lazy_eval = self.board.lazy_eval();
 
-            // razoring
-            // https://www.chessprogramming.org/Razoring
-            if can_razor(depth, alpha) {
-                let margin = RAZOR_MARGIN_PER_DEPTH * depth as i16;
-                if lazy_eval + margin < alpha {
-                    if STATS { self.stats.razor_attempts += 1 }
-                    let score = self.quiesce::<STATS>(alpha, beta);
-                    if score <= alpha {
-                        if STATS { self.stats.razor_successes += 1 }
-                        return alpha
-                    }
-                }
-            }
-
             // reverse futility pruning (static null move pruning)
             // source: https://www.chessprogramming.org/Reverse_Futility_Pruning
-            if can_do_rfp(depth, beta) && lazy_eval >= beta + RFP_MARGIN_PER_DEPTH * depth as i16 {
+            if can_do_rfp(depth, beta, lazy_eval) {
                 if STATS { self.stats.rfp_prunes += 1 }
                 return beta
             }
 
             // null move pruning
             // source: https://www.chessprogramming.org/Null_Move_Pruning
-            if self.can_do_nmp(allow_null, depth, beta) && lazy_eval >= beta - 50 {
+            if can_do_nmp(allow_null, self.board.phase, depth, beta, lazy_eval) {
                 if STATS { self.stats.nmp_attempts += 1 }
-                // make null move
                 let ctx = self.board.make_null_move();
-                // get a score
                 let score = -self.negamax::<false, false, STATS>(-beta, 1 - beta, depth - 3, ply + 1, &mut Vec::new(), 0, false, false);
-                // unmake null move
                 self.board.unmake_null_move(ctx);
-                // prune
                 if score >= beta {
-                    // this was a cause of much pain, forgetting that the tt_hit is never used is pruned here
                     if STATS { self.stats.nmp_successes += 1 }
                     return beta
                 }
@@ -167,7 +147,7 @@ impl Engine {
             // source: https://www.chessprogramming.org/Late_Move_Reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
-            let reduction = do_lmr as i8 * (1 + (m_idx >= 6) as i8 + (m_idx >= 10) as i8);
+            let reduction = do_lmr as i8;
 
             // pvs framework
             // relies on good move ordering!
@@ -221,7 +201,7 @@ impl Engine {
 
         // writing to hash table
         if write_to_hash {
-            self.ttable.push(zobrist, best_move, depth, self.age, bound, best_score, ply);
+            self.ttable.push(self.board.zobrist, best_move, depth, self.age, bound, best_score, ply);
         }
 
         // fail-soft
