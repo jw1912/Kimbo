@@ -1,15 +1,17 @@
 use super::{Engine, sorting::{MoveScores, get_next_move}};
 use crate::position::{MoveType, MoveList};
 
-/// Comments:
-/// UCI: implemented for the uci protocol / debug stats
-
 impl Engine {
     /// Quiescence search
     /// 
-    /// Constant parameters:
-    ///  - STATS - are debug stats required?
+    /// fail-hard
+    /// 
+    /// source: https://www.chessprogramming.org/Quiescence_Search
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
+        // UCI: count qnodes now, as no early prune
+        self.stats.node_count += 1;
+        if STATS { self.stats.qnode_count += 1; }
+
         // static eval
         let stand_pat = self.board.static_eval(&self.ptable);
 
@@ -27,10 +29,6 @@ impl Engine {
         if alpha < stand_pat {
             alpha = stand_pat;
         }
-        
-        // UCI: count qnodes now, as no early prune
-        self.stats.node_count += 1;
-        if STATS { self.stats.qnode_count += 1; }
 
         // generating captures
         let mut captures = MoveList::default();

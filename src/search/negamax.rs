@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
+    pruning::{can_do_lmr, can_do_rfp, can_razor, tt_prune, RFP_MARGIN_PER_DEPTH, RAZOR_MARGIN_PER_DEPTH},
     sorting::{MoveScores, get_next_move}, 
     is_capture, 
     MAX_PLY
@@ -14,10 +14,6 @@ use std::cmp::{max, min};
 
 impl Engine {
     /// Main alpha-beta minimax search
-    /// 
-    /// Constant parameters:
-    ///  - ROOT - is this a root (ply = 0) node?
-    ///  - STATS - are debug stats required?
     /// 
     /// source: https://www.chessprogramming.org/Alpha-Beta
     #[allow(clippy::too_many_arguments)]
@@ -101,6 +97,7 @@ impl Engine {
 
         // pruning
         if !PV && !king_in_check {
+            // just psts and material
             let lazy_eval = self.board.lazy_eval();
 
             // razoring
@@ -119,13 +116,9 @@ impl Engine {
 
             // reverse futility pruning (static null move pruning)
             // source: https://www.chessprogramming.org/Reverse_Futility_Pruning
-            if can_do_rfp(depth, beta) {
-                if STATS { self.stats.rfp_attempts += 1 }
-                let margin = RFP_MARGIN_PER_DEPTH * depth as i16;
-                if lazy_eval - margin >= beta {
-                    if STATS { self.stats.rfp_successes += 1 }
-                    return beta
-                }
+            if can_do_rfp(depth, beta) && lazy_eval >= beta + RFP_MARGIN_PER_DEPTH * depth as i16 {
+                if STATS { self.stats.rfp_prunes += 1 }
+                return beta
             }
 
             // null move pruning
@@ -151,68 +144,49 @@ impl Engine {
         let mut moves = MoveList::default();
         self.board.gen_moves::<{ MoveType::ALL }>(&mut moves);
 
-        // checking for checkmate/stalemate
+        // checking for (stale)mate
         if moves.is_empty() {
             return king_in_check as i16 * (-MAX_SCORE + ply as i16);
         }
 
-        // move scoring for move ordering
-        let mut move_hit: bool = false;
+        // scoring moves
         let mut move_scores = MoveScores::default();
-        self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, ply, &mut move_hit);
-        if STATS { 
-            if hash_move > 0 { self.stats.tt_move_tries += 1 }
-            if move_hit { 
-                self.stats.tt_move_hits += 1 
-            } else if hash_move > 0 { 
-                self.stats.tt_move_misses += 1 
-            }
-        }
+        self.score_moves::<ROOT>(&moves, &mut move_scores, hash_move, prev_move, ply);
         
-        // initialising stuff for going through moves
+        // stuff for going through moves
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
-        let mut do_pvs = false;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
             let mut sub_pv = Vec::new();
-
-            // making move
             self.board.make_move(m);
-            let check = self.board.is_in_check();
-
+            
             // late move reductions
             // source: https://www.chessprogramming.org/Late_Move_Reductions
-            let do_lmr = self.can_do_lmr::<ROOT>(king_in_check, depth, m_idx, m_score, check);
-            let reduction = do_lmr as i8 * (1 + (m_idx >= 6) as i8);
+            let check = self.board.is_in_check();
+            let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
+            let reduction = do_lmr as i8 * (1 + (m_idx >= 6) as i8 + (m_idx >= 10) as i8);
 
             // pvs framework
+            // relies on good move ordering!
             // source: https://www.chessprogramming.org/Principal_Variation_Search
-            let score = if PV || do_pvs {
-                if m_idx == 0 {
-                    -self.negamax::<true, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
-                } else {
-                    if STATS { self.stats.lmr_attempts += 1 }
-                    let lmr_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
-                    if lmr_score > alpha && (lmr_score < beta || reduction > 0) {
-                        -self.negamax::<true, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
-                    } else {
-                        if STATS { self.stats.lmr_successes += 1 }
-                        lmr_score
-                    }
-                }
+            let score = if m_idx == 0 {
+                -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
             } else {
-                let lmr_score = -self.negamax::<false, false, STATS>(-beta, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
-                if lmr_score > alpha && reduction > 0 {
-                    -self.negamax::<false, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
+                if STATS { self.stats.pvs_attempts += 1 }
+                // do a null window search
+                let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
+                // if it fails high (but not too high!), re-search w/ full window and w/out reductions
+                if (null_window_score < beta || reduction > 0) && null_window_score > alpha {
+                    -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
-                    lmr_score
+                    if STATS { self.stats.pvs_successes += 1 }
+                    null_window_score
                 }
             };
 
-            // unmaking move
             self.board.unmake_move();
 
             // alpha improvements
@@ -224,7 +198,6 @@ impl Engine {
                 if score > alpha {
                     alpha = score;
                     bound = Bound::EXACT;
-                    do_pvs = true;
                     update_pv(pv, m, &mut sub_pv);
                 } 
             }
@@ -240,10 +213,9 @@ impl Engine {
                     // source: https://www.chessprogramming.org/History_Heuristic
                     self.htable.set(self.board.side_to_move, m, depth);
                 }
+                // lower bound
                 bound = Bound::LOWER;
                 break;
-            } else if !is_capture(m) {
-                self.htable.reduce(self.board.side_to_move, m);
             }
         }
 
@@ -252,7 +224,7 @@ impl Engine {
             self.ttable.push(zobrist, best_move, depth, self.age, bound, best_score, ply);
         }
 
-        // return best score
+        // fail-soft
         best_score
     }
 }

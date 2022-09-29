@@ -120,19 +120,15 @@ pub struct Stats {
     // Debugging only
     pub qnode_count: u64,
     pub tt_hits: u64,
-    pub tt_move_tries: u64,
-    pub tt_move_hits: u64,
-    pub tt_move_misses: u64,
     pub tt_prunes: u64,
     pub countermove_hits: u64,
     pub killermove_hits: u64,
     pub history_hits: u64,
-    pub lmr_attempts: u64,
-    pub lmr_successes: u64,
+    pub pvs_attempts: u64,
+    pub pvs_successes: u64,
     pub nmp_attempts: u64,
     pub nmp_successes: u64,
-    pub rfp_attempts: u64,
-    pub rfp_successes: u64,
+    pub rfp_prunes: u64,
     pub razor_attempts: u64,
     pub razor_successes: u64,
 }
@@ -144,21 +140,17 @@ impl Default for Stats {
             start_time: Instant::now(),
             qnode_count: 0,
             tt_hits: 0,
-            tt_move_tries: 0,
-            tt_move_hits: 0,
-            tt_move_misses: 0,
             tt_prunes: 0,
             countermove_hits: 0,
             killermove_hits: 0,
             history_hits: 0,
-            lmr_attempts: 0,
-            lmr_successes: 0,
+            pvs_attempts: 0,
+            pvs_successes: 0,
             nmp_attempts: 0,
             nmp_successes: 0,
             razor_attempts: 0,
             razor_successes: 0,
-            rfp_attempts: 0,
-            rfp_successes: 0,
+            rfp_prunes: 0,
         } 
     }
 }
@@ -168,18 +160,14 @@ impl Stats {
         *self = Self::default();
     }
     pub fn report(&self) {
-        let valid = self.tt_move_hits as f64 * 100.0 / (self.tt_move_tries as f64);
-        let invalid = self.tt_move_misses as f64 * 100.0 / (self.tt_move_tries as f64);
-        let lmr = self.lmr_successes as f64 * 100.0 / (self.lmr_attempts as f64);
+        let pvs = self.pvs_successes as f64 * 100.0 / (self.pvs_attempts as f64);
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
-        println!("hash hits: {}, moves tries: {} ({:.2}% valid moves, {:.2}% invalid)", self.tt_hits, self.tt_move_tries, valid, invalid);
+        println!("hash hits: {}", self.tt_hits);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
-        println!("counter move hits : {}", self.countermove_hits);
-        println!("killer move hits : {}", self.killermove_hits);
-        println!("history move hits : {}", self.history_hits);
-        println!("lmr attempts: {}, successes: {} ({:.2}%)", self.lmr_attempts, self.lmr_successes, lmr);
+        println!("movetype hits, killer: {}, counter: {}, history: {}", self.killermove_hits, self.countermove_hits, self.history_hits);
+        println!("pvs attempts: {}, successes: {} ({:.2}%)", self.pvs_attempts, self.pvs_successes, pvs);
         println!("nmp attempts: {}, successes: {}", self.nmp_attempts, self.nmp_successes);
-        println!("rfp attempts: {}, successes: {}", self.rfp_attempts, self.rfp_successes);
+        println!("rfp prunes: {}", self.rfp_prunes);
         println!("razor attempts: {}, successes: {}", self.razor_attempts, self.razor_successes);
     }
 }

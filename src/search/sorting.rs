@@ -41,9 +41,8 @@ impl Engine {
         MVV_LVA[captured_pc][moved_pc]
     }
 
-    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY], move_hit: &mut bool) -> i16 {
+    pub fn score_move<const ROOT: bool>(&mut self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY]) -> i16 {
         if m == hash_move {
-            *move_hit = true;
             HASH_MOVE
         } else if is_capture(m) {
             self.mvv_lva(m)
@@ -63,12 +62,12 @@ impl Engine {
         }
     }
     
-    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8, move_hit: &mut bool) {
+    pub fn score_moves<const ROOT: bool>(&mut self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8) {
         let counter_move = self.ctable.get(prev_move);
         let killer_moves = self.ktable.get_ply(ply);
         for i in move_scores.start_idx..moves.len() {
             let m = moves[i]; 
-            move_scores.push(self.score_move::<ROOT>(m, hash_move, counter_move, killer_moves, move_hit));
+            move_scores.push(self.score_move::<ROOT>(m, hash_move, counter_move, killer_moves));
         }
     }
 
