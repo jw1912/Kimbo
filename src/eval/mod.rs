@@ -181,8 +181,6 @@ impl Position {
 
     /// is the game drawn by insufficient material?
     /// 
-    /// SOURCE: https://www.chessprogramming.org/Draw_Evaluation
-    /// 
     /// can claim draw by FIDE rules:
     ///  - KvK
     ///  - KvKN or KvKB

@@ -15,7 +15,7 @@ use std::cmp::{max, min};
 impl Engine {
     /// Main alpha-beta minimax search
     /// 
-    /// source: https://www.chessprogramming.org/Alpha-Beta
+    /// fail-soft
     #[allow(clippy::too_many_arguments)]
     pub fn negamax<const PV: bool, const ROOT: bool, const STATS: bool>(
         &mut self, 
@@ -40,13 +40,11 @@ impl Engine {
         self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
 
         // draw detection
-        // source: https://www.chessprogramming.org/Draw
         if self.board.is_draw_by_50() || self.board.is_draw_by_repetition(2 + ROOT as u8) || self.board.is_draw_by_material() {
             return 0;
         }
 
         // mate distance pruning
-        // source: https://www.chessprogramming.org/Mate_Distance_Pruning
         alpha = max(alpha, -MAX_SCORE + ply as i16);
         beta = min(beta, MAX_SCORE - ply as i16 - 1);
         if alpha >= beta {
@@ -54,11 +52,9 @@ impl Engine {
         }
 
         // check extensions
-        // source: https://www.chessprogramming.org/Check_Extensions
         depth += king_in_check as i8;
 
         // quiescence search at depth <= 0 or maximum ply
-        // source: https://www.chessprogramming.org/Quiescence_Search
         if depth <= 0 || ply == MAX_PLY {
             return self.quiesce::<STATS>(alpha, beta);
         }
@@ -67,7 +63,6 @@ impl Engine {
         self.stats.node_count += 1;
 
         // probing hash table
-        // source: https://www.chessprogramming.org/Transposition_Table
         let mut hash_move = 0;
         let mut write_to_hash = true;
         if let Some(res) = self.ttable.get(self.board.zobrist, ply, self.age) {
@@ -100,14 +95,12 @@ impl Engine {
             let lazy_eval = self.board.lazy_eval();
 
             // reverse futility pruning (static null move pruning)
-            // source: https://www.chessprogramming.org/Reverse_Futility_Pruning
             if can_do_rfp(depth, beta, lazy_eval) {
                 if STATS { self.stats.rfp_prunes += 1 }
                 return beta
             }
 
             // null move pruning
-            // source: https://www.chessprogramming.org/Null_Move_Pruning
             if can_do_nmp(allow_null, self.board.phase, depth, beta, lazy_eval) {
                 if STATS { self.stats.nmp_attempts += 1 }
                 let ctx = self.board.make_null_move();
@@ -144,14 +137,12 @@ impl Engine {
             self.board.make_move(m);
             
             // late move reductions
-            // source: https://www.chessprogramming.org/Late_Move_Reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
             let reduction = do_lmr as i8;
 
             // pvs framework
             // relies on good move ordering!
-            // source: https://www.chessprogramming.org/Principal_Variation_Search
             let score = if m_idx == 0 {
                 -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
             } else {
@@ -186,11 +177,8 @@ impl Engine {
             if score >= beta {
                 // counter move, killer move, history heuristics
                 if !is_capture(m) {
-                    // source: https://www.chessprogramming.org/Countermove_Heuristic
                     self.ctable.set(prev_move, m);
-                    // source: https://www.chessprogramming.org/Killer_Heuristic
                     self.ktable.push(m, ply);
-                    // source: https://www.chessprogramming.org/History_Heuristic
                     self.htable.set(self.board.side_to_move, m, depth);
                 }
                 // lower bound

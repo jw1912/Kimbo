@@ -45,8 +45,6 @@ pub fn can_do_pruning<const PV: bool>(king_in_check: bool, beta: i16) -> bool {
 }
 
 /// can we safely do null move pruning?
-/// 
-/// source: https://www.chessprogramming.org/Null_Move_Pruning
 #[inline]
 pub fn can_do_nmp(allow_null: bool, phase: i16, depth: i8, beta: i16, lazy_eval: i16) -> bool {
     allow_null
@@ -56,8 +54,6 @@ pub fn can_do_nmp(allow_null: bool, phase: i16, depth: i8, beta: i16, lazy_eval:
 }
 
 /// can we safely do reverse futility pruning?
-/// 
-/// source: https://www.chessprogramming.org/Reverse_Futility_Pruning
 #[inline]
 pub fn can_do_rfp(depth: i8, beta: i16, lazy_eval: i16) -> bool {
     depth <= RFP_MAX_DEPTH
@@ -65,8 +61,6 @@ pub fn can_do_rfp(depth: i8, beta: i16, lazy_eval: i16) -> bool {
 }
 
 /// can we safely do late move reductions?
-/// 
-/// source: https://www.chessprogramming.org/Late_Move_Reductions
 #[inline]
 pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: i16, check: bool) -> bool {
     !ROOT

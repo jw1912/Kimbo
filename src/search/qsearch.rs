@@ -5,8 +5,6 @@ impl Engine {
     /// Quiescence search
     /// 
     /// fail-hard
-    /// 
-    /// source: https://www.chessprogramming.org/Quiescence_Search
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // UCI: count qnodes now, as no early prune
         self.stats.node_count += 1;

@@ -18,16 +18,16 @@ impl ParamContainer {
 
     pub const fn new() -> Self {
         ParamContainer {
-            doubled_mg: 0,
+            doubled_mg: 1,
             doubled_eg: -15,
-            isolated_mg: -7,
-            isolated_eg: -7,
+            isolated_mg: -8,
+            isolated_eg: -5,
             passed_mg: -7,
-            passed_eg: 30,
-            shield_mg: 0,
-            shield_eg: 4,
-            open_file_mg: -25,
-            open_file_eg: 11,
+            passed_eg: 27,
+            shield_mg: 2,
+            shield_eg: 1,
+            open_file_mg: -24,
+            open_file_eg: 8,
         }
     }
 }

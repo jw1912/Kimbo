@@ -43,7 +43,11 @@ pub fn tuner_eval(pos: &Position, params: &[i16; 10]) -> i16 {
     let mat = eval_factor(phase, pos.mat_mg, pos.mat_eg);
     let pst = eval_factor(phase, pos.pst_mg, pos.pst_eg);
     let pwn = tuner_pawn_score(pos, 0, phase, params) - tuner_pawn_score(pos, 1, phase, params);
-    mat + pst + pwn
+    let mut eval = mat + pst + pwn;
+    if eval != 0 {
+        eval += pos.eg_king_score((eval < 0) as usize, phase)
+    }
+    eval
 }
 
 fn tuner_pawn_score(pos: &Position, side: usize, phase: i32, params: &[i16; 10]) -> i16 {
