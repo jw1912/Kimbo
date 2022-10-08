@@ -121,16 +121,11 @@ pub struct Stats {
     pub qnode_count: u64,
     pub tt_hits: u64,
     pub tt_prunes: u64,
-    pub countermove_hits: u64,
-    pub killermove_hits: u64,
-    pub history_hits: u64,
     pub pvs_attempts: u64,
     pub pvs_successes: u64,
     pub nmp_attempts: u64,
     pub nmp_successes: u64,
     pub rfp_prunes: u64,
-    pub razor_attempts: u64,
-    pub razor_successes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -141,15 +136,10 @@ impl Default for Stats {
             qnode_count: 0,
             tt_hits: 0,
             tt_prunes: 0,
-            countermove_hits: 0,
-            killermove_hits: 0,
-            history_hits: 0,
             pvs_attempts: 0,
             pvs_successes: 0,
             nmp_attempts: 0,
             nmp_successes: 0,
-            razor_attempts: 0,
-            razor_successes: 0,
             rfp_prunes: 0,
         } 
     }
@@ -165,10 +155,8 @@ impl Stats {
         println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
         println!("hash hits: {}", self.tt_hits);
         println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
-        println!("movetype hits, killer: {}, counter: {}, history: {}", self.killermove_hits, self.countermove_hits, self.history_hits);
         println!("pvs attempts: {}, successes: {} ({:.2}%)", self.pvs_attempts, self.pvs_successes, pvs);
         println!("nmp attempts: {}, successes: {} ({:.2}%)", self.nmp_attempts, self.nmp_successes, nmp);
         println!("rfp prunes: {}", self.rfp_prunes);
-        println!("razor attempts: {}, successes: {}", self.razor_attempts, self.razor_successes);
     }
 }

@@ -67,7 +67,7 @@ pub const PASSED_MG: i16 = -7;
 pub const PASSED_EG: i16 = 27;
 pub const PAWN_SHIELD_MG: i16 = 2;
 pub const PAWN_SHIELD_EG: i16 = 1;
-pub const PAWN_OPEN_FILE_MG: i16 = -24;
+pub const PAWN_OPEN_FILE_MG: i16 = -10;
 pub const PAWN_OPEN_FILE_EG: i16 = 8;
 
 // PeSTO evaluation values

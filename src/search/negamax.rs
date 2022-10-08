@@ -134,6 +134,7 @@ impl Engine {
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
             let mut sub_pv = Vec::new();
+            
             self.board.make_move(m);
             
             // late move reductions

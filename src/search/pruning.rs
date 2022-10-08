@@ -6,10 +6,9 @@ const LMR_MAX_SCORE: i16 = 300;
 
 const NMP_MIN_PHASE: i16 = 6;
 const NMP_MIN_DEPTH: i8 = 3;
-const NMP_MARGIN: i16 = 50;
 
 const RFP_MAX_DEPTH: i8 = 8;
-pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
+const RFP_MARGIN_PER_DEPTH: i16 = 120;
 
 /// can we safely prune based off hash score?
 #[inline]
@@ -38,6 +37,7 @@ pub fn tt_prune<const PV: bool>(res: &HashResult, depth: i8, alpha: i16, beta: i
 }
 
 /// can we safely try pruning?
+#[inline]
 pub fn can_do_pruning<const PV: bool>(king_in_check: bool, beta: i16) -> bool {
     !PV 
     && !king_in_check
@@ -50,7 +50,7 @@ pub fn can_do_nmp(allow_null: bool, phase: i16, depth: i8, beta: i16, lazy_eval:
     allow_null
     && phase >= NMP_MIN_PHASE
     && depth >= NMP_MIN_DEPTH
-    && lazy_eval >= beta - NMP_MARGIN
+    && lazy_eval >= beta
 }
 
 /// can we safely do reverse futility pruning?
