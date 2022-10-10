@@ -1,4 +1,4 @@
-use crate::{io::outputs::u16_to_uci, position::{zobrist::{initialise_zobrist, initialise_pawnhash}}, eval::{calc_pst, calc_material}};
+use crate::{io::outputs::u16_to_uci, position::zobrist::{initialise_zobrist, initialise_pawnhash}, eval::{calc_pst, calc_material}};
 use super::{MoveType, MoveList, Position};
 
 pub fn perft<const ROOT: bool, const DEBUG: bool>(position: &mut Position, depth_left: u8) -> u64 {
