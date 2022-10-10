@@ -36,8 +36,8 @@ fn _search_all() {
     let pt = Arc::new(PawnHashTable::new(1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
-    for (i, pos ) in _POSITIONS.iter().enumerate() {
-        let position =  Position::from_fen(*pos, zvals.clone()).unwrap();
+    for pos in _POSITIONS {
+        let position =  Position::from_fen(pos, zvals.clone()).unwrap();
         let mut search= Engine::new(
             position,
             Arc::new(AtomicBool::new(false)),
@@ -46,9 +46,8 @@ fn _search_all() {
             u64::MAX,
             tt.clone(),
             pt.clone(),
-            i as u8,
         );
-        assert_eq!(String::from(*pos), search.board.to_fen());
+        assert_eq!(String::from(pos), search.board.to_fen());
         display_board::<true>(&search.board);
         println!("fen: {}", pos);
         search.go::<true, true>();
@@ -73,7 +72,6 @@ fn _search_one(pos: usize) {
         u64::MAX,
         tt,
         pt,
-        0,
     );
     display_board::<true>(&search.board);
     println!("fen: {}", _POSITIONS[pos]);

@@ -35,8 +35,8 @@ fn main() {
     let pt = Arc::new(PawnHashTable::new(4 * 1024 * 1024));
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
-    for (i, position ) in _POSITIONS.iter().enumerate() {
-        let pos =  Position::from_fen(*position, zvals.clone()).unwrap();
+    for position  in _POSITIONS {
+        let pos =  Position::from_fen(position, zvals.clone()).unwrap();
         let mut search = Engine::new(
             pos,
             Arc::new(AtomicBool::new(false)),
@@ -45,7 +45,6 @@ fn main() {
             u64::MAX,
             tt.clone(),
             pt.clone(),
-            i as u8,
         );
         println!("===Search Report===");
         println!("fen: {}", position);

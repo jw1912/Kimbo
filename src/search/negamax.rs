@@ -65,7 +65,7 @@ impl Engine {
         // probing hash table
         let mut hash_move = 0;
         let mut write_to_hash = true;
-        if let Some(res) = self.ttable.get(self.board.zobrist, ply, self.age) {
+        if let Some(res) = self.ttable.get(self.board.zobrist, ply) {
             if STATS { self.stats.tt_hits += 1; }
 
             // hash entry found, only write to hash table if this depth search  
@@ -190,7 +190,7 @@ impl Engine {
 
         // writing to hash table
         if write_to_hash {
-            self.ttable.push(self.board.zobrist, best_move, depth, self.age, bound, best_score, ply);
+            self.ttable.push(self.board.zobrist, best_move, depth, bound, best_score, ply);
         }
 
         // fail-soft

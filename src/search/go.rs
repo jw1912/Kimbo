@@ -55,7 +55,6 @@ impl Engine {
         }
         // resetting counts
         self.stats.reset();
-        self.age += 1;
         best_move
     }
 }

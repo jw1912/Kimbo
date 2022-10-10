@@ -58,7 +58,6 @@ pub struct Engine {
     pub max_move_time: u64,
     pub max_depth: i8,
     pub max_nodes: u64,
-    pub age: u8,
     pub stats: Stats,
 }
 
@@ -72,7 +71,7 @@ impl Engine {
         zobrist_vals: Arc<ZobristVals>
     ) -> Result<Self, UciError> {
         let board = Position::from_fen(s, zobrist_vals)?;
-        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable, 0))
+        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -84,7 +83,6 @@ impl Engine {
         max_nodes: u64,
         ttable: Arc<HashTable>,
         ptable: Arc<PawnHashTable>,
-        age: u8,
     ) -> Self {
         let stats = Stats::default();
         Self {
@@ -98,7 +96,6 @@ impl Engine {
             ctable: Arc::new(CounterMoveTable::default()),
             ktable: Arc::new(KillerMoveTable::default()),
             htable: Arc::new(HistoryTable::default()),
-            age,
             stats,
         }
     }

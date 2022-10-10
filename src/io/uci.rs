@@ -27,7 +27,6 @@ struct State {
     ttable: Arc<HashTable>,
     ptable: Arc<PawnHashTable>,
     zvals: Arc<ZobristVals>,
-    age: u8,
     move_overhead: u64,
 }
 
@@ -41,7 +40,6 @@ impl Default for State {
             ttable: Arc::new(HashTable::new(1024 * 1024)),
             ptable: Arc::new(PawnHashTable::new(4 * 1024 * 1024)),
             zvals: Arc::new(ZobristVals::default()),
-            age: 0,
             move_overhead: 10,
         }
     }
@@ -100,7 +98,10 @@ fn isready() -> Result<(), UciError> {
 }
 
 fn ucinewgame(state: Arc<Mutex<State>>) -> Result<(), UciError> {
-    state.lock().unwrap().pos = Position::default();
+    let mut state_lock = state.lock().unwrap();
+    state_lock.pos = Position::default();
+    state_lock.ttable.clear();
+    drop(state_lock);
     Ok(())
 }
 
@@ -272,7 +273,6 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         let abort_signal = state_lock.stop.clone();
         let tt = state_lock.ttable.clone();
         let pt = state_lock.ptable.clone();
-        let age = state_lock.age;
         let move_overhead = state_lock.move_overhead;
         drop(state_lock);
 
@@ -286,13 +286,9 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             max_nodes,
             tt,
             pt,
-            age,
         );
         let best_move = search.go::<true, false>();
         println!("bestmove {}", u16_to_uci(&best_move));
-        let mut state_lock = state_2.lock().unwrap();
-        state_lock.age += 1;
-        drop(state_lock);
     });
     // join handle provided to master thread
     state.lock().unwrap().search_handle = Some(search_thread);
@@ -331,13 +327,11 @@ fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErr
             let mut state_lock = state.lock().unwrap();
             state_lock.ttable_size = std::cmp::max(1, size as i16 - 4) as usize;
             state_lock.ttable = Arc::new(HashTable::new(state_lock.ttable_size * 1024 * 1024));
-            state_lock.age = 0;
             drop(state_lock)
         }
         "Clear Hash" => {
-            let mut state_lock = state.lock().unwrap();
-            state_lock.ttable = Arc::new(HashTable::new(state_lock.ttable_size * 1024 * 1024));
-            state_lock.age = 0;
+            let state_lock = state.lock().unwrap();
+            state_lock.ttable.clear();
             drop(state_lock)
         }
         "Move Overhead" => {

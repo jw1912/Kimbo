@@ -50,7 +50,6 @@ pub struct HashResult {
     pub best_move: u16,
     pub score: i16,
     pub depth: i8,
-    pub age: u8,
     pub bound: u8,
 }
 
@@ -65,8 +64,18 @@ impl HashTable {
             filled: AtomicU64::new(0),
         }
     }
+
+    pub fn clear(&self) {
+        for bucket in &self.table {
+            for entry in &bucket.entries {
+                entry.data.store(0, Ordering::Relaxed);
+            }
+        }
+        self.filled.store(0, Ordering::Relaxed);
+    }
+
     #[allow(clippy::too_many_arguments)]
-    pub fn push(&self, zobrist: u64, best_move: u16, depth: i8, age: u8, bound: u8, mut score: i16, ply: i8) {
+    pub fn push(&self, zobrist: u64, best_move: u16, depth: i8, bound: u8, mut score: i16, ply: i8) {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
@@ -75,12 +84,7 @@ impl HashTable {
         for (entry_idx, entry) in bucket.entries.iter().enumerate() {
             let data = entry.data.load(Ordering::Relaxed);
             let entry_data = HashEntry::load(data);
-            // ignoring entries from previous searches anyway, so they are first to be replaced
-            if entry_data.age != age {
-                desired_idx = entry_idx;
-                break;
-            }
-            // then replace lower depth entries with this key
+            // replace lower depth entries with this key
             if entry_data.key == key && depth > entry_data.depth {
                 desired_idx = entry_idx;
                 break;
@@ -103,10 +107,10 @@ impl HashTable {
         } else if score < -MATE_THRESHOLD {
             score -= ply as i16;
         }
-        bucket.entries[desired_idx].store(key, best_move, depth, age, bound, score);
+        bucket.entries[desired_idx].store(key, best_move, depth, bound, score);
     }
 
-    pub fn get(&self, zobrist: u64, ply: i8, search_age: u8) -> Option<HashResult> {
+    pub fn get(&self, zobrist: u64, ply: i8) -> Option<HashResult> {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];
@@ -114,7 +118,7 @@ impl HashTable {
             let data = entry.data.load(Ordering::Relaxed);
             let entry_key = HashEntry::get_key(data);
             // require that the key matches AND that the result is from this search
-            if entry_key == key && search_age == HashEntry::get_age(data) {
+            if entry_key == key {
                 let mut entry_data = HashEntry::load(data);
                 if entry_data.score > MATE_THRESHOLD {
                     entry_data.score -= ply as i16;
@@ -133,22 +137,17 @@ impl HashTable {
 }
 
 impl HashEntry {
-    fn store(&self, key: u16, best_move: u16, depth: i8, age: u8, bound: u8, score: i16) {
+    fn store(&self, key: u16, best_move: u16, depth: i8, bound: u8, score: i16) {
         let data = (key as u64)
             | ((best_move as u64) << 16)
             | (((score as u16) as u64) << 32)
             | ((depth as u64) << 48)
-            | ((bound as u64) << 56)
-            | ((age as u64) << 58);
+            | ((bound as u64) << 56);
         self.data.store(data, Ordering::Relaxed);
     }
 
     fn get_key(data: u64) -> u16 {
         data as u16
-    }
-
-    fn get_age(data: u64) -> u8 {
-        (data >> 58) as u8
     }
 
     fn load(data: u64) -> HashResult {
@@ -157,7 +156,6 @@ impl HashEntry {
             best_move: (data >> 16) as u16,
             score: (data >> 32) as i16,
             depth: (data >> 48) as i8,
-            age: (data >> 58) as u8,
             bound: ((data >> 56) & 3) as u8,
         }
     }
