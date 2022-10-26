@@ -33,7 +33,7 @@ impl Engine {
         if self.stop.load(Ordering::Relaxed) {
             return 0;
         }
-        if self.search_limits_reached() {
+        if self.stats.node_count & 2047 == 0 && self.search_limits_reached() {
             self.stop.store(true, Ordering::Relaxed);
             return 0;
         }
