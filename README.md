@@ -8,10 +8,10 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 
 #### ELO
 
-| Version | Release Date | CCRL Blitz |
-| ------- | ------------ | ---------- |
-| [0.2.1](https://github.com/JacquesRW/Kimbo/releases/tag/v0.2.1)   | 20th September 2022 | 2205 |
-| [0.3.0](https://github.com/JacquesRW/Kimbo/releases/tag/v0.3.0)   | 10th October 2022 | TBD |
+| Version | Release Date | CCRL Blitz | CCRL 40/15 |
+| :-----: | :----------: | :--------: | :--------: |
+| [0.2.1](https://github.com/JacquesRW/Kimbo/releases/tag/v0.2.1)   | 20th September 2022 | 2205 | - |
+| [0.3.0](https://github.com/JacquesRW/Kimbo/releases/tag/v0.3.0)   | 10th October 2022 | TBD | TBD |
 
 ## Features
 
@@ -35,7 +35,7 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 6. Castling
 4. Quiets, sorted by history heuristic
 
-#### Evalutaion
+#### Evalutation
 - Tapered from midgame to endgame
 - Material
 - Piece-square tables
