@@ -39,7 +39,7 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 - Tapered from midgame to endgame
 - Material
 - Piece-square tables
-- Passed structure (w/ basic king safety)
+- Pawn structure (w/ basic king safety)
 
 #### Pruning/Reductions
 - Mate distance pruning
