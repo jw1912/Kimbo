@@ -48,7 +48,7 @@ fn _search_all() {
             pt.clone(),
         );
         assert_eq!(String::from(pos), search.board.to_fen());
-        display_board::<true>(&search.board);
+        //display_board::<true>(&search.board);
         println!("fen: {}", pos);
         search.go::<true, true>();
         println!(" ");

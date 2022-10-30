@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_iid, can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move}, 
     is_capture,
     MAX_PLY
@@ -111,6 +111,9 @@ impl Engine {
                     return beta
                 }
             }
+
+            // internal iterative deepening
+            depth -= can_do_iid(depth, hash_move) as i8;
         }
 
         // generating moves
