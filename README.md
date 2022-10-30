@@ -35,7 +35,7 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 6. Castling
 4. Quiets, sorted by history heuristic
 
-#### Evalutation
+#### Evaluation
 - Tapered from midgame to endgame
 - Material
 - Piece-square tables
