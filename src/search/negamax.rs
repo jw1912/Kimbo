@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_iid, can_do_lmr, can_do_nmp, can_do_razoring, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_iid, can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move}, 
     is_capture,
     MAX_PLY
@@ -109,14 +109,6 @@ impl Engine {
                 if score >= beta {
                     if STATS { self.stats.nmp_successes += 1 }
                     return beta
-                }
-            }
-
-            // razoring
-            if can_do_razoring(depth, alpha, lazy_eval) {
-                let score = self.quiesce::<STATS>(alpha, beta);
-                if score <= alpha {
-                    return alpha
                 }
             }
 
