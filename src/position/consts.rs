@@ -292,7 +292,6 @@ const fn line_through_lookup() -> [[u64; 64]; 64] {
 }
 
 #[derive(Clone, Copy)]
-#[repr(align(32))]
 pub struct Masks {
     pub bitmask: u64,
     pub diag: u64,

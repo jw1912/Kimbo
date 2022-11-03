@@ -8,7 +8,12 @@ const NMP_MIN_PHASE: i16 = 6;
 const NMP_MIN_DEPTH: i8 = 3;
 
 const RFP_MAX_DEPTH: i8 = 8;
-const RFP_MARGIN_PER_DEPTH: i16 = 120;
+const RFP_MARGIN_PER_DEPTH: i16 = 100;
+
+const RAZOR_MAX_DEPTH: i8 = 4;
+const RAZOR_MARGIN_PER_DEPTH: i16 = 250;
+
+const IID_MIN_DEPTH: i8 = 4;
 
 /// can we safely prune based off hash score?
 #[inline]
@@ -68,4 +73,16 @@ pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: 
     && m_idx >= LMR_MIN_IDX
     && m_score <= LMR_MAX_SCORE
     && !check
+}
+
+/// can we safely reduce nodes with no hash moves?
+#[inline]
+pub fn can_do_iid(depth: i8, hash_move: u16) -> bool {
+    depth >= IID_MIN_DEPTH && hash_move == 0
+}
+
+/// can we safely do razoring?
+#[inline]
+pub fn can_do_razoring(depth: i8, alpha: i16, lazy_eval: i16) -> bool {
+    depth <= RAZOR_MAX_DEPTH && (lazy_eval + (depth as i16) * RAZOR_MARGIN_PER_DEPTH <= alpha)
 }

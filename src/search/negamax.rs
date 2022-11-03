@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_iid, can_do_lmr, can_do_nmp, can_do_razoring, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move}, 
     is_capture,
     MAX_PLY
@@ -37,7 +37,7 @@ impl Engine {
             self.stop.store(true, Ordering::Relaxed);
             return 0;
         }
-        self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
+        self.stats.seldepth = max(self.stats.seldepth, ply);
 
         // draw detection
         if self.board.is_draw_by_50() || self.board.is_draw_by_repetition(2 + ROOT as u8) || self.board.is_draw_by_material() {
@@ -111,6 +111,17 @@ impl Engine {
                     return beta
                 }
             }
+
+            // razoring
+            if can_do_razoring(depth, alpha, lazy_eval) {
+                let score = self.quiesce::<STATS>(alpha, beta);
+                if score <= alpha {
+                    return alpha
+                }
+            }
+
+            // internal iterative deepening
+            depth -= can_do_iid(depth, hash_move) as i8;
         }
 
         // generating moves
