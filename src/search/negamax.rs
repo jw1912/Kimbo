@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_iid, can_do_lmr, can_do_nmp, can_do_razoring, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_iir, can_do_lmr, can_do_nmp, can_do_razoring, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move}, 
     is_capture,
     MAX_PLY
@@ -89,6 +89,9 @@ impl Engine {
             }
         }
 
+        // need to track if iid applied
+        let mut iid = false;
+
         // pruning
         if can_do_pruning::<PV>(king_in_check, beta) {
             // just psts and material
@@ -120,8 +123,9 @@ impl Engine {
             //    }
             //}
 
-            // internal iterative deepening
-            //depth -= can_do_iid(depth, hash_move) as i8;
+            // internal iterative reductions
+            depth -= can_do_iir(depth, hash_move) as i8;
+            iid = true;
         }
 
         // generating moves
@@ -162,7 +166,7 @@ impl Engine {
                 // do a null window search
                 let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
                 // if it fails high (but not too high!), re-search w/ full window and w/out reductions
-                if (null_window_score < beta || reduction > 0) && null_window_score > alpha {
+                if (null_window_score < beta || reduction > 0 || iid) && null_window_score > alpha {
                     -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
                     if STATS { self.stats.pvs_successes += 1 }

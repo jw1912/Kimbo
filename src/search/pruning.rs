@@ -77,7 +77,7 @@ pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: 
 
 /// can we safely reduce nodes with no hash moves?
 #[inline]
-pub fn can_do_iid(depth: i8, hash_move: u16) -> bool {
+pub fn can_do_iir(depth: i8, hash_move: u16) -> bool {
     depth >= IID_MIN_DEPTH && hash_move == 0
 }
 
