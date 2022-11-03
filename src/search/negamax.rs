@@ -113,15 +113,15 @@ impl Engine {
             }
 
             // razoring
-            if can_do_razoring(depth, alpha, lazy_eval) {
-                let score = self.quiesce::<STATS>(alpha, beta);
-                if score <= alpha {
-                    return alpha
-                }
-            }
+            //if can_do_razoring(depth, alpha, lazy_eval) {
+            //    let score = self.quiesce::<STATS>(alpha, beta);
+            //    if score <= alpha {
+            //        return alpha
+            //    }
+            //}
 
             // internal iterative deepening
-            depth -= can_do_iid(depth, hash_move) as i8;
+            //depth -= can_do_iid(depth, hash_move) as i8;
         }
 
         // generating moves
