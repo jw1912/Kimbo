@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_iir, can_do_lmr, can_do_nmp, can_do_razoring, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_iir, can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move}, 
     is_capture,
     MAX_PLY
@@ -114,14 +114,6 @@ impl Engine {
                     return beta
                 }
             }
-
-            // razoring
-            //if can_do_razoring(depth, alpha, lazy_eval) {
-            //    let score = self.quiesce::<STATS>(alpha, beta);
-            //    if score <= alpha {
-            //        return alpha
-            //    }
-            //}
 
             // internal iterative reductions
             depth -= can_do_iir(depth, hash_move) as i8;
