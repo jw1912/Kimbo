@@ -37,7 +37,7 @@ impl Engine {
             self.stop.store(true, Ordering::Relaxed);
             return 0;
         }
-        self.stats.seldepth = std::cmp::max(self.stats.seldepth, ply);
+        self.stats.seldepth = max(self.stats.seldepth, ply);
 
         // draw detection
         if self.board.is_draw_by_50() || self.board.is_draw_by_repetition(2 + ROOT as u8) || self.board.is_draw_by_material() {
