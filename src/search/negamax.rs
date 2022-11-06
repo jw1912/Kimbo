@@ -89,9 +89,6 @@ impl Engine {
             }
         }
 
-        // need to track if iid applied
-        let mut iid = false;
-
         // pruning
         if can_do_pruning::<PV>(king_in_check, beta) {
             // just psts and material
@@ -114,11 +111,10 @@ impl Engine {
                     return beta
                 }
             }
-
-            // internal iterative reductions
-            depth -= can_do_iir(depth, hash_move) as i8;
-            iid = true;
         }
+
+        // internal iterative reductions
+        let iir = can_do_iir::<PV>(depth, hash_move) as i8;
 
         // generating moves
         let mut moves = MoveList::default();
@@ -147,7 +143,7 @@ impl Engine {
             // late move reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
-            let reduction = do_lmr as i8;
+            let reduction = do_lmr as i8 + iir;
 
             // pvs framework
             // relies on good move ordering!
@@ -158,7 +154,7 @@ impl Engine {
                 // do a null window search
                 let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
                 // if it fails high (but not too high!), re-search w/ full window and w/out reductions
-                if (null_window_score < beta || reduction > 0 || iid) && null_window_score > alpha {
+                if (null_window_score < beta || reduction > 0) && null_window_score > alpha {
                     -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
                     if STATS { self.stats.pvs_successes += 1 }
