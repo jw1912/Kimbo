@@ -1,6 +1,7 @@
 use super::*;
 use crate::io::SearchStats;
 use crate::io::outputs::uci_info;
+use crate::position::{MoveList, MoveType};
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
@@ -9,6 +10,13 @@ impl Engine {
     /// CLI: command line output of info needed?
     /// STATS: debug stats needed?
     pub fn go<const CLI: bool, const STATS: bool>(&mut self) -> u16 {
+        // if only one legal move, make it immediately
+        let mut moves = MoveList::default();
+        self.board.gen_moves::<{ MoveType::ALL }>(&mut moves);
+        if moves.len() == 1 {
+            return moves[0]
+        }
+
         // loop of iterative deepening, up to preset max depth
         self.stats.start_time = Instant::now();
         let mut stats = SearchStats::new(0, 0, 0, Vec::new());
