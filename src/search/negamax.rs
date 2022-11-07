@@ -148,10 +148,7 @@ impl Engine {
             // pvs framework
             // relies on good move ordering!
             let score = if m_idx == 0 {
-                // quiet pv move extensions
-                let ext = (!ROOT && PV && !king_in_check && !check && ply < 10 && hash_move > 0 && self.ktable.get_ply(ply).contains(&hash_move)) as i8;
-                // no null moves or reductions
-                -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1 + ext, ply + 1, &mut sub_pv, m, check, false)
+                -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
             } else {
                 if STATS { self.stats.pvs_attempts += 1 }
                 // do a null window search
