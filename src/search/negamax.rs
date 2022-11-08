@@ -144,6 +144,12 @@ impl Engine {
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
             let reduction = do_lmr as i8 + iir;
+            
+            // history leaf pruning
+            if !PV && depth - reduction == 0 && m_score <= 1 {
+                self.board.unmake_move();
+                continue
+            }
 
             // pvs framework
             // relies on good move ordering!
