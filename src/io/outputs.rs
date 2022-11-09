@@ -44,26 +44,22 @@ pub fn uci_info(depth: i8, seldepth: i8, nodes: u64, time: u128, pv: Vec<u16>, e
 
 // getting symbols for pieces
 const PIECE_SYMBOLS: [&str; 13] = [" ", "P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"];
-const PIECE_SYMBOLS_FANCY: [&str; 13] = [" ", "♟", "♞", "♝", "♜", "♛", "♚", "♙", "♘", "♗", "♖", "♕", "♔"];
-fn symbol_at_idx<const FANCY: bool>(idx: usize, pos: &Position) -> &str {
+fn symbol_at_idx(idx: usize, pos: &Position) -> &str {
     let indx = match pos.squares[idx] {
         6 => 0,
         _ => ((pos.squares[idx] + 1) as u64 + 6 * ((pos.sides[1] >> idx) & 1)) as usize,
     };
-    match FANCY {
-        true => PIECE_SYMBOLS_FANCY[indx],
-        false => PIECE_SYMBOLS[indx],
-    }
+    PIECE_SYMBOLS[indx]
 }
 
 /// Prints the current board in pretty format
-pub fn display_board<const FANCY: bool>(pos: &Position) {
+pub fn display_board(pos: &Position) {
     println!("+---+---+---+---+---+---+---+---+");
     for i in 1..9 {
         let mut line: String = String::from("| ");
         for j in 0..8 {
             let idx = 64 - i * 8 + j;
-            line.push_str(symbol_at_idx::<FANCY>(idx, pos));
+            line.push_str(symbol_at_idx(idx, pos));
             line.push_str(" | ");
         }
         println!("{}", line);

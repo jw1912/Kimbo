@@ -108,14 +108,12 @@ fn ucinewgame(state: Arc<Mutex<State>>) -> Result<(), UciError> {
 fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     enum Tokens {
         None,
-        Fancy,
         Stats,
     }
     let mut token: Tokens = Tokens::None;
     for command in commands {
         match command {
             "display" => (),
-            "fancy" => token = Tokens::Fancy,
             "stats" => token = Tokens::Stats,
             _ => {
                 return Err(UciError::Display);
@@ -123,8 +121,7 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
         }
     }
     match token {
-        Tokens::None => display_board::<false>(&state.lock().unwrap().pos),
-        Tokens::Fancy => display_board::<true>(&state.lock().unwrap().pos),
+        Tokens::None => display_board(&state.lock().unwrap().pos),
         Tokens::Stats => {
             let state_lock = state.lock().unwrap();
             report_stats(&state_lock.pos);
