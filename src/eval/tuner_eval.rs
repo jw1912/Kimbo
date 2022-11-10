@@ -18,12 +18,12 @@ pub struct ParamContainer {
 
 impl From<[i16; 10]> for ParamContainer {
     fn from(x: [i16; 10]) -> Self {
-        Self { 
-            doubled_mg: x[0], doubled_eg: x[1], 
-            isolated_mg: x[2], isolated_eg: x[3], 
-            passed_mg: x[4], passed_eg: x[5], 
-            shield_mg: x[6], shield_eg: x[7], 
-            open_file_mg: x[8], open_file_eg: x[9] 
+        Self {
+            doubled_mg: x[0], doubled_eg: x[1],
+            isolated_mg: x[2], isolated_eg: x[3],
+            passed_mg: x[4], passed_eg: x[5],
+            shield_mg: x[6], shield_eg: x[7],
+            open_file_mg: x[8], open_file_eg: x[9]
         }
     }
 }

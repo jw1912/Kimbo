@@ -79,7 +79,7 @@ impl Position {
             attackers &= attackers - 1;
         }
     }
-     
+
     /// finds all unpinned-pawn pushes
     fn pawn_pushes_general<const SIDE: usize, const IN_CHECK: bool, const PINNED: bool>(
         &self,
@@ -113,7 +113,7 @@ impl Position {
                     move_list.push(m);
                 }
                 continue;
-            } 
+            }
             move_list.push(m);
         }
         while promotable_pawns > 0 {
@@ -132,10 +132,10 @@ impl Position {
             idx = ls1b_scan(dbl_pushable_pawns);
             dbl_pushable_pawns &= dbl_pushable_pawns - 1;
             m = MoveFlags::DBL_PUSH | idx_shift::<SIDE, 16>(idx) << 6 | idx;
-            if PINNED { 
+            if PINNED {
                 if self.clone().validate(m) {
                     move_list.push(m);
-                } 
+                }
                 continue;
             }
             move_list.push(m);
@@ -178,7 +178,7 @@ impl Position {
 
     fn piece_moves_general<const PIECE: usize, const IN_CHECK: bool, const IS_PINNED: bool, const IS_KING: bool, const TYPE: u8>(
         &self, move_list: &mut MoveList, king_idx: usize, blockers: u64, mut attackers: u64
-    ) { 
+    ) {
         let mut from: u16;
         let mut idx: usize;
         let mut attacks: u64;

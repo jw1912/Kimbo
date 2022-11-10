@@ -13,12 +13,12 @@ impl Position {
         let from = 1u64 << from_idx;
         let to = 1u64 << to_idx;
         let moved_pc = self.squares[from_idx];
-        let mut ctx = GameState { 
+        let mut ctx = GameState {
             m,
             moved_pc,
-            captured_pc: Piece::NONE as u8, 
-            castle_rights: self.castle_rights, 
-            en_passant_sq: self.en_passant_sq, 
+            captured_pc: Piece::NONE as u8,
+            castle_rights: self.castle_rights,
+            en_passant_sq: self.en_passant_sq,
             halfmove_clock: self.halfmove_clock,
             zobrist: self.zobrist,
             pawnhash: self.pawnhash,
@@ -122,12 +122,12 @@ impl Position {
                 let castle = match self.side_to_move {
                     Side::WHITE => {
                         self.squares[0] = Piece::NONE as u8;
-                        self.squares[3] = Piece::ROOK as u8; 
+                        self.squares[3] = Piece::ROOK as u8;
                         A1 | D1
                     },
                     Side::BLACK => {
                         self.squares[56] = Piece::NONE as u8;
-                        self.squares[59] = Piece::ROOK as u8; 
+                        self.squares[59] = Piece::ROOK as u8;
                         A8 | D8
                     },
                     _ => panic!("Invalid side!"),
@@ -155,12 +155,12 @@ impl Position {
                 let castle = match self.side_to_move {
                     Side::WHITE => {
                         self.squares[7] = Piece::NONE as u8;
-                        self.squares[5] = Piece::ROOK as u8; 
+                        self.squares[5] = Piece::ROOK as u8;
                         F1 | H1
                     },
                     Side::BLACK => {
                         self.squares[63] = Piece::NONE as u8;
-                        self.squares[61] = Piece::ROOK as u8; 
+                        self.squares[61] = Piece::ROOK as u8;
                         F8 | H8
                     },
                     _ => panic!("Invalid side!"),
@@ -237,7 +237,7 @@ impl Position {
         }
         if self.castle_rights > CastleRights::NONE && (moved_pc == Piece::KING as u8 || moved_pc == Piece::ROOK as u8) {
             self.castle_rights &= CASTLE_RIGHTS[from_idx]
-        } 
+        }
         let mut changed_castle = ctx.castle_rights & !self.castle_rights;
         while changed_castle > 0 {
             let ls1b = changed_castle & changed_castle.wrapping_neg();
@@ -306,12 +306,12 @@ impl Position {
                 let castle = match self.side_to_move {
                     Side::WHITE => {
                         self.squares[3] = Piece::NONE as u8;
-                        self.squares[0] = Piece::ROOK as u8; 
+                        self.squares[0] = Piece::ROOK as u8;
                         A1 | D1
                     },
                     Side::BLACK => {
                         self.squares[59] = Piece::NONE as u8;
-                        self.squares[56] = Piece::ROOK as u8; 
+                        self.squares[56] = Piece::ROOK as u8;
                         A8 | D8
                     },
                     _ => panic!("Invalid side!"),
@@ -324,12 +324,12 @@ impl Position {
                 let castle = match self.side_to_move {
                     Side::WHITE => {
                         self.squares[5] = Piece::NONE as u8;
-                        self.squares[7] = Piece::ROOK as u8; 
+                        self.squares[7] = Piece::ROOK as u8;
                         F1 | H1
                     },
                     Side::BLACK => {
                         self.squares[61] = Piece::NONE as u8;
-                        self.squares[63] = Piece::ROOK as u8; 
+                        self.squares[63] = Piece::ROOK as u8;
                         F8 | H8
                     },
                     _ => panic!("Invalid side!"),

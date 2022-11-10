@@ -3,32 +3,32 @@ use super::{
     MAX_SCORE,
     update_pv,
     pruning::{can_do_iir, can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
-    sorting::{MoveScores, get_next_move}, 
+    sorting::{MoveScores, get_next_move},
     is_capture,
     MAX_PLY
 };
 use crate::tables::search::Bound;
-use crate::position::{MoveType, MoveList}; 
+use crate::position::{MoveType, MoveList};
 use std::sync::atomic::Ordering;
 use std::cmp::{max, min};
 
 impl Engine {
     /// Main alpha-beta minimax search
-    /// 
+    ///
     /// fail-soft
     #[allow(clippy::too_many_arguments)]
     pub fn negamax<const PV: bool, const ROOT: bool, const STATS: bool>(
-        &mut self, 
-        mut alpha: i16, 
-        mut beta: i16, 
-        mut depth: i8, 
-        ply: i8, 
-        pv: &mut Vec<u16>, 
+        &mut self,
+        mut alpha: i16,
+        mut beta: i16,
+        mut depth: i8,
+        ply: i8,
+        pv: &mut Vec<u16>,
         prev_move: u16,
         king_in_check: bool,
         mut allow_null: bool,
     ) -> i16 {
-        
+
         // UCI stuff
         if self.stop.load(Ordering::Relaxed) {
             return 0;
@@ -68,7 +68,7 @@ impl Engine {
         if let Some(res) = self.ttable.get(self.board.zobrist, ply) {
             if STATS { self.stats.tt_hits += 1; }
 
-            // hash entry found, only write to hash table if this depth search  
+            // hash entry found, only write to hash table if this depth search
             // is deeper than the depth of the hash entry
             write_to_hash = depth > res.depth;
 
@@ -128,7 +128,7 @@ impl Engine {
         // scoring moves
         let mut move_scores = MoveScores::default();
         self.score_moves(&moves, &mut move_scores, hash_move, prev_move, ply);
-        
+
         // stuff for going through moves
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
@@ -137,9 +137,9 @@ impl Engine {
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
             let mut sub_pv = Vec::new();
-            
+
             self.board.make_move(m);
-            
+
             // late move reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
@@ -174,7 +174,7 @@ impl Engine {
                     alpha = score;
                     bound = Bound::EXACT;
                     update_pv(pv, m, &mut sub_pv);
-                } 
+                }
             }
 
             // beta pruning

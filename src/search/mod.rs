@@ -28,7 +28,7 @@ pub fn is_mate_score(score: i16) -> bool {
 fn update_pv(pv: &mut Vec<u16>, m: u16, sub_pv: &mut Vec<u16>) {
     pv.clear();
     pv.push(m);
-    pv.append(sub_pv); 
+    pv.append(sub_pv);
 }
 
 fn is_capture(m: u16) -> bool {
@@ -138,7 +138,7 @@ impl Default for Stats {
             nmp_attempts: 0,
             nmp_successes: 0,
             rfp_prunes: 0,
-        } 
+        }
     }
 }
 

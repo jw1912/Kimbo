@@ -126,7 +126,7 @@ impl HashTable {
                     entry_data.score += ply as i16;
                 }
                 return Some(entry_data);
-            } 
+            }
         }
         None
     }

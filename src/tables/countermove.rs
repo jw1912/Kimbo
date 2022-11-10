@@ -6,7 +6,7 @@ use super::Move;
 // then pass the previous move through negamax
 // and if a move in the movelist matches the countermove
 // entry, give it a bonus
-// could also have a 6x64 table of move.pc and move.to, 
+// could also have a 6x64 table of move.pc and move.to,
 // but testing showed it was not effective
 
 pub struct CounterMoveTable {
@@ -18,8 +18,8 @@ impl Default for CounterMoveTable {
         const ENTRY: Move = Move::new();
         #[allow(clippy::declare_interior_mutable_const)]
         const ROW: [Move; 64] = [ENTRY; 64];
-        Self { 
-            table: [ROW; 64] 
+        Self {
+            table: [ROW; 64]
         }
     }
 }

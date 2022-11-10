@@ -38,14 +38,14 @@ impl ZobristVals {
 impl Default for ZobristVals {
     fn default() -> Self {
         fastrand::seed(353012);
-        
+
         let mut vals = Self {
             pieces: [[[0; 64]; 6]; 2],
             castle: [0; 4],
             en_passant: [0; 8],
             side: fastrand::u64(1..u64::MAX),
         };
-        
+
         for color in 0..2 {
             for piece in 0..6 {
                 for sq_idx in 0..64 {

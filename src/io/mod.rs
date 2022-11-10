@@ -76,9 +76,9 @@ pub struct SearchStats {
 
 impl SearchStats {
     pub fn new(depth_reached: i8, time_to_depth: u64, nodes_to_depth: u64, pv: Vec<u16>) -> Self {
-        Self { 
-            depth_reached, 
-            nodes_to_depth, 
+        Self {
+            depth_reached,
+            nodes_to_depth,
             time_to_depth,
             pv,
         }

@@ -95,7 +95,7 @@ impl Position {
         || (PAWN_ATTACKS[side][idx] & op_pawns > 0)
         || (rook_attacks(idx, occupied) & op_rooks_and_queen > 0)
         || (bishop_attacks(idx, occupied) & op_bishops_and_queen > 0)
-            
+
     }
 
     pub fn checkers_pinned_pieces(&self, side: usize, king_idx: usize) -> (u64, u64) {

@@ -27,7 +27,7 @@ impl Move {
     }
 
     pub fn set(&self, m: u16) {
-        self.store(m, Ordering::Relaxed) 
+        self.store(m, Ordering::Relaxed)
     }
 
     pub fn get(&self) -> u16 {

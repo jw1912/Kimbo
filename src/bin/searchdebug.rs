@@ -10,7 +10,7 @@ use std::time::Instant;
 
 pub const _POSITIONS: [&str; 12] = [
     // Start Position
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     // Lasker-Reichhelm Position
     "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1",
     // Kiwipete Position

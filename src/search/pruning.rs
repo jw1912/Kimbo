@@ -41,7 +41,7 @@ pub fn tt_prune<const PV: bool>(res: &HashResult, depth: i8, alpha: i16, beta: i
 /// can we safely try pruning?
 #[inline]
 pub fn can_do_pruning<const PV: bool>(king_in_check: bool, beta: i16) -> bool {
-    !PV 
+    !PV
     && !king_in_check
     && !is_mate_score(beta)
 }

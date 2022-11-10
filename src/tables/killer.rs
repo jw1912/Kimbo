@@ -16,8 +16,8 @@ impl Default for KillerMoveTable {
         const ENTRY: Move = Move::new();
         #[allow(clippy::declare_interior_mutable_const)]
         const ROW: [Move; 3] = [ENTRY; KILLERS_PER_PLY];
-        Self { 
-            table: [ROW; MAX_PLY as usize] 
+        Self {
+            table: [ROW; MAX_PLY as usize]
         }
     }
 }

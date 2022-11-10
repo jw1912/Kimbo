@@ -28,7 +28,7 @@ pub struct Position {
     pub zobrist: u64,
     pub pawnhash: u64,
     // heap allocated
-    pub state_stack: Vec<GameState>, 
+    pub state_stack: Vec<GameState>,
     pub zobrist_vals: Arc<ZobristVals>,
     /// Eval stuff
     pub mat_mg: [i16; 2],
@@ -170,7 +170,7 @@ impl Default for MoveList {
                 mem::MaybeUninit::uninit().assume_init()
             },
             len: 0,
-        } 
+        }
     }
 }
 

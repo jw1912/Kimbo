@@ -35,7 +35,7 @@ fn board(sqs: [u8; 64], sides: [u64; 2]) -> String {
                 let idx = j + 8 * (7 - i);
                 let side = ((sides[1] & (1 << idx)) > 0) as usize;
                 fen.push(piece_out((side, *sq as usize)));
-            }           
+            }
         }
         if empty {
             fen.push_str(&empty_count.to_string());

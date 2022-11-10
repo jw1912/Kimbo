@@ -59,12 +59,12 @@ impl Engine {
             self.htable.get(self.board.side_to_move, m)
         }
     }
-    
+
     pub fn score_moves(&self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8) {
         let counter_move = self.ctable.get(prev_move);
         let killer_moves = self.ktable.get_ply(ply);
         for i in move_scores.start_idx..moves.len() {
-            let m = moves[i]; 
+            let m = moves[i];
             move_scores.push(self.score_move(m, hash_move, counter_move, killer_moves));
         }
     }
@@ -72,7 +72,7 @@ impl Engine {
     pub fn score_captures(&self, moves: &MoveList, move_scores: &mut MoveScores) {
         if moves.is_empty() { return }
         for i in move_scores.start_idx..moves.len() {
-            let m = moves[i]; 
+            let m = moves[i];
             move_scores.push(self.mvv_lva(m));
         }
     }
@@ -92,7 +92,7 @@ impl Default for MoveScores {
             },
             len: 0,
             start_idx: 0,
-        } 
+        }
     }
 }
 impl MoveScores {

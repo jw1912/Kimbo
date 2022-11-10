@@ -3,7 +3,7 @@ use crate::position::{MoveType, MoveList};
 
 impl Engine {
     /// Quiescence search
-    /// 
+    ///
     /// fail-hard
     pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // UCI: count qnodes now, as no early prune

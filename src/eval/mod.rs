@@ -174,13 +174,13 @@ impl Position {
         }
         false
     }
-    
+
     pub fn is_draw_by_50(&self) -> bool {
         self.null_counter == 0 && self.halfmove_clock >= 100
     }
 
     /// is the game drawn by insufficient material?
-    /// 
+    ///
     /// can claim draw by FIDE rules:
     ///  - KvK
     ///  - KvKN or KvKB

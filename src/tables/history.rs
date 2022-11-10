@@ -2,11 +2,11 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use crate::search::sorting::HISTORY_MAX;
 
 // History heuristic
-// If a non-capture causes a beta cutoff, 
+// If a non-capture causes a beta cutoff,
 // add to a table indexed by from and to squares depth*depth
 // order quiet moves that are not counter or killer moves
-// according to the value in the table of their from and 
-// to squares 
+// according to the value in the table of their from and
+// to squares
 
 pub struct HistoryScore {
     data: AtomicU32,
@@ -38,7 +38,7 @@ impl Default for HistoryTable {
         const ROW: [HistoryScore; 64] = [ENTRY; 64];
         #[allow(clippy::declare_interior_mutable_const)]
         const SIDE: [[HistoryScore; 64]; 64] = [ROW; 64];
-        Self { 
+        Self {
             table: [SIDE; 2],
             max: AtomicU32::new(1),
         }
