@@ -145,6 +145,12 @@ impl Engine {
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
             let reduction = do_lmr as i8;
 
+            // futility pruning
+            if !PV && depth - reduction <= 0 {
+                self.board.unmake_move();
+                continue;
+            }
+
             // pvs framework
             // relies on good move ordering!
             let score = if m_idx == 0 {
