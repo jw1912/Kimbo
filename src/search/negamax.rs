@@ -143,7 +143,7 @@ impl Engine {
             // late move reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
-            let reduction = do_lmr as i8;
+            let reduction = do_lmr as i8 * (1 + (depth > 8) as i8);
 
             // futility pruning
             if !PV && depth - reduction <= 0 {
