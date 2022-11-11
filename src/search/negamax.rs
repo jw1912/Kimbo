@@ -114,7 +114,7 @@ impl Engine {
         }
 
         // internal iterative reductions
-        depth -= can_do_iir::<PV>(depth, hash_move, king_in_check) as i8;
+        depth -= can_do_iir::<PV>(depth, hash_move) as i8;
 
         // generating moves
         let mut moves = MoveList::default();
