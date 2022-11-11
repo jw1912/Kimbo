@@ -114,7 +114,7 @@ impl Engine {
         }
 
         // internal iterative reductions
-        depth -= can_do_iir::<PV>(depth, hash_move) as i8;
+        depth -= can_do_iir::<PV>(depth, hash_move, king_in_check) as i8;
 
         // generating moves
         let mut moves = MoveList::default();
@@ -143,7 +143,7 @@ impl Engine {
             // late move reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
-            let reduction = do_lmr as i8 * (1 + (depth > 8) as i8);
+            let reduction = do_lmr as i8;
 
             // pvs framework
             // relies on good move ordering!
