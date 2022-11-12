@@ -1,6 +1,7 @@
 use crate::tables::search::{Bound, HashResult};
 use super::is_mate_score;
 
+const LMR_MIN_DEPTH: i8 = 2;
 const LMR_MIN_IDX: usize = 2;
 const LMR_MAX_SCORE: i16 = 300;
 
@@ -64,8 +65,9 @@ pub fn can_do_rfp(depth: i8, beta: i16, lazy_eval: i16) -> bool {
 
 /// can we safely do late move reductions?
 #[inline]
-pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: i16, check: bool) -> bool {
+pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: i16, check: bool, depth: i8) -> bool {
     !ROOT
+    && depth >= LMR_MIN_DEPTH
     && !king_in_check
     && m_idx >= LMR_MIN_IDX
     && m_score <= LMR_MAX_SCORE

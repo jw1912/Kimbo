@@ -134,14 +134,12 @@ impl Engine {
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
         let margin = 2 + depth as usize * 4;
-        let prunable = depth <= 4 && !king_in_check && self.board.lazy_eval() <= alpha - 200;
+        let prunable = depth <= 2 && !king_in_check;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
             // movecount pruning
-            if !PV && prunable && m_idx > margin && m_score <= 1 {
-                break;
-            }
+            if !PV && prunable && m_idx > margin && m_score <= 0 { break }
 
             let mut sub_pv = Vec::new();
 
@@ -149,8 +147,8 @@ impl Engine {
 
             // late move reductions
             let check = self.board.is_in_check();
-            let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
-            let reduction = do_lmr as i8 * (1 + min(2 - PV as i8, depth / 4));
+            let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check, depth);
+            let reduction = do_lmr as i8;
 
             // pvs framework
             // relies on good move ordering!
