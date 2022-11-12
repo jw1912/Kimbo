@@ -89,11 +89,11 @@ impl Engine {
             }
         }
 
+        // just psts and material
+        let lazy_eval = self.board.lazy_eval();
+
         // pruning
         if can_do_pruning::<PV>(king_in_check, beta) {
-            // just psts and material
-            let lazy_eval = self.board.lazy_eval();
-
             // reverse futility pruning (static null move pruning)
             if can_do_rfp(depth, beta, lazy_eval) {
                 if STATS { self.stats.rfp_prunes += 1 }
@@ -133,9 +133,16 @@ impl Engine {
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
+        let margin = 2 + depth as usize * 4;
+        let prunable = depth <= 4 && !king_in_check && self.board.lazy_eval() <= alpha - 200;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
+            // movecount pruning
+            if !PV && prunable && m_idx > margin && m_score <= 1 {
+                break;
+            }
+
             let mut sub_pv = Vec::new();
 
             self.board.make_move(m);
@@ -143,7 +150,7 @@ impl Engine {
             // late move reductions
             let check = self.board.is_in_check();
             let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check);
-            let reduction = do_lmr as i8;
+            let reduction = do_lmr as i8 * (1 + min(2 - PV as i8, depth / 4));
 
             // pvs framework
             // relies on good move ordering!
