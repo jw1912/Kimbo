@@ -11,8 +11,6 @@ const NMP_MIN_DEPTH: i8 = 3;
 const RFP_MAX_DEPTH: i8 = 8;
 const RFP_MARGIN_PER_DEPTH: i16 = 120;
 
-const IIR_MIN_DEPTH: i8 = 4;
-
 /// can we safely prune based off hash score?
 #[inline]
 pub fn tt_prune<const PV: bool>(res: &HashResult, depth: i8, alpha: i16, beta: i16, halfmove_clock: u8) -> Option<i16> {
@@ -72,10 +70,4 @@ pub fn can_do_lmr<const ROOT: bool>(king_in_check: bool, m_idx: usize, m_score: 
     && m_idx >= LMR_MIN_IDX
     && m_score <= LMR_MAX_SCORE
     && !check
-}
-
-/// can we safely reduce nodes with no hash moves?
-#[inline]
-pub fn can_do_iir<const PV: bool>(depth: i8, hash_move: u16) -> bool {
-    !PV && depth >= IIR_MIN_DEPTH && hash_move == 0
 }

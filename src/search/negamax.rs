@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_iir, can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
     sorting::{MoveScores, get_next_move},
     is_capture,
     MAX_PLY
@@ -113,8 +113,8 @@ impl Engine {
             }
         }
 
-        // internal iterative reductions
-        depth -= can_do_iir::<PV>(depth, hash_move) as i8;
+        // internal iterative deepening
+        if depth >= 4 && hash_move == 0 { depth -= 1 }
 
         // generating moves
         let mut moves = MoveList::default();
@@ -133,13 +133,15 @@ impl Engine {
         let mut best_move = 0;
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
-        let margin = 2 + depth as usize * 4;
-        let prunable = depth <= 2 && !king_in_check;
+
+        // futility pruning stuff
+        let can_prune = depth <= 5 && !king_in_check;
+        let margin = 8 * depth as usize;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
-            // movecount pruning
-            if !PV && prunable && m_idx > margin && m_score <= 0 { break }
+            // futility pruning
+            if !PV && can_prune && m_idx >= margin && m_score <= 0 { break }
 
             let mut sub_pv = Vec::new();
 
@@ -147,22 +149,20 @@ impl Engine {
 
             // late move reductions
             let check = self.board.is_in_check();
-            let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check, depth);
-            let reduction = do_lmr as i8;
+            let do_lmr = can_do_lmr::<false>(king_in_check, m_idx, m_score, check, depth);
+            let reduction = do_lmr as i8 * (1 + min(2 - PV as i8, ((m_idx - 2) / 4) as i8));
 
             // pvs framework
             // relies on good move ordering!
             let score = if m_idx == 0 {
                 -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
             } else {
-                if STATS { self.stats.pvs_attempts += 1 }
                 // do a null window search
                 let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
                 // if it fails high (but not too high!), re-search w/ full window and w/out reductions
                 if (null_window_score < beta || reduction > 0) && null_window_score > alpha {
                     -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
-                    if STATS { self.stats.pvs_successes += 1 }
                     null_window_score
                 }
             };
