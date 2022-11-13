@@ -96,7 +96,6 @@ impl Engine {
 
             // reverse futility pruning (static null move pruning)
             if can_do_rfp(depth, beta, lazy_eval) {
-                if STATS { self.stats.rfp_prunes += 1 }
                 return beta
             }
 
@@ -117,7 +116,7 @@ impl Engine {
 
         // internal iterative deepening
         // TODO: test !PV, !king_in_check
-        if depth >= 4 && hash_move == 0 { depth -= 1 }
+        //if depth >= 4 && hash_move == 0 { depth -= 1 }
 
         // generating moves
         let mut moves = MoveList::default();
@@ -139,14 +138,11 @@ impl Engine {
 
         // late move pruning stuff
         // TODO: test depth and margin
-        let can_prune = depth <= 5 && !king_in_check;
-        let margin = 8 * depth as usize;
+        //let can_prune = depth <= 4 && !king_in_check;
+        //let margin = 4 * depth as usize;
 
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
-            // late move pruning
-            if !PV && can_prune && m_idx >= margin && m_score <= 0 { break }
-
             let mut sub_pv = Vec::new();
 
             self.board.make_move(m);
@@ -162,12 +158,14 @@ impl Engine {
             let score = if m_idx == 0 {
                 -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
             } else {
+                if STATS { self.stats.pvs_attempts += 1 }
                 // do a null window search
                 let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
                 // if it fails high (but not too high!), re-search w/ full window and w/out reductions
                 if (null_window_score < beta || reduction > 0) && null_window_score > alpha {
                     -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
+                    if STATS { self.stats.pvs_successes += 1 }
                     null_window_score
                 }
             };
