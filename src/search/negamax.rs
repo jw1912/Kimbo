@@ -110,13 +110,7 @@ impl Engine {
                     return beta
                 }
             }
-
-            // TODO: test razoring
         }
-
-        // internal iterative deepening
-        // TODO: test !PV, !king_in_check
-        //if depth >= 4 && hash_move == 0 { depth -= 1 }
 
         // generating moves
         let mut moves = MoveList::default();
@@ -136,11 +130,6 @@ impl Engine {
         let mut best_score = -MAX_SCORE;
         let mut bound: u8 = Bound::UPPER;
 
-        // late move pruning stuff
-        // TODO: test depth and margin
-        //let can_prune = depth <= 4 && !king_in_check;
-        //let margin = 4 * depth as usize;
-
         // going through moves
         while let Some((m, m_idx, m_score)) = get_next_move(&mut moves, &mut move_scores) {
             let mut sub_pv = Vec::new();
@@ -149,8 +138,7 @@ impl Engine {
 
             // late move reductions
             let check = self.board.is_in_check();
-            // TODO: test false vs PV
-            let do_lmr = can_do_lmr::<false>(king_in_check, m_idx, m_score, check, depth);
+            let do_lmr = can_do_lmr::<ROOT>(king_in_check, m_idx, m_score, check, depth);
             let reduction = do_lmr as i8 * (1 + min(2 - PV as i8, ((m_idx - 2) / 4) as i8));
 
             // pvs framework
