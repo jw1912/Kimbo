@@ -1,6 +1,6 @@
 # Kimbo
 
-Kimbo is a UCI compatible chess engine written in Rust. 
+Kimbo is a UCI compatible chess engine written in Rust. It is now succeeded by [akimbo](https://github.com/JacquesRW/akimbo).
 
 
 #### Compiling
