@@ -21,6 +21,7 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 - Hyperbola quintessence sliding attacks
 
 #### Search
+- Fail-soft
 - Principle variation search
 - Quiescence search
 - Iterative deepening
@@ -44,7 +45,7 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 #### Pruning/Reductions
 - Mate distance pruning
 - Hash score pruning
-- Late move reductions
+- Variable late move reductions
 - Reverse futility pruning
 - Null move pruning
 - Delta pruning
