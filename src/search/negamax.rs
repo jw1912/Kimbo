@@ -2,7 +2,7 @@ use super::{
     Engine,
     MAX_SCORE,
     update_pv,
-    pruning::{can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning},
+    pruning::{can_do_lmr, can_do_nmp, can_do_rfp, tt_prune, can_do_pruning, RFP_MARGIN_PER_DEPTH},
     sorting::{MoveScores, get_next_move},
     is_capture,
     MAX_PLY
@@ -76,11 +76,9 @@ impl Engine {
             hash_move = res.best_move;
 
             // hash score pruning (no pruning on root)
-            if !ROOT {
-                if let Some(score) = tt_prune::<PV>(&res, depth, alpha, beta, self.board.halfmove_clock) {
+            if !ROOT &&tt_prune::<PV>(&res, depth, alpha, beta, self.board.halfmove_clock).is_some() {
                     if STATS { self.stats.tt_prunes += 1 }
-                    return score;
-                }
+                    return res.score;
             }
 
             // we only null move prune when we expect a beta cutoff
@@ -96,7 +94,7 @@ impl Engine {
 
             // reverse futility pruning (static null move pruning)
             if can_do_rfp(depth, beta, lazy_eval) {
-                return beta
+                return lazy_eval + RFP_MARGIN_PER_DEPTH * depth as i16
             }
 
             // null move pruning
@@ -107,7 +105,7 @@ impl Engine {
                 self.board.unmake_null_move(ctx);
                 if score >= beta {
                     if STATS { self.stats.nmp_successes += 1 }
-                    return beta
+                    return score
                 }
             }
         }

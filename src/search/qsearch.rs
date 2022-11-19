@@ -11,16 +11,16 @@ impl Engine {
         if STATS { self.stats.qnode_count += 1; }
 
         // static eval
-        let stand_pat = self.board.static_eval(&self.ptable);
+        let mut stand_pat = self.board.static_eval(&self.ptable);
 
         // beta pruning
         if stand_pat >= beta {
-            return beta;
+            return stand_pat;
         }
 
         // delta pruning
         if stand_pat < alpha - 850 {
-            return alpha;
+            return stand_pat + 850;
         }
 
         // improving alpha bound
@@ -47,16 +47,14 @@ impl Engine {
             // unmaking move
             self.board.unmake_move();
 
-            // beta pruning
-            if score >= beta {
-                return beta;
-            }
-
-            // improve alpha bound
-            if score > alpha {
-                alpha = score;
+            if score > stand_pat {
+                stand_pat = score;
+                if score > alpha {
+                    alpha = score;
+                    if score >= beta { return score }
+                }
             }
         }
-        alpha
+        stand_pat
     }
 }

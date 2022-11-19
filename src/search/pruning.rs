@@ -9,7 +9,7 @@ const NMP_MIN_PHASE: i16 = 6;
 const NMP_MIN_DEPTH: i8 = 3;
 
 const RFP_MAX_DEPTH: i8 = 8;
-const RFP_MARGIN_PER_DEPTH: i16 = 120;
+pub const RFP_MARGIN_PER_DEPTH: i16 = 120;
 
 /// can we safely prune based off hash score?
 #[inline]
