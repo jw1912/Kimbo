@@ -147,8 +147,8 @@ impl Engine {
                 if STATS { self.stats.pvs_attempts += 1 }
                 // do a null window search
                 let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
-                // if it fails high (but not too high!), re-search w/ full window and w/out reductions
-                if (null_window_score < beta || reduction > 0) && null_window_score > alpha {
+                // if it fails high re-search w/ full window and w/out reductions
+                if (alpha != beta - 1 || reduction > 0) && null_window_score > alpha {
                     -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
                     if STATS { self.stats.pvs_successes += 1 }
