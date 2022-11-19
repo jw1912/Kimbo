@@ -114,15 +114,6 @@ pub struct Stats {
     pub node_count: u64,
     pub start_time: Instant,
     pub seldepth: i8,
-    // Debugging only
-    pub qnode_count: u64,
-    pub tt_hits: u64,
-    pub tt_prunes: u64,
-    pub pvs_attempts: u64,
-    pub pvs_successes: u64,
-    pub nmp_attempts: u64,
-    pub nmp_successes: u64,
-    pub rfp_prunes: u64,
 }
 impl Default for Stats {
     fn default() -> Self {
@@ -130,14 +121,6 @@ impl Default for Stats {
             node_count: 0,
             seldepth: 0,
             start_time: Instant::now(),
-            qnode_count: 0,
-            tt_hits: 0,
-            tt_prunes: 0,
-            pvs_attempts: 0,
-            pvs_successes: 0,
-            nmp_attempts: 0,
-            nmp_successes: 0,
-            rfp_prunes: 0,
         }
     }
 }
@@ -145,15 +128,5 @@ impl Default for Stats {
 impl Stats {
     pub fn reset(&mut self) {
         *self = Self::default();
-    }
-    pub fn report(&self) {
-        let pvs = self.pvs_successes as f64 * 100.0 / (self.pvs_attempts as f64);
-        let nmp = self.nmp_successes as f64 * 100.0 / (self.nmp_attempts as f64);
-        println!("{}% of nodes are quiescence nodes", self.qnode_count * 100 / self.node_count);
-        println!("hash hits: {}", self.tt_hits);
-        println!("{}% of tt hits pruned", self.tt_prunes * 100 / self.tt_hits);
-        println!("pvs attempts: {}, successes: {} ({:.2}%)", self.pvs_attempts, self.pvs_successes, pvs);
-        println!("nmp attempts: {}, successes: {} ({:.2}%)", self.nmp_attempts, self.nmp_successes, nmp);
-        println!("rfp prunes: {}", self.rfp_prunes);
     }
 }

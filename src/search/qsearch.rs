@@ -5,10 +5,9 @@ impl Engine {
     /// Quiescence search
     ///
     /// fail-hard
-    pub fn quiesce<const STATS: bool>(&mut self, mut alpha: i16, beta: i16) -> i16 {
+    pub fn quiesce(&mut self, mut alpha: i16, beta: i16) -> i16 {
         // UCI: count qnodes now, as no early prune
         self.stats.node_count += 1;
-        if STATS { self.stats.qnode_count += 1; }
 
         // static eval
         let mut stand_pat = self.board.static_eval(&self.ptable);
@@ -42,7 +41,7 @@ impl Engine {
             self.board.make_move(m);
 
             // getting score
-            let score = -self.quiesce::<STATS>(-beta, -alpha);
+            let score = -self.quiesce(-beta, -alpha);
 
             // unmaking move
             self.board.unmake_move();

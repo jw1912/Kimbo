@@ -49,7 +49,7 @@ fn _search_all() {
         );
         assert_eq!(String::from(pos), search.board.to_fen());
         println!("fen: {}", pos);
-        search.go::<true, true>();
+        search.go::<true>();
         println!(" ");
     }
     println!("Total time: {}ms", now.elapsed().as_millis());
@@ -74,7 +74,7 @@ fn _search_one(pos: usize) {
     );
     display_board(&search.board);
     println!("fen: {}", _POSITIONS[pos]);
-    search.go::<true, true>();
+    search.go::<true>();
 }
 
 fn main() {

@@ -284,7 +284,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             tt,
             pt,
         );
-        let best_move = search.go::<true, false>();
+        let best_move = search.go::<true>();
         println!("bestmove {}", u16_to_uci(&best_move));
     });
     // join handle provided to master thread

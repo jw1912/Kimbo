@@ -17,7 +17,7 @@ impl Engine {
     ///
     /// fail-soft
     #[allow(clippy::too_many_arguments)]
-    pub fn negamax<const PV: bool, const ROOT: bool, const STATS: bool>(
+    pub fn negamax<const PV: bool, const ROOT: bool>(
         &mut self,
         mut alpha: i16,
         mut beta: i16,
@@ -56,7 +56,7 @@ impl Engine {
 
         // quiescence search at depth <= 0 or maximum ply
         if depth <= 0 || ply == MAX_PLY {
-            return self.quiesce::<STATS>(alpha, beta);
+            return self.quiesce(alpha, beta);
         }
 
         // not a quiescence node so count it
@@ -66,8 +66,6 @@ impl Engine {
         let mut hash_move = 0;
         let mut write_to_hash = true;
         if let Some(res) = self.ttable.get(self.board.zobrist, ply) {
-            if STATS { self.stats.tt_hits += 1; }
-
             // hash entry found, only write to hash table if this depth search
             // is deeper than the depth of the hash entry
             write_to_hash = depth > res.depth;
@@ -77,7 +75,6 @@ impl Engine {
 
             // hash score pruning (no pruning on root)
             if !ROOT &&tt_prune::<PV>(&res, depth, alpha, beta, self.board.halfmove_clock).is_some() {
-                    if STATS { self.stats.tt_prunes += 1 }
                     return res.score;
             }
 
@@ -99,12 +96,10 @@ impl Engine {
 
             // null move pruning
             if can_do_nmp(allow_null, self.board.phase, depth, beta, lazy_eval) {
-                if STATS { self.stats.nmp_attempts += 1 }
                 let ctx = self.board.make_null_move();
-                let score = -self.negamax::<false, false, STATS>(-beta, 1 - beta, depth - 3, ply + 1, &mut Vec::new(), 0, false, false);
+                let score = -self.negamax::<false, false>(-beta, 1 - beta, depth - 3, ply + 1, &mut Vec::new(), 0, false, false);
                 self.board.unmake_null_move(ctx);
                 if score >= beta {
-                    if STATS { self.stats.nmp_successes += 1 }
                     return score
                 }
             }
@@ -142,16 +137,14 @@ impl Engine {
             // pvs framework
             // relies on good move ordering!
             let score = if m_idx == 0 {
-                -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
+                -self.negamax::<PV, false>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
             } else {
-                if STATS { self.stats.pvs_attempts += 1 }
                 // do a null window search
-                let null_window_score = -self.negamax::<false, false, STATS>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
+                let null_window_score = -self.negamax::<false, false>(-alpha - 1, -alpha, depth - 1 - reduction, ply + 1, &mut sub_pv, m, check, true);
                 // if it fails high re-search w/ full window and w/out reductions
                 if (alpha != beta - 1 || reduction > 0) && null_window_score > alpha {
-                    -self.negamax::<PV, false, STATS>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
+                    -self.negamax::<PV, false>(-beta, -alpha, depth - 1, ply + 1, &mut sub_pv, m, check, false)
                 } else {
-                    if STATS { self.stats.pvs_successes += 1 }
                     null_window_score
                 }
             };
