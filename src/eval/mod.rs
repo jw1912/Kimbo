@@ -100,7 +100,9 @@ impl Position {
             // if result found, use it
             pwn = val.score;
         } else {
-            pwn = self.side_pawn_score(0, phase) - self.side_pawn_score(1, phase);
+            let wp = self.side_pawn_score(0);
+            let bp = self.side_pawn_score(1);
+            pwn = taper(phase, wp[0] - bp[0], wp[1] - bp[1]);
             ptable.push(self.pawnhash, pwn);
         }
 
@@ -114,7 +116,7 @@ impl Position {
         SIDE_FACTOR[self.side_to_move] * eval
     }
 
-    fn side_pawn_score(&self, side: usize, phase: i32) -> i16 {
+    fn side_pawn_score(&self, side: usize) -> [i16; 2] {
         let mut doubled = 0;
         let mut isolated = 0;
         let mut passed = 0;
@@ -145,7 +147,7 @@ impl Position {
                     + protecting_pawns * PAWN_SHIELD_MG + open_files * PAWN_OPEN_FILE_MG;
         let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG
                     + protecting_pawns * PAWN_SHIELD_EG + open_files * PAWN_OPEN_FILE_EG;
-        taper(phase, mg, eg)
+        [mg, eg]
     }
 
     fn eg_king_score(&self, winning_side: usize, phase: i32) -> i16 {
