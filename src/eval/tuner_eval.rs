@@ -1,6 +1,6 @@
 // This is only used for tuning
 use crate::position::*;
-use super::*;
+use super::{*, tuner::TunerPosition};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ParamContainer {
@@ -35,22 +35,23 @@ impl From<ParamContainer> for [i16; 10] {
 }
 
 /// static evaluation of position
-pub fn tuner_eval(pos: &Position, params: &[i16; 10]) -> i16 {
-    let mut phase = pos.phase as i32;
-    if phase > TOTALPHASE {
-        phase = TOTALPHASE
-    };
-    let mat = eval_factor(phase, pos.mat_mg, pos.mat_eg);
-    let pst = eval_factor(phase, pos.pst_mg, pos.pst_eg);
-    let pwn = tuner_pawn_score(pos, 0, phase, params) - tuner_pawn_score(pos, 1, phase, params);
-    let mut eval = mat + pst + pwn;
-    if eval != 0 {
-        eval += pos.eg_king_score((eval < 0) as usize, phase)
-    }
-    eval
+#[inline(always)]
+pub fn tuner_eval(pos: &TunerPosition, params: &[i16; 10]) -> i16 {
+    pos.pst + pawn_eval(pos.phase, pos.pawns, params)
 }
 
-fn tuner_pawn_score(pos: &Position, side: usize, phase: i32, params: &[i16; 10]) -> i16 {
+#[inline(always)]
+pub fn pawn_eval(phase: i16, pawns: [i16; 5], params: &[i16; 10]) -> i16 {
+    let mut mg = 0;
+    let mut eg = 0;
+    for i in 0..5 {
+        mg += pawns[i] * params[2 * i];
+        eg += pawns[i] * params[2 * i + 1];
+    }
+    taper(phase as i32, mg, eg)
+}
+
+pub fn tuner_pawn_score(pos: &Position, side: usize) -> [i16; 5] {
     let mut doubled = 0;
     let mut isolated = 0;
     let mut passed = 0;
@@ -73,9 +74,5 @@ fn tuner_pawn_score(pos: &Position, side: usize, phase: i32, params: &[i16; 10])
     for file in std::cmp::max(0, king_file - 1)..=std::cmp::min(7, king_file + 1) {
         open_files += (FILES[file as usize] & pos.pieces[side][Piece::PAWN] == 0) as i16
     }
-    let mg = doubled * params[0] + isolated * params[2] + passed * params[4]
-                + protecting_pawns * params[6] + open_files * params[8];
-    let eg = doubled * params[1] + isolated * params[3] + passed * params[5]
-                + protecting_pawns * params[7] + open_files * params[9];
-    taper(phase, mg, eg)
+    [doubled, isolated, passed, protecting_pawns, open_files]
 }

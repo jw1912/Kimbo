@@ -1,14 +1,18 @@
 use crate::position::{Position, zobrist::ZobristVals};
+use super::*;
 use std::io::BufRead;
 use std::time::Instant;
 use std::{sync::Arc, io::BufReader};
 use std::fs::File;
 
-use super::tuner_eval::{ParamContainer, tuner_eval};
+use super::tuner_eval::{ParamContainer, tuner_eval, tuner_pawn_score};
 
-struct TunerPosition {
-    position: Position,
-    result: f64,
+#[derive(Debug)]
+pub struct TunerPosition {
+    pub pst: i16,
+    pub pawns: [i16; 5],
+    pub phase: i16,
+    pub result: f64,
 }
 
 fn parse_epd(s: &str, zvals: Arc<ZobristVals>) -> TunerPosition {
@@ -20,7 +24,17 @@ fn parse_epd(s: &str, zvals: Arc<ZobristVals>) -> TunerPosition {
         "\"1/2-1/2\";" => 0.5,
         _ => panic!("invalid results")
     };
-    TunerPosition { position: pos, result: r }
+    let mut phase = pos.phase as i32;
+    if phase > TOTALPHASE {
+        phase = TOTALPHASE
+    };
+    let pst = eval_factor(phase, pos.pst_mg, pos.pst_eg) + eval_factor(phase, pos.mat_mg, pos.mat_eg);
+    let mut pawns = tuner_pawn_score(&pos, 0);
+    let bp = tuner_pawn_score(&pos, 1);
+    for i in 0..5 {
+        pawns[i] -= bp[i]
+    }
+    TunerPosition { pst, pawns, phase: phase as i16, result: r}
 }
 
 fn get_positions(filename: &str) -> Vec<TunerPosition> {
@@ -33,9 +47,14 @@ fn get_positions(filename: &str) -> Vec<TunerPosition> {
         }
     };
     let zvals = Arc::new(ZobristVals::default());
+    let mut count = 0;
+    let now = Instant::now();
     for line in BufReader::new(file).lines() {
         positions.push(parse_epd(&line.unwrap(), zvals.clone()));
+        count += 1;
+        if count & 65535 == 0 {println!("Loaded {count} positions, {} per sec.", count * 1000 / now.elapsed().as_millis())}
     }
+    println!("Completed: Loaded {count} positions.");
     positions
 }
 
@@ -46,7 +65,7 @@ fn sigmoid(k: f64, x: f64) -> f64 {
 fn calculate_error(positions: &Vec<TunerPosition>, params: &[i16; 10], num_positions: f64, k: f64) -> f64 {
     let mut error = 0.0;
     for pos in positions {
-        error += (pos.result - sigmoid(k, tuner_eval(&pos.position, params) as f64 / 100.0)).powi(2);
+        error += (pos.result - sigmoid(k, tuner_eval(pos, params) as f64 / 100.0)).powi(2);
     }
     error / num_positions
 }
@@ -73,13 +92,13 @@ fn optimise_k(positions: &Vec<TunerPosition>, params: &[i16; 10], num_positions:
 // source: https://www.chessprogramming.org/Texel%27s_Tuning_Method
 pub fn optimise<const PRINT_PARAMS: bool>(filename: &str, mut best_params: ParamContainer) -> ParamContainer {
     let start = Instant::now();
+    let mut params: [i16; 10] = best_params.into();
     let positions = get_positions(filename);
     if positions.is_empty() {
         return best_params
     }
     let num_positions = positions.len() as f64;
     println!("{}ms to load positions", start.elapsed().as_millis());
-    let mut params: [i16; 10] = best_params.into();
 
     // optimising K value
     let k = optimise_k(&positions, &params, num_positions, 1.0, 0.01);

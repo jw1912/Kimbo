@@ -26,7 +26,7 @@ impl ParamContainer {
             passed_eg: 27,
             shield_mg: 2,
             shield_eg: 1,
-            open_file_mg: -24,
+            open_file_mg: -10,
             open_file_eg: 8,
         }
     }
