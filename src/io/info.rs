@@ -3,30 +3,37 @@ pub const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 pub const FEATURES: &str = "
 Move Generation:
- - fully-legal
- - bitboard based
- - classical/hyperbola quintessence sliding attacks
- - move list on stack\n
+- Bitboards
+- Fully-legal
+- Hyperbola quintessence sliding attacks
+
 Search:
- - negamax search
- - quiescence search
- - iterative deepening
- - check extensions
- - reverse futility pruning
- - null move pruning
- - late move reductions (searched by PVS)
- - hash score and mate pruning\n
+- Fail-soft
+- Principle variation search
+- Quiescence search
+- Iterative deepening
+- Check extensions
+
 Move Ordering:
- - hash move
- - captures sorted by mvv-lva
- - promotions
- - killer moves
- - counter moves
- - castling
- - quiets\n
+1. Hash move
+2. Captures, sorted by MVV-LVA
+3. Promotions
+4. Killer moves
+5. Counter moves
+6. Castling
+4. Quiets, sorted by history heuristic
+
 Evaluation:
- - tapered midgame to endgame
- - material
- - piece-square tables
- - pawn structure (w/ basic king safety)\n
+- Tapered from midgame to endgame
+- Material
+- Piece-square tables
+- Pawn structure (w/ basic king safety)
+
+Pruning/Reductions:
+- Mate distance pruning
+- Hash score pruning
+- Variable late move reductions
+- Reverse futility pruning
+- Null move pruning
+- Delta pruning
 ";

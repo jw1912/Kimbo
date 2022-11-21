@@ -1,6 +1,6 @@
 [package]
 name = "kimbo"
-version = "0.3.0"
+version = "1.0.0"
 authors = ["Jamie Whiting"]
 edition = "2021"
 description = "Kimbo, a chess engine written in rust."
@@ -16,9 +16,3 @@ panic = "abort"
 lto = true
 codegen-units = 1
 strip = true
-debug = false
-incremental = false
-
-[profile.dev]
-opt-level = 3
-overflow-checks = false

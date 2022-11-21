@@ -11,7 +11,8 @@ If you have cargo installed, run ```cargo build --release --bin kimbo```.
 | Version | Release Date | CCRL Blitz | CCRL 40/15 |
 | :-----: | :----------: | :--------: | :--------: |
 | [0.2.1](https://github.com/JacquesRW/Kimbo/releases/tag/v0.2.1)   | 20th September 2022 | 2205 | - |
-| [0.3.0](https://github.com/JacquesRW/Kimbo/releases/tag/v0.3.0)   | 10th October 2022 | TBD | 2476 |
+| [0.3.0](https://github.com/JacquesRW/Kimbo/releases/tag/v0.3.0)   | 10th October 2022   | -  | 2476 |
+| [1.0.0](https://github.com/JacquesRW/Kimbo/releases/tag/v1.0.0)   | 10th October 2022   | TBD  | TBD |
 
 ## Features
 
