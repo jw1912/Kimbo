@@ -59,16 +59,24 @@ const fn init_chains() -> [u64; 64]{
     chains
 }
 // just guesses, need improvement
-pub const DOUBLED_MG: i16 = 1;
-pub const DOUBLED_EG: i16 = -15;
-pub const ISOLATED_MG: i16 = -8;
+pub const DOUBLED_MG: i16 = -2;
+pub const DOUBLED_EG: i16 = -14;
+pub const ISOLATED_MG: i16 = -11;
 pub const ISOLATED_EG: i16 = -5;
-pub const PASSED_MG: i16 = -7;
-pub const PASSED_EG: i16 = 27;
-pub const PAWN_SHIELD_MG: i16 = 2;
+pub const PASSED_MG: i16 = 3;
+pub const PASSED_EG: i16 = 25;
+pub const PAWN_SHIELD_MG: i16 = -1;
 pub const PAWN_SHIELD_EG: i16 = 1;
-pub const PAWN_OPEN_FILE_MG: i16 = -19;
-pub const PAWN_OPEN_FILE_EG: i16 = 8;
+pub const PAWN_OPEN_FILE_MG: i16 = -20;
+pub const PAWN_OPEN_FILE_EG: i16 = 7;
+
+pub const CENTER: u64 = 0x00_00_3C_3C_3C_3C_00_00;
+pub const RIM: u64 = !CENTER;
+
+pub const CMOB_MG: [i16; 6] = [-4, 3, 5, 4, 0,-4];
+pub const CMOB_EG: [i16; 6] = [-6, 3, 5, 2, 5, 4];
+pub const OMOB_MG: [i16; 6] = [-3,-1, 0, 3, 1,-1];
+pub const OMOB_EG: [i16; 6] = [-4, 2, 1, 3, 4, 3];
 
 // PeSTO evaluation values
 pub const MG_PC_VALS: [i16; 6] = [82, 337, 365, 477, 1025,  0];

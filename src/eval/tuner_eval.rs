@@ -2,7 +2,7 @@
 use crate::position::{*, attacks::{bishop_attacks, rook_attacks}};
 use super::{*, tuner::TunerPosition};
 
-pub const NUM_PARAMS: usize = 26;
+pub const NUM_PARAMS: usize = 34;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ParamContainer {
@@ -16,6 +16,8 @@ pub struct ParamContainer {
     pub shield_eg: i16,
     pub open_file_mg: i16,
     pub open_file_eg: i16,
+    pub pawn_mg: i16,
+    pub pawn_eg: i16,
     pub knight_mg: i16,
     pub knight_eg: i16,
     pub bishop_mg: i16,
@@ -24,6 +26,8 @@ pub struct ParamContainer {
     pub rook_eg: i16,
     pub queen_mg: i16,
     pub queen_eg: i16,
+    pub king_mg: i16,
+    pub king_eg: i16,
     pub outer_knight_mg: i16,
     pub outer_knight_eg: i16,
     pub outer_bishop_mg: i16,
@@ -32,6 +36,10 @@ pub struct ParamContainer {
     pub outer_rook_eg: i16,
     pub outer_queen_mg: i16,
     pub outer_queen_eg: i16,
+    pub outer_pawn_mg: i16,
+    pub outer_pawn_eg: i16,
+    pub outer_king_mg: i16,
+    pub outer_king_eg: i16,
 }
 
 impl From<[i16; NUM_PARAMS]> for ParamContainer {
@@ -42,14 +50,18 @@ impl From<[i16; NUM_PARAMS]> for ParamContainer {
             passed_mg: x[4], passed_eg: x[5],
             shield_mg: x[6], shield_eg: x[7],
             open_file_mg: x[8], open_file_eg: x[9],
-            knight_mg: x[10], knight_eg: x[11],
-            bishop_mg: x[12], bishop_eg: x[13],
-            rook_mg: x[14], rook_eg: x[15],
-            queen_mg: x[16], queen_eg: x[17],
-            outer_knight_mg: x[18], outer_knight_eg: x[19],
-            outer_bishop_mg: x[20], outer_bishop_eg: x[21],
-            outer_rook_mg: x[22], outer_rook_eg: x[23],
-            outer_queen_mg: x[24], outer_queen_eg: x[25],
+            pawn_mg: x[10], pawn_eg: x[11],
+            knight_mg: x[12], knight_eg: x[13],
+            bishop_mg: x[14], bishop_eg: x[15],
+            rook_mg: x[16], rook_eg: x[17],
+            queen_mg: x[18], queen_eg: x[19],
+            king_mg: x[20], king_eg: x[21],
+            outer_pawn_mg: x[22], outer_pawn_eg: x[23],
+            outer_knight_mg: x[24], outer_knight_eg: x[25],
+            outer_bishop_mg: x[26], outer_bishop_eg: x[27],
+            outer_rook_mg: x[28], outer_rook_eg: x[29],
+            outer_queen_mg: x[30], outer_queen_eg: x[31],
+            outer_king_mg: x[32], outer_king_eg: x[33]
         }
     }
 }
@@ -62,14 +74,18 @@ impl From<ParamContainer> for [i16; NUM_PARAMS] {
         x.passed_mg, x.passed_eg,
         x.shield_mg, x.shield_eg,
         x.open_file_mg, x.open_file_eg,
+        x.pawn_mg, x.pawn_eg,
         x.knight_mg, x.knight_eg,
         x.bishop_mg, x.bishop_eg,
         x.rook_mg, x.rook_eg,
         x.queen_mg, x.queen_eg,
+        x.king_mg, x.king_eg,
+        x.outer_pawn_mg, x.outer_pawn_eg,
         x.outer_knight_mg, x.outer_knight_eg,
         x.outer_bishop_mg, x.outer_bishop_eg,
         x.outer_rook_mg, x.outer_rook_eg,
         x.outer_queen_mg, x.outer_queen_eg,
+        x.outer_king_mg, x.outer_king_eg,
         ]
     }
 }
@@ -91,10 +107,10 @@ pub fn pawn_eval(phase: i16, pawns: [i16; 5], params: &[i16; NUM_PARAMS]) -> i16
     taper(phase as i32, mg, eg)
 }
 
-pub fn mob_eval(phase: i16, mob: [i16; 8], params: &[i16; NUM_PARAMS]) -> i16 {
+pub fn mob_eval(phase: i16, mob: [i16; 12], params: &[i16; NUM_PARAMS]) -> i16 {
     let mut mg = 0;
     let mut eg = 0;
-    for i in 0..8 {
+    for i in 0..12 {
         mg += mob[i] * params[10 + 2 * i];
         eg += mob[i] * params[10 + 2 * i + 1];
     }
@@ -127,18 +143,15 @@ pub fn tuner_pawn_score(pos: &Position, side: usize) -> [i16; 5] {
     [doubled, isolated, passed, protecting_pawns, open_files]
 }
 
-pub fn tuner_mobility_score(pos: &Position, side: usize) -> [i16; 8] {
-    let mut mob = [0; 8];
-    for pc in Piece::KNIGHT..=Piece::QUEEN {
+pub fn tuner_mobility_score(pos: &Position, side: usize) -> [i16; 12] {
+    let mut mob = [0; 12];
+    for pc in Piece::PAWN..=Piece::KING {
         let m = piece_mobility(pos, side, pos.occupied, pc);
-        mob[pc - 1] = m.0;
-        mob[pc + 3] = m.1;
+        mob[pc] = m.0;
+        mob[pc + 6] = m.1;
     }
     mob
 }
-
-const CENTER: u64 = 0x00_00_3C_3C_3C_3C_00_00;
-const RIM: u64 = !CENTER;
 
 pub fn piece_mobility(pos: &Position, side: usize, mut occupied: u64, pc: usize) -> (i16, i16) {
     let mut from: u16;
@@ -160,10 +173,12 @@ pub fn piece_mobility(pos: &Position, side: usize, mut occupied: u64, pc: usize)
         from = ls1b_scan(attackers);
         idx = from as usize;
         centers = match pc {
+            Piece::PAWN => PAWN_ATTACKS[side][idx],
             Piece::KNIGHT => KNIGHT_ATTACKS[idx],
             Piece::ROOK => rook_attacks(idx, occupied),
             Piece::BISHOP => bishop_attacks(idx, occupied),
             Piece::QUEEN => rook_attacks(idx, occupied) | bishop_attacks(idx, occupied),
+            Piece::KING => KING_ATTACKS[idx],
             _ => panic!("Not a valid usize in fn piece_moves_general: {}", pc),
         } & !pos.sides[side];
         rims = centers & RIM;

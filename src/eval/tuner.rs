@@ -12,7 +12,7 @@ pub struct TunerPosition {
     pub pst: i16,
     pub pawns: [i16; 5],
     pub phase: i16,
-    pub mob: [i16; 8],
+    pub mob: [i16; 12],
     pub result: f64,
 }
 
@@ -37,7 +37,7 @@ fn parse_epd(s: &str, zvals: Arc<ZobristVals>) -> TunerPosition {
     }
     let mut mob = tuner_mobility_score(&pos, 0);
     let bm = tuner_mobility_score(&pos, 1);
-    for i in 0..8 {
+    for i in 0..12 {
         mob[i] -= bm[i];
     }
     TunerPosition { pst, pawns, phase: phase as i16, result: r, mob }
