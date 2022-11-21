@@ -105,8 +105,14 @@ impl Position {
             ptable.push(self.pawnhash, pwn);
         }
 
+        // endgame "mop-up" eval for king of winning side
+        let mut eval = mat + pst + pwn;
+        if eval != 0 {
+            eval += self.eg_king_score((eval < 0) as usize, phase)
+        }
+
         // relative to side due to negamax framework
-        SIDE_FACTOR[self.side_to_move] * (mat + pst + pwn)
+        SIDE_FACTOR[self.side_to_move] * eval
     }
 
     fn side_pawn_score(&self, side: usize) -> [i16; 2] {
@@ -141,6 +147,17 @@ impl Position {
         let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG
                     + protecting_pawns * PAWN_SHIELD_EG + open_files * PAWN_OPEN_FILE_EG;
         [mg, eg]
+    }
+
+    fn eg_king_score(&self, winning_side: usize, phase: i32) -> i16 {
+        let losing_side = winning_side ^ 1;
+        let losing_king = ls1b_scan(self.pieces[losing_side][Piece::KING]) as i16;
+        let winning_king = ls1b_scan(self.pieces[winning_side][Piece::KING]) as i16;
+        let cmd = CMD[losing_king as usize];
+        let md = ((losing_king >> 3) - (winning_king >> 3)).abs() + ((losing_king & 7) - (winning_king & 7)).abs();
+        let mut score = 5 * cmd + 2 * ( 14 - md );
+        score = taper(phase, 0, score);
+        SIDE_FACTOR[winning_side] * score
     }
 
     pub fn is_draw_by_repetition(&self, num: u8) -> bool {
