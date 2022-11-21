@@ -12,18 +12,6 @@ pub fn get_weight<const MG: bool>(idx: usize, side: usize, piece: usize) -> i16 
     }
 }
 
-/// King eval stuff
-pub const CMD: [i16; 64] = [
-    6, 5, 4, 3, 3, 4, 5, 6,
-    5, 4, 3, 2, 2, 3, 4, 5,
-    4, 3, 2, 1, 1, 2, 3, 4,
-    3, 2, 1, 0, 0, 1, 2, 3,
-    3, 2, 1, 0, 0, 1, 2, 3,
-    4, 3, 2, 1, 1, 2, 3, 4,
-    5, 4, 3, 2, 2, 3, 4, 5,
-    6, 5, 4, 3, 3, 4, 5, 6
-];
-
 /// Pawn eval stuff
 pub const FILES: [u64; 8] = [72340172838076673, 144680345676153346, 289360691352306692, 578721382704613384, 1157442765409226768, 2314885530818453536, 4629771061636907072, 9259542123273814144];
 pub const RAILS: [u64; 8] = [FILES[1], FILES[0] | FILES[2], FILES[1] | FILES[3], FILES[2] | FILES[4], FILES[3] | FILES[5], FILES[4] | FILES[6], FILES[5] | FILES[7], FILES[6]];

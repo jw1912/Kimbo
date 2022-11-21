@@ -1,6 +1,5 @@
 pub mod tuner_eval;
 pub mod tuner;
-pub mod vals;
 
 use crate::tables::pawn::PawnHashTable;
 use crate::position::{ls1b_scan, Piece};

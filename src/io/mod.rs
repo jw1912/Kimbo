@@ -35,15 +35,7 @@ fn run_tuner(commands: Vec<&str>) {
         println!("invalid command");
         return;
     }
-    let initial_params = if commands.len() == 3 {
-        match commands[2] {
-            "new" => ParamContainer::new(),
-            "zero" => ParamContainer::default(),
-            _ => ParamContainer::old(),
-        }
-    } else {
-        ParamContainer::old()
-    };
+    let initial_params = ParamContainer::default();
     let best = optimise::<true>(commands[1], initial_params);
     println!("Best parameters:");
     println!("{:#?}", best);
