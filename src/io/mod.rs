@@ -31,11 +31,19 @@ fn features() {
 
 /// run Texel tuner
 fn run_tuner(commands: Vec<&str>) {
-    if commands.len() != 2 {
-        println!("please specify 'tune [dataset file]'");
+    if !(2..=3).contains(&commands.len()) {
+        println!("invalid command");
         return;
     }
-    let initial_params = ParamContainer::default();
+    let initial_params = if commands.len() == 3 {
+        match commands[2] {
+            "new" => ParamContainer::new(),
+            "zero" => ParamContainer::default(),
+            _ => ParamContainer::old(),
+        }
+    } else {
+        ParamContainer::old()
+    };
     let best = optimise::<true>(commands[1], initial_params);
     println!("Best parameters:");
     println!("{:#?}", best);
