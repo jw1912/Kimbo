@@ -4,7 +4,7 @@ pub mod tuner;
 use crate::tables::pawn::PawnHashTable;
 use crate::position::{ls1b_scan, Piece};
 use crate::position::consts::*;
-use crate::position::{*, attacks::{bishop_attacks, rook_attacks}};
+use crate::position::*;
 
 /// Calculating phase
 pub fn calculate_phase(pos: &Position) -> i16 {
@@ -105,12 +105,8 @@ impl Position {
             ptable.push(self.pawnhash, pwn);
         }
 
-        let wm = self.mobility(0);
-        let bm = self.mobility(1);
-        let mob = taper(phase, wm.0 - bm.0, wm.1 - bm.1);
-
         // relative to side due to negamax framework
-        SIDE_FACTOR[self.side_to_move] * (mat + pst + pwn + mob)
+        SIDE_FACTOR[self.side_to_move] * (mat + pst + pwn)
     }
 
     fn side_pawn_score(&self, side: usize) -> [i16; 2] {
@@ -199,54 +195,6 @@ impl Position {
     pub fn is_in_check(&self) -> bool {
         let king_idx = ls1b_scan(self.pieces[self.side_to_move][Piece::KING]) as usize;
         self.is_square_attacked(king_idx, self.side_to_move, self.occupied)
-    }
-
-    fn piece_mobility<const PC: usize>(&self, side: usize) -> (i16, i16) {
-        let mut from: u16;
-        let mut idx: usize;
-        let mut mg: i16 = 0;
-        let mut eg: i16 = 0;
-        let mut centers: u64;
-        let mut rims: u64;
-        let mut attackers: u64 = self.pieces[side][PC];
-        let mut occupied = self.occupied & !self.pieces[side][Piece::QUEEN];
-        match PC {
-            Piece::ROOK => occupied &= !self.pieces[side][Piece::ROOK],
-            Piece::BISHOP => occupied &= !self.pieces[side][Piece::BISHOP],
-            Piece::QUEEN => occupied &= !(self.pieces[side][Piece::BISHOP] | self.pieces[side][Piece::ROOK]),
-            _ => {}
-        }
-        while attackers > 0 {
-            from = ls1b_scan(attackers);
-            idx = from as usize;
-            centers = match PC {
-                Piece::PAWN => PAWN_ATTACKS[side][idx],
-                Piece::KNIGHT => KNIGHT_ATTACKS[idx],
-                Piece::ROOK => rook_attacks(idx, occupied),
-                Piece::BISHOP => bishop_attacks(idx, occupied),
-                Piece::QUEEN => rook_attacks(idx, occupied) | bishop_attacks(idx, occupied),
-                Piece::KING => KING_ATTACKS[idx],
-                _ => panic!("Not a valid usize in fn piece_moves_general: {}", PC),
-            } & !self.sides[side];
-            rims = centers & RIM;
-            centers &= CENTER;
-            let cnt = centers.count_ones() as i16;
-            let rm = rims.count_ones() as i16;
-            mg += cnt * CMOB_MG[PC] + rm * OMOB_MG[PC];
-            eg += cnt * CMOB_EG[PC] + rm * OMOB_EG[PC];
-            attackers &= attackers - 1;
-        }
-        (mg, eg)
-    }
-
-    fn mobility(&self, side: usize) -> (i16, i16) {
-        let p = self.piece_mobility::<{ Piece::PAWN }>(side);
-        let n = self.piece_mobility::<{ Piece::KNIGHT }>(side);
-        let b = self.piece_mobility::<{ Piece::BISHOP }>(side);
-        let r = self.piece_mobility::<{ Piece::ROOK }>(side);
-        let q = self.piece_mobility::<{ Piece::QUEEN }>(side);
-        let k = self.piece_mobility::<{ Piece::KING }>(side);
-        (p.0 + n.0 + b.0 + r.0 + q.0 + k.0, p.1 + n.1 + b.1 + r.1 + q.1 + k.1)
     }
 }
 
