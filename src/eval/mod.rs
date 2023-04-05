@@ -1,10 +1,10 @@
-pub mod tuner_eval;
 pub mod tuner;
+pub mod tuner_eval;
 
-use crate::tables::pawn::PawnHashTable;
-use crate::position::{ls1b_scan, Piece};
 use crate::position::consts::*;
 use crate::position::*;
+use crate::position::{ls1b_scan, Piece};
+use crate::tables::pawn::PawnHashTable;
 
 /// Calculating phase
 pub fn calculate_phase(pos: &Position) -> i16 {
@@ -20,7 +20,10 @@ pub fn calc_material<const MG: bool>(pos: &Position) -> [i16; 2] {
     let mut scores = [0; 2];
     for (i, side) in pos.pieces.iter().enumerate() {
         let mut score = 0;
-        for (j, piece_val) in (if MG {MG_PC_VALS} else {EG_PC_VALS}).iter().enumerate() {
+        for (j, piece_val) in (if MG { MG_PC_VALS } else { EG_PC_VALS })
+            .iter()
+            .enumerate()
+        {
             let mut piece = side[j];
             while piece > 0 {
                 score += piece_val;
@@ -31,7 +34,6 @@ pub fn calc_material<const MG: bool>(pos: &Position) -> [i16; 2] {
     }
     scores
 }
-
 
 /// Calculate midgame piece-square tables from scratch
 pub fn calc_pst<const MG: bool>(pos: &Position) -> [i16; 2] {
@@ -136,16 +138,23 @@ impl Position {
         // a *very* primitive king safety eval
         let king_idx = ls1b_scan(self.pieces[side][Piece::KING]);
         let king_file = (king_idx & 7) as i8;
-        let protecting_pawns = (KING_ATTACKS[king_idx as usize] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
+        let protecting_pawns =
+            (KING_ATTACKS[king_idx as usize] & self.pieces[side][Piece::PAWN]).count_ones() as i16;
         let mut open_files = 0;
         for file in std::cmp::max(0, king_file - 1)..=std::cmp::min(7, king_file + 1) {
             open_files += (FILES[file as usize] & self.pieces[side][Piece::PAWN] == 0) as i16
         }
         // score
-        let mg = doubled * DOUBLED_MG + isolated * ISOLATED_MG + passed * PASSED_MG
-                    + protecting_pawns * PAWN_SHIELD_MG + open_files * PAWN_OPEN_FILE_MG;
-        let eg = doubled * DOUBLED_EG + isolated * ISOLATED_EG + passed * PASSED_EG
-                    + protecting_pawns * PAWN_SHIELD_EG + open_files * PAWN_OPEN_FILE_EG;
+        let mg = doubled * DOUBLED_MG
+            + isolated * ISOLATED_MG
+            + passed * PASSED_MG
+            + protecting_pawns * PAWN_SHIELD_MG
+            + open_files * PAWN_OPEN_FILE_MG;
+        let eg = doubled * DOUBLED_EG
+            + isolated * ISOLATED_EG
+            + passed * PASSED_EG
+            + protecting_pawns * PAWN_SHIELD_EG
+            + open_files * PAWN_OPEN_FILE_EG;
         [mg, eg]
     }
 
@@ -154,23 +163,30 @@ impl Position {
         let losing_king = ls1b_scan(self.pieces[losing_side][Piece::KING]) as i16;
         let winning_king = ls1b_scan(self.pieces[winning_side][Piece::KING]) as i16;
         let cmd = CMD[losing_king as usize];
-        let md = ((losing_king >> 3) - (winning_king >> 3)).abs() + ((losing_king & 7) - (winning_king & 7)).abs();
-        let mut score = 5 * cmd + 2 * ( 14 - md );
+        let md = ((losing_king >> 3) - (winning_king >> 3)).abs()
+            + ((losing_king & 7) - (winning_king & 7)).abs();
+        let mut score = 5 * cmd + 2 * (14 - md);
         score = taper(phase, 0, score);
         SIDE_FACTOR[winning_side] * score
     }
 
     pub fn is_draw_by_repetition(&self, num: u8) -> bool {
         let l = self.state_stack.len();
-        if l < 6 || self.null_counter > 0 { return false }
+        if l < 6 || self.null_counter > 0 {
+            return false;
+        }
         let to = l - 1;
         let mut from = l.wrapping_sub(self.halfmove_clock as usize);
-        if from > 1024 { from = 0 }
+        if from > 1024 {
+            from = 0
+        }
         let mut repetitions_count = 1;
         for i in (from..to).rev().step_by(2) {
             if self.state_stack[i].zobrist == self.zobrist {
                 repetitions_count += 1;
-                if repetitions_count >= num { return true }
+                if repetitions_count >= num {
+                    return true;
+                }
             }
         }
         false
@@ -189,7 +205,10 @@ impl Position {
     pub fn is_draw_by_material(&self) -> bool {
         let pawns = self.pieces[0][Piece::PAWN] | self.pieces[1][Piece::PAWN];
         // pawns left? not draw. more than one minor piece on either side? not draw.
-        if pawns == 0 && self.mat_eg[0] <= EG_PC_VALS[Piece::BISHOP] && self.mat_eg[1] <= EG_PC_VALS[Piece::BISHOP] {
+        if pawns == 0
+            && self.mat_eg[0] <= EG_PC_VALS[Piece::BISHOP]
+            && self.mat_eg[1] <= EG_PC_VALS[Piece::BISHOP]
+        {
             let total_mat = self.mat_eg[0] + self.mat_eg[1];
             // two minor pieces left
             if total_mat >= 2 * EG_PC_VALS[Piece::KNIGHT] {
@@ -198,13 +217,13 @@ impl Position {
                     let bishops = self.pieces[0][Piece::BISHOP] | self.pieces[1][Piece::BISHOP];
                     // are bishops on opposite or same colour squares
                     if bishops & SQ1 == bishops || bishops & SQ2 == bishops {
-                        return true
+                        return true;
                     }
                 }
-                return false
+                return false;
             }
             // 1 or zero minor pieces is a draw
-            return true
+            return true;
         }
         false
     }

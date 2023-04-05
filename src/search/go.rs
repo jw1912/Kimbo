@@ -13,7 +13,7 @@ impl Engine {
         let mut moves = MoveList::default();
         self.board.gen_moves::<{ MoveType::ALL }>(&mut moves);
         if moves.len() == 1 {
-            return moves[0]
+            return moves[0];
         }
 
         // loop of iterative deepening, up to preset max depth
@@ -27,7 +27,16 @@ impl Engine {
             self.stats.seldepth = 0;
             let mut pv = Vec::new();
             let check = self.board.is_in_check();
-            let score = self.negamax::<true, true>(-MAX_SCORE, MAX_SCORE, d + 1, 0, &mut pv, prev_m, check, false);
+            let score = self.negamax::<true, true>(
+                -MAX_SCORE,
+                MAX_SCORE,
+                d + 1,
+                0,
+                &mut pv,
+                prev_m,
+                check,
+                false,
+            );
 
             if self.stop.load(Ordering::Relaxed) || self.stats.node_count > self.max_nodes {
                 break;

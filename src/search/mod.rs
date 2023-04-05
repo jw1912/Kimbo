@@ -1,18 +1,18 @@
-pub mod timings;
 mod go;
+pub mod timings;
 #[rustfmt::skip]
 mod negamax;
+mod pruning;
 mod qsearch;
 pub mod sorting;
-mod pruning;
 
+use crate::io::errors::UciError;
+use crate::position::{zobrist::ZobristVals, Position};
 use crate::tables::history::HistoryTable;
 use crate::tables::killer::KillerMoveTable;
-use crate::tables::{pawn::PawnHashTable, search::HashTable, countermove::CounterMoveTable};
-use crate::position::{Position, zobrist::ZobristVals};
-use std::sync::{Arc, atomic::AtomicBool};
+use crate::tables::{countermove::CounterMoveTable, pawn::PawnHashTable, search::HashTable};
+use std::sync::{atomic::AtomicBool, Arc};
 use std::time::Instant;
-use crate::io::errors::UciError;
 
 pub const MAX_PLY: i8 = i8::MAX;
 
@@ -68,10 +68,18 @@ impl Engine {
         s: &str,
         ttable: Arc<HashTable>,
         ptable: Arc<PawnHashTable>,
-        zobrist_vals: Arc<ZobristVals>
+        zobrist_vals: Arc<ZobristVals>,
     ) -> Result<Self, UciError> {
         let board = Position::from_fen(s, zobrist_vals)?;
-        Ok(Self::new(board, Arc::new(AtomicBool::new(false)), 0, 0, 0, ttable, ptable))
+        Ok(Self::new(
+            board,
+            Arc::new(AtomicBool::new(false)),
+            0,
+            0,
+            0,
+            ttable,
+            ptable,
+        ))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -103,7 +111,8 @@ impl Engine {
     #[inline(always)]
     pub fn search_limits_reached(&self) -> bool {
         self.stats.node_count > self.max_nodes // node count reached
-        || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time // search time exceeded
+        || self.stats.start_time.elapsed().as_millis() as u64 > self.max_move_time
+        // search time exceeded
     }
 }
 

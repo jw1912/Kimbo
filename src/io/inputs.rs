@@ -1,6 +1,6 @@
-use crate::position::{MoveType, MoveList, Position};
 use super::errors::UciError;
 use super::FILES;
+use crate::position::{MoveList, MoveType, Position};
 
 fn sq_to_idx(sq: &str) -> Result<u16, UciError> {
     let chs: Vec<char> = sq.chars().collect();
@@ -17,7 +17,7 @@ const TWELVE: u16 = 0b0000_1111_1111_1111;
 pub fn uci_to_u16(pos: &Position, m: &str) -> Result<u16, UciError> {
     let l = m.len();
     if !(l == 4 || l == 5) {
-        return Err(UciError::Move)
+        return Err(UciError::Move);
     }
     let from = sq_to_idx(&m[0..2])?;
     let to = sq_to_idx(&m[2..4])?;

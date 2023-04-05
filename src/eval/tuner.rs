@@ -1,11 +1,11 @@
-use crate::position::{Position, zobrist::ZobristVals};
 use super::*;
+use crate::position::{zobrist::ZobristVals, Position};
+use std::fs::File;
 use std::io::BufRead;
 use std::time::Instant;
-use std::{sync::Arc, io::BufReader};
-use std::fs::File;
+use std::{io::BufReader, sync::Arc};
 
-use super::tuner_eval::{ParamContainer, tuner_eval, tuner_pawn_score};
+use super::tuner_eval::{tuner_eval, tuner_pawn_score, ParamContainer};
 
 #[derive(Debug)]
 pub struct TunerPosition {
@@ -22,19 +22,25 @@ fn parse_epd(s: &str, zvals: Arc<ZobristVals>) -> TunerPosition {
         "\"1-0\";" => 1.0,
         "\"0-1\";" => 0.0,
         "\"1/2-1/2\";" => 0.5,
-        _ => panic!("invalid results")
+        _ => panic!("invalid results"),
     };
     let mut phase = pos.phase as i32;
     if phase > TOTALPHASE {
         phase = TOTALPHASE
     };
-    let pst = eval_factor(phase, pos.pst_mg, pos.pst_eg) + eval_factor(phase, pos.mat_mg, pos.mat_eg);
+    let pst =
+        eval_factor(phase, pos.pst_mg, pos.pst_eg) + eval_factor(phase, pos.mat_mg, pos.mat_eg);
     let mut pawns = tuner_pawn_score(&pos, 0);
     let bp = tuner_pawn_score(&pos, 1);
     for i in 0..5 {
         pawns[i] -= bp[i]
     }
-    TunerPosition { pst, pawns, phase: phase as i16, result: r}
+    TunerPosition {
+        pst,
+        pawns,
+        phase: phase as i16,
+        result: r,
+    }
 }
 
 fn get_positions(filename: &str) -> Vec<TunerPosition> {
@@ -52,17 +58,27 @@ fn get_positions(filename: &str) -> Vec<TunerPosition> {
     for line in BufReader::new(file).lines() {
         positions.push(parse_epd(&line.unwrap(), zvals.clone()));
         count += 1;
-        if count & 65535 == 0 {println!("Loaded {count} positions, {} per sec.", count * 1000 / now.elapsed().as_millis())}
+        if count & 65535 == 0 {
+            println!(
+                "Loaded {count} positions, {} per sec.",
+                count * 1000 / now.elapsed().as_millis()
+            )
+        }
     }
     println!("Completed: Loaded {count} positions.");
     positions
 }
 
 fn sigmoid(k: f64, x: f64) -> f64 {
-    1.0 / (1.0 + 10f64.powf(- k * x))
+    1.0 / (1.0 + 10f64.powf(-k * x))
 }
 
-fn calculate_error(positions: &Vec<TunerPosition>, params: &[i16; 10], num_positions: f64, k: f64) -> f64 {
+fn calculate_error(
+    positions: &Vec<TunerPosition>,
+    params: &[i16; 10],
+    num_positions: f64,
+    k: f64,
+) -> f64 {
     let mut error = 0.0;
     for pos in positions {
         error += (pos.result - sigmoid(k, tuner_eval(pos, params) as f64 / 100.0)).powi(2);
@@ -70,9 +86,17 @@ fn calculate_error(positions: &Vec<TunerPosition>, params: &[i16; 10], num_posit
     error / num_positions
 }
 
-fn optimise_k(positions: &Vec<TunerPosition>, params: &[i16; 10], num_positions: f64, mut initial_guess: f64, step_size: f64) -> f64 {
+fn optimise_k(
+    positions: &Vec<TunerPosition>,
+    params: &[i16; 10],
+    num_positions: f64,
+    mut initial_guess: f64,
+    step_size: f64,
+) -> f64 {
     let mut best_error = calculate_error(positions, params, num_positions, initial_guess);
-    let step = if calculate_error(positions, params, num_positions, initial_guess - step_size) < calculate_error(positions, params, num_positions, initial_guess + step_size) {
+    let step = if calculate_error(positions, params, num_positions, initial_guess - step_size)
+        < calculate_error(positions, params, num_positions, initial_guess + step_size)
+    {
         -step_size
     } else {
         step_size
@@ -90,12 +114,15 @@ fn optimise_k(positions: &Vec<TunerPosition>, params: &[i16; 10], num_positions:
 }
 
 // source: https://www.chessprogramming.org/Texel%27s_Tuning_Method
-pub fn optimise<const PRINT_PARAMS: bool>(filename: &str, mut best_params: ParamContainer) -> ParamContainer {
+pub fn optimise<const PRINT_PARAMS: bool>(
+    filename: &str,
+    mut best_params: ParamContainer,
+) -> ParamContainer {
     let start = Instant::now();
     let mut params: [i16; 10] = best_params.into();
     let positions = get_positions(filename);
     if positions.is_empty() {
-        return best_params
+        return best_params;
     }
     let num_positions = positions.len() as f64;
     println!("{}ms to load positions", start.elapsed().as_millis());
@@ -128,9 +155,16 @@ pub fn optimise<const PRINT_PARAMS: bool>(filename: &str, mut best_params: Param
                 }
             }
         }
-        println!("Run {} in {}ms, error: {}", count, runtime.elapsed().as_millis(), best_error);
+        println!(
+            "Run {} in {}ms, error: {}",
+            count,
+            runtime.elapsed().as_millis(),
+            best_error
+        );
         best_params = params.into();
-        if PRINT_PARAMS { println!("{:#?}", best_params) }
+        if PRINT_PARAMS {
+            println!("{:#?}", best_params)
+        }
         count += 1;
     }
     println!("Finished optimisation.");

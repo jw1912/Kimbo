@@ -1,15 +1,18 @@
 // Converting position to fen
 // other way is handled in kimbo_state
 
-use crate::position::{*, zobrist::{ZobristVals, initialise_pawnhash, initialise_zobrist}};
-use crate::eval::{calculate_phase, calc_pst, calc_material};
-use std::{fmt, num::ParseIntError};
-use std::sync::Arc;
 use super::outputs::idx_to_sq;
+use crate::eval::{calc_material, calc_pst, calculate_phase};
+use crate::position::{
+    zobrist::{initialise_pawnhash, initialise_zobrist, ZobristVals},
+    *,
+};
+use std::sync::Arc;
+use std::{fmt, num::ParseIntError};
 
-const PIECES: [char; 12] = ['P','N','B','R','Q','K','p','n','b','r','q','k'];
-const RIGHTS: [u8; 4] = [4,8,1,2];
-const RIGHTS_CHAR: [char; 4] = ['K','Q','k','q'];
+const PIECES: [char; 12] = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k'];
+const RIGHTS: [u8; 4] = [4, 8, 1, 2];
+const RIGHTS_CHAR: [char; 4] = ['K', 'Q', 'k', 'q'];
 const SIDES: [char; 2] = ['w', 'b'];
 
 fn piece_out(pc: (usize, usize)) -> char {
@@ -19,7 +22,7 @@ fn piece_out(pc: (usize, usize)) -> char {
 fn board(sqs: [u8; 64], sides: [u64; 2]) -> String {
     let mut fen = String::from("");
     for i in 0..8 {
-        let row = &sqs[(7-i)*8 .. (8-i)*8];
+        let row = &sqs[(7 - i) * 8..(8 - i) * 8];
         let mut empty_count = 0;
         let mut empty = false;
         for (j, sq) in row.iter().enumerate() {
@@ -40,7 +43,9 @@ fn board(sqs: [u8; 64], sides: [u64; 2]) -> String {
         if empty {
             fen.push_str(&empty_count.to_string());
         }
-        if i != 7 { fen.push('/'); }
+        if i != 7 {
+            fen.push('/');
+        }
     }
     fen
 }
@@ -60,7 +65,8 @@ fn castle_rights(rights: u8) -> String {
 
 impl Position {
     pub fn to_fen(&self) -> String {
-        format!("{} {} {} {} {} {}",
+        format!(
+            "{} {} {} {} {} {}",
             board(self.squares, self.sides),
             SIDES[self.side_to_move],
             castle_rights(self.castle_rights),
@@ -78,7 +84,7 @@ impl Position {
 pub struct FenError;
 impl fmt::Display for FenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"error parsing 'fen' string")
+        write!(f, "error parsing 'fen' string")
     }
 }
 impl From<ParseIntError> for FenError {
@@ -105,20 +111,34 @@ fn pieces_to_squares(pieces: [[u64; 6]; 2]) -> [u8; 64] {
 
 fn piece_in(ch: char) -> Result<(usize, usize), FenError> {
     if let Some(idx) = PIECES.iter().position(|&element| element == ch) {
-        return Ok(((idx > 5) as usize, idx - 6 * ((idx > 5) as usize)))
+        return Ok(((idx > 5) as usize, idx - 6 * ((idx > 5) as usize)));
     };
     Err(FenError)
 }
 
 fn piece_idxs(s: &str) -> Result<[[Vec<usize>; 6]; 2], FenError> {
     let mut piece_idxs = [
-        [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()],
-        [Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()],
+        [
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        ],
+        [
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        ],
     ];
     let mut idx: usize = 63;
     let rows: Vec<&str> = s.split('/').collect();
     if rows.len() != 8 {
-        return Err(FenError)
+        return Err(FenError);
     }
     for row in rows {
         let mut count = 0;
@@ -142,7 +162,7 @@ fn piece_idxs(s: &str) -> Result<[[Vec<usize>; 6]; 2], FenError> {
             }
         }
         if count != 8 {
-            return Err(FenError)
+            return Err(FenError);
         }
     }
     Ok(piece_idxs)
@@ -195,7 +215,7 @@ fn get_square(s: &str) -> Result<u16, FenError> {
     }
     let arr = s.as_bytes();
     if arr.len() != 2 {
-        return Err(FenError)
+        return Err(FenError);
     }
     let x = arr[0] as char;
     let y = arr[1] as char;
@@ -220,7 +240,7 @@ impl Position {
         // splits fen string by whitespace
         let vec: Vec<&str> = s.split_whitespace().collect();
         if vec.len() < 4 {
-            return Err(FenError)
+            return Err(FenError);
         }
         let pieces = get_pieces(vec[0])?;
         let sides = get_sides(pieces);
@@ -243,8 +263,25 @@ impl Position {
             fullmove_counter = vec[5].parse::<u16>()?;
         }
         let mut pos = Self {
-            pieces, sides, occupied, squares, side_to_move, castle_rights, en_passant_sq, halfmove_clock, fullmove_counter, zobrist_vals,
-            state_stack: Vec::new(), null_counter: 0, pawnhash: 0, zobrist: 0, phase: 0, pst_eg: [0,0], pst_mg: [0,0], mat_eg: [0,0], mat_mg: [0,0]
+            pieces,
+            sides,
+            occupied,
+            squares,
+            side_to_move,
+            castle_rights,
+            en_passant_sq,
+            halfmove_clock,
+            fullmove_counter,
+            zobrist_vals,
+            state_stack: Vec::new(),
+            null_counter: 0,
+            pawnhash: 0,
+            zobrist: 0,
+            phase: 0,
+            pst_eg: [0, 0],
+            pst_mg: [0, 0],
+            mat_eg: [0, 0],
+            mat_mg: [0, 0],
         };
         pos.pawnhash = initialise_pawnhash(&pos);
         pos.zobrist = initialise_zobrist(&pos);

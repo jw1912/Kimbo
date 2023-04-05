@@ -1,24 +1,24 @@
+/// error handling
+pub mod errors;
+pub mod fen;
+mod info;
 pub mod inputs;
 /// internal representations to readable outputs
 pub mod outputs;
 /// uci interface
 pub mod uci;
-/// error handling
-pub mod errors;
-pub mod fen;
-mod info;
 
-use uci::uci_run;
-use outputs::u16_to_uci;
 use info::*;
+use outputs::u16_to_uci;
 use std::io;
 use std::process;
+use uci::uci_run;
 
 use crate::eval::tuner::optimise;
 use crate::eval::tuner_eval::ParamContainer;
 
 // used in inputs/outputs
-const FILES: [char; 8] = ['a','b','c','d','e','f','g','h'];
+const FILES: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
 /// description of version
 fn description() {
@@ -77,7 +77,10 @@ impl SearchStats {
     }
 
     pub fn report(&self) {
-        println!("depth reached {} nodes {} time {}", self.depth_reached, self.nodes_to_depth, self.time_to_depth);
+        println!(
+            "depth reached {} nodes {} time {}",
+            self.depth_reached, self.nodes_to_depth, self.time_to_depth
+        );
         println!("pv {}", self.pv.iter().map(u16_to_uci).collect::<String>());
     }
 }

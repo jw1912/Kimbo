@@ -91,11 +91,10 @@ impl Position {
         let op_king = self.pieces[other][Piece::KING];
         // all attackers
         (KNIGHT_ATTACKS[idx] & op_knights > 0)
-        || (KING_ATTACKS[idx] & op_king > 0)
-        || (PAWN_ATTACKS[side][idx] & op_pawns > 0)
-        || (rook_attacks(idx, occupied) & op_rooks_and_queen > 0)
-        || (bishop_attacks(idx, occupied) & op_bishops_and_queen > 0)
-
+            || (KING_ATTACKS[idx] & op_king > 0)
+            || (PAWN_ATTACKS[side][idx] & op_pawns > 0)
+            || (rook_attacks(idx, occupied) & op_rooks_and_queen > 0)
+            || (bishop_attacks(idx, occupied) & op_bishops_and_queen > 0)
     }
 
     pub fn checkers_pinned_pieces(&self, side: usize, king_idx: usize) -> (u64, u64) {
@@ -109,7 +108,8 @@ impl Position {
             | (rook_attacks(king_idx, self.occupied) & op_rooks_and_queen);
         let own_usizes = self.sides[side];
         let mut pinned = 0;
-        let mut pinner = xray_rook_attacks(self.occupied, own_usizes, king_idx) & op_rooks_and_queen;
+        let mut pinner =
+            xray_rook_attacks(self.occupied, own_usizes, king_idx) & op_rooks_and_queen;
         let mut sq: usize;
         while pinner > 0 {
             sq = ls1b_scan(pinner) as usize;

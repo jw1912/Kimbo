@@ -1,6 +1,6 @@
 // This is only used for tuning
+use super::{tuner::TunerPosition, *};
 use crate::position::*;
-use super::{*, tuner::TunerPosition};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ParamContainer {
@@ -19,18 +19,34 @@ pub struct ParamContainer {
 impl From<[i16; 10]> for ParamContainer {
     fn from(x: [i16; 10]) -> Self {
         Self {
-            doubled_mg: x[0], doubled_eg: x[1],
-            isolated_mg: x[2], isolated_eg: x[3],
-            passed_mg: x[4], passed_eg: x[5],
-            shield_mg: x[6], shield_eg: x[7],
-            open_file_mg: x[8], open_file_eg: x[9]
+            doubled_mg: x[0],
+            doubled_eg: x[1],
+            isolated_mg: x[2],
+            isolated_eg: x[3],
+            passed_mg: x[4],
+            passed_eg: x[5],
+            shield_mg: x[6],
+            shield_eg: x[7],
+            open_file_mg: x[8],
+            open_file_eg: x[9],
         }
     }
 }
 
 impl From<ParamContainer> for [i16; 10] {
     fn from(x: ParamContainer) -> Self {
-        [x.doubled_mg, x.doubled_eg, x.isolated_mg, x.isolated_eg, x.passed_mg, x.passed_eg, x.shield_mg, x.shield_eg, x.open_file_mg, x.open_file_eg]
+        [
+            x.doubled_mg,
+            x.doubled_eg,
+            x.isolated_mg,
+            x.isolated_eg,
+            x.passed_mg,
+            x.passed_eg,
+            x.shield_mg,
+            x.shield_eg,
+            x.open_file_mg,
+            x.open_file_eg,
+        ]
     }
 }
 
@@ -69,7 +85,8 @@ pub fn tuner_pawn_score(pos: &Position, side: usize) -> [i16; 5] {
     }
     let king_idx = ls1b_scan(pos.pieces[side][Piece::KING]);
     let king_file = (king_idx & 7) as i8;
-    let protecting_pawns = (KING_ATTACKS[king_idx as usize] & pos.pieces[side][Piece::PAWN]).count_ones() as i16;
+    let protecting_pawns =
+        (KING_ATTACKS[king_idx as usize] & pos.pieces[side][Piece::PAWN]).count_ones() as i16;
     let mut open_files = 0;
     for file in std::cmp::max(0, king_file - 1)..=std::cmp::min(7, king_file + 1) {
         open_files += (FILES[file as usize] & pos.pieces[side][Piece::PAWN] == 0) as i16

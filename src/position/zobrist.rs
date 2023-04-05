@@ -3,8 +3,8 @@
 // simply because this is the only way to do it
 // initialise_zobrist function is my own
 
-use fastrand;
 use super::{ls1b_scan, Position};
+use fastrand;
 
 pub struct ZobristVals {
     pieces: [[[u64; 64]; 6]; 2],
@@ -85,7 +85,9 @@ pub fn initialise_zobrist(pos: &Position) -> u64 {
         castle_rights &= castle_rights - 1
     }
     if pos.en_passant_sq > 0 {
-        zobrist ^= pos.zobrist_vals.en_passant_hash((pos.en_passant_sq & 7) as usize);
+        zobrist ^= pos
+            .zobrist_vals
+            .en_passant_hash((pos.en_passant_sq & 7) as usize);
     }
     if pos.side_to_move == 0 {
         zobrist ^= pos.zobrist_vals.side_hash();

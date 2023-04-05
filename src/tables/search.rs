@@ -75,7 +75,15 @@ impl HashTable {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn push(&self, zobrist: u64, best_move: u16, depth: i8, bound: u8, mut score: i16, ply: i8) {
+    pub fn push(
+        &self,
+        zobrist: u64,
+        best_move: u16,
+        depth: i8,
+        bound: u8,
+        mut score: i16,
+        ply: i8,
+    ) {
         let key = (zobrist >> 48) as u16;
         let idx = (zobrist as usize) % self.num_buckets;
         let bucket = &self.table[idx];

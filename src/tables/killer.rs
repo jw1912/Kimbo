@@ -8,7 +8,7 @@ use crate::search::MAX_PLY;
 
 pub const KILLERS_PER_PLY: usize = 3;
 pub struct KillerMoveTable {
-    pub table: [[Move; KILLERS_PER_PLY]; MAX_PLY as usize]
+    pub table: [[Move; KILLERS_PER_PLY]; MAX_PLY as usize],
 }
 impl Default for KillerMoveTable {
     fn default() -> Self {
@@ -17,7 +17,7 @@ impl Default for KillerMoveTable {
         #[allow(clippy::declare_interior_mutable_const)]
         const ROW: [Move; 3] = [ENTRY; KILLERS_PER_PLY];
         Self {
-            table: [ROW; MAX_PLY as usize]
+            table: [ROW; MAX_PLY as usize],
         }
     }
 }
@@ -31,7 +31,9 @@ impl KillerMoveTable {
         let mut copy_found = false;
         for idx in (1..KILLERS_PER_PLY).rev() {
             let entry = self.table[ply as usize][idx - 1].get();
-            if entry == m { copy_found = true }
+            if entry == m {
+                copy_found = true
+            }
             self.table[ply as usize][idx].set(entry);
         }
         if copy_found {
