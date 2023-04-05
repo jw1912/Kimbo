@@ -1,6 +1,6 @@
-use crate::position::{Position, MoveList};
-use crate::search::{MAX_SCORE, is_mate_score};
 use super::FILES;
+use crate::position::{MoveList, Position};
+use crate::search::{is_mate_score, MAX_SCORE};
 
 /// board idx to square
 pub fn idx_to_sq(idx: u16) -> String {
@@ -12,24 +12,41 @@ pub fn idx_to_sq(idx: u16) -> String {
 }
 
 /// u16 move format to uci move format
-const PROMOS: [&str; 4] = ["n","b","r","q"];
+const PROMOS: [&str; 4] = ["n", "b", "r", "q"];
 const PROMO_BIT: u16 = 0b1000_0000_0000_0000;
 pub fn u16_to_uci(m: &u16) -> String {
     let mut promo = "";
     if m & PROMO_BIT > 0 {
         promo = PROMOS[((m >> 12) & 0b11) as usize];
     }
-    format!("{}{}{} ", idx_to_sq(m & 0b111111), idx_to_sq((m >> 6) & 0b111111), promo)
+    format!(
+        "{}{}{} ",
+        idx_to_sq(m & 0b111111),
+        idx_to_sq((m >> 6) & 0b111111),
+        promo
+    )
 }
 
 /// returns info on the search
-pub fn uci_info(depth: i8, seldepth: i8, nodes: u64, time: u128, pv: Vec<u16>, eval: i16, hashfull: u64) {
+pub fn uci_info(
+    depth: i8,
+    seldepth: i8,
+    nodes: u64,
+    time: u128,
+    pv: Vec<u16>,
+    eval: i16,
+    hashfull: u64,
+) {
     let pv_str: String = pv.iter().map(u16_to_uci).collect();
     let mut score_type = "cp";
     let mut score = eval;
     if is_mate_score(eval) {
         score_type = "mate";
-        score = if eval < 0 { eval.abs() - MAX_SCORE } else { MAX_SCORE - eval + 1 } / 2;
+        score = if eval < 0 {
+            eval.abs() - MAX_SCORE
+        } else {
+            MAX_SCORE - eval + 1
+        } / 2;
     }
     let nps = if time != 0 {
         ((nodes as f64) / ((time as f64) / 1000.0)) as u32
@@ -43,7 +60,9 @@ pub fn uci_info(depth: i8, seldepth: i8, nodes: u64, time: u128, pv: Vec<u16>, e
 }
 
 // getting symbols for pieces
-const PIECE_SYMBOLS: [&str; 13] = [" ", "P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"];
+const PIECE_SYMBOLS: [&str; 13] = [
+    " ", "P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k",
+];
 fn symbol_at_idx(idx: usize, pos: &Position) -> &str {
     let indx = match pos.squares[idx] {
         6 => 0,

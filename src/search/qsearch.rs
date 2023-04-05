@@ -1,5 +1,8 @@
-use super::{Engine, sorting::{MoveScores, get_next_move}};
-use crate::position::{MoveType, MoveList};
+use super::{
+    sorting::{get_next_move, MoveScores},
+    Engine,
+};
+use crate::position::{MoveList, MoveType};
 
 impl Engine {
     /// Quiescence search
@@ -29,7 +32,8 @@ impl Engine {
 
         // generating captures
         let mut captures = MoveList::default();
-        self.board.gen_moves::<{ MoveType::CAPTURES }>(&mut captures);
+        self.board
+            .gen_moves::<{ MoveType::CAPTURES }>(&mut captures);
 
         // scoring captures
         let mut move_scores = MoveScores::default();
@@ -50,7 +54,9 @@ impl Engine {
                 stand_pat = score;
                 if score > alpha {
                     alpha = score;
-                    if score >= beta { return score }
+                    if score >= beta {
+                        return score;
+                    }
                 }
             }
         }

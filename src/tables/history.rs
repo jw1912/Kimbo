@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicU32, Ordering};
 use crate::search::sorting::HISTORY_MAX;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 // History heuristic
 // If a non-capture causes a beta cutoff,
@@ -13,12 +13,16 @@ pub struct HistoryScore {
 }
 impl Clone for HistoryScore {
     fn clone(&self) -> Self {
-        Self { data: AtomicU32::new(self.data.load(Ordering::Relaxed)) }
+        Self {
+            data: AtomicU32::new(self.data.load(Ordering::Relaxed)),
+        }
     }
 }
 impl HistoryScore {
     const fn new() -> Self {
-        Self { data: AtomicU32::new(0) }
+        Self {
+            data: AtomicU32::new(0),
+        }
     }
 
     pub fn get(&self) -> u32 {

@@ -34,22 +34,38 @@ impl Position {
         self.pieces[self.side_to_move][moved_pc as usize] ^= mo;
         self.sides[self.side_to_move] ^= mo;
         self.en_passant_sq = 0;
-        self.pst_mg[self.side_to_move] -= get_weight::<true>(from_idx, self.side_to_move, moved_pc as usize);
-        self.pst_eg[self.side_to_move] -= get_weight::<false>(from_idx, self.side_to_move, moved_pc as usize);
+        self.pst_mg[self.side_to_move] -=
+            get_weight::<true>(from_idx, self.side_to_move, moved_pc as usize);
+        self.pst_eg[self.side_to_move] -=
+            get_weight::<false>(from_idx, self.side_to_move, moved_pc as usize);
         self.zobrist ^= self.zobrist_vals.side_hash();
-        self.zobrist ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
+        self.zobrist ^=
+            self.zobrist_vals
+                .piece_hash(from_idx, self.side_to_move, moved_pc as usize);
         if ctx.en_passant_sq > 0 {
-            self.zobrist ^= self.zobrist_vals.en_passant_hash((ctx.en_passant_sq & 7) as usize);
+            self.zobrist ^= self
+                .zobrist_vals
+                .en_passant_hash((ctx.en_passant_sq & 7) as usize);
         }
         match flag {
             MoveFlags::QUIET => {
                 self.squares[to_idx] = moved_pc;
-                self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
-                self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
-                self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_mg[self.side_to_move] +=
+                    get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_eg[self.side_to_move] +=
+                    get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
+                self.zobrist ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 if moved_pc == 0 {
-                    self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
-                    self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                    self.pawnhash ^= self.zobrist_vals.piece_hash(
+                        from_idx,
+                        self.side_to_move,
+                        moved_pc as usize,
+                    );
+                    self.pawnhash ^=
+                        self.zobrist_vals
+                            .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 }
             }
             MoveFlags::CAPTURE => {
@@ -61,19 +77,29 @@ impl Position {
                 if captured_pc == Piece::ROOK {
                     self.castle_rights &= CASTLE_RIGHTS[to_idx];
                 }
-                self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
-                self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_mg[self.side_to_move] +=
+                    get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_eg[self.side_to_move] +=
+                    get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
                 // updated captured piece psts
                 self.mat_mg[opponent] -= MG_PC_VALS[captured_pc];
                 self.mat_eg[opponent] -= EG_PC_VALS[captured_pc];
                 self.pst_mg[opponent] -= get_weight::<true>(to_idx, opponent, captured_pc);
                 self.pst_eg[opponent] -= get_weight::<false>(to_idx, opponent, captured_pc);
-                self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.zobrist ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, opponent, captured_pc);
                 self.phase -= PHASE_VALS[captured_pc];
                 if moved_pc == 0 {
-                    self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
-                    self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                    self.pawnhash ^= self.zobrist_vals.piece_hash(
+                        from_idx,
+                        self.side_to_move,
+                        moved_pc as usize,
+                    );
+                    self.pawnhash ^=
+                        self.zobrist_vals
+                            .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 }
                 if captured_pc == 0 {
                     self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, opponent, captured_pc);
@@ -90,17 +116,25 @@ impl Position {
                 self.sides[opponent] ^= pwn;
                 self.squares[to_idx] = Piece::PAWN as u8;
                 self.squares[pwn_idx] = Piece::NONE as u8;
-                self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
-                self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_mg[self.side_to_move] +=
+                    get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_eg[self.side_to_move] +=
+                    get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
                 self.mat_mg[opponent] -= MG_PC_VALS[0];
                 self.mat_eg[opponent] -= EG_PC_VALS[0];
                 self.pst_mg[opponent] -= get_weight::<true>(pwn_idx, opponent, 0);
                 self.pst_eg[opponent] -= get_weight::<false>(pwn_idx, opponent, 0);
-                self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.zobrist ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 self.zobrist ^= self.zobrist_vals.piece_hash(pwn_idx, opponent, 0);
                 self.phase -= PHASE_VALS[0];
-                self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
-                self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.pawnhash ^=
+                    self.zobrist_vals
+                        .piece_hash(from_idx, self.side_to_move, moved_pc as usize);
+                self.pawnhash ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 self.pawnhash ^= self.zobrist_vals.piece_hash(pwn_idx, opponent, 0);
             }
             MoveFlags::DBL_PUSH => {
@@ -110,12 +144,20 @@ impl Position {
                     _ => panic!("Invalid side!"),
                 } as u16;
                 self.squares[to_idx] = Piece::PAWN as u8;
-                self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
-                self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
-                self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_mg[self.side_to_move] +=
+                    get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_eg[self.side_to_move] +=
+                    get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
+                self.zobrist ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
                 self.zobrist ^= self.zobrist_vals.en_passant_hash(to_idx & 7);
-                self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
-                self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.pawnhash ^=
+                    self.zobrist_vals
+                        .piece_hash(from_idx, self.side_to_move, moved_pc as usize);
+                self.pawnhash ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
             }
             MoveFlags::QS_CASTLE => {
                 self.castle_rights &= CastleRights::SIDES[opponent];
@@ -124,19 +166,21 @@ impl Position {
                         self.squares[0] = Piece::NONE as u8;
                         self.squares[3] = Piece::ROOK as u8;
                         A1 | D1
-                    },
+                    }
                     Side::BLACK => {
                         self.squares[56] = Piece::NONE as u8;
                         self.squares[59] = Piece::ROOK as u8;
                         A8 | D8
-                    },
+                    }
                     _ => panic!("Invalid side!"),
                 };
                 self.pieces[self.side_to_move][Piece::ROOK] ^= castle;
                 self.sides[self.side_to_move] ^= castle;
                 self.squares[to_idx] = Piece::KING as u8;
-                self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
-                self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_mg[self.side_to_move] +=
+                    get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_eg[self.side_to_move] +=
+                    get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
                 let (idx1, idx2) = match self.side_to_move {
                     Side::WHITE => (0, 3),
                     Side::BLACK => (56, 59),
@@ -148,7 +192,9 @@ impl Position {
                 self.pst_eg[self.side_to_move] += get_weight::<false>(idx2, self.side_to_move, 3);
                 self.zobrist ^= self.zobrist_vals.piece_hash(idx1, self.side_to_move, 3);
                 self.zobrist ^= self.zobrist_vals.piece_hash(idx2, self.side_to_move, 3);
-                self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.zobrist ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
             }
             MoveFlags::KS_CASTLE => {
                 self.castle_rights &= CastleRights::SIDES[opponent];
@@ -157,19 +203,21 @@ impl Position {
                         self.squares[7] = Piece::NONE as u8;
                         self.squares[5] = Piece::ROOK as u8;
                         F1 | H1
-                    },
+                    }
                     Side::BLACK => {
                         self.squares[63] = Piece::NONE as u8;
                         self.squares[61] = Piece::ROOK as u8;
                         F8 | H8
-                    },
+                    }
                     _ => panic!("Invalid side!"),
                 };
                 self.pieces[self.side_to_move][Piece::ROOK] ^= castle;
                 self.sides[self.side_to_move] ^= castle;
                 self.squares[to_idx] = Piece::KING as u8;
-                self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
-                self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_mg[self.side_to_move] +=
+                    get_weight::<true>(to_idx, self.side_to_move, moved_pc as usize);
+                self.pst_eg[self.side_to_move] +=
+                    get_weight::<false>(to_idx, self.side_to_move, moved_pc as usize);
                 let (idx1, idx2) = match self.side_to_move {
                     Side::WHITE => (7, 5),
                     Side::BLACK => (63, 61),
@@ -181,7 +229,9 @@ impl Position {
                 self.pst_eg[self.side_to_move] += get_weight::<false>(idx2, self.side_to_move, 3);
                 self.zobrist ^= self.zobrist_vals.piece_hash(idx1, self.side_to_move, 3);
                 self.zobrist ^= self.zobrist_vals.piece_hash(idx2, self.side_to_move, 3);
-                self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+                self.zobrist ^=
+                    self.zobrist_vals
+                        .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
             }
             _ => {
                 // promotions
@@ -190,15 +240,23 @@ impl Position {
                 if flag < MoveFlags::KNIGHT_PROMO_CAPTURE {
                     self.pieces[self.side_to_move][promo_pc] ^= to;
                     self.squares[to_idx] = promo_pc as u8;
-                    self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, promo_pc);
-                    self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, promo_pc);
-                    self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, promo_pc);
+                    self.pst_mg[self.side_to_move] +=
+                        get_weight::<true>(to_idx, self.side_to_move, promo_pc);
+                    self.pst_eg[self.side_to_move] +=
+                        get_weight::<false>(to_idx, self.side_to_move, promo_pc);
+                    self.zobrist ^=
+                        self.zobrist_vals
+                            .piece_hash(to_idx, self.side_to_move, promo_pc);
                     self.phase += PHASE_VALS[promo_pc];
                     self.mat_mg[self.side_to_move] += MG_PC_VALS[promo_pc];
                     self.mat_mg[self.side_to_move] -= MG_PC_VALS[0];
                     self.mat_eg[self.side_to_move] += EG_PC_VALS[promo_pc];
                     self.mat_eg[self.side_to_move] -= EG_PC_VALS[0];
-                    self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
+                    self.pawnhash ^= self.zobrist_vals.piece_hash(
+                        from_idx,
+                        self.side_to_move,
+                        moved_pc as usize,
+                    );
                 } else {
                     let captured_pc = self.squares[to_idx] as usize;
                     ctx.captured_pc = captured_pc as u8;
@@ -209,8 +267,10 @@ impl Position {
                     if captured_pc == Piece::ROOK {
                         self.castle_rights &= CASTLE_RIGHTS[to_idx];
                     }
-                    self.pst_mg[self.side_to_move] += get_weight::<true>(to_idx, self.side_to_move, promo_pc);
-                    self.pst_eg[self.side_to_move] += get_weight::<false>(to_idx, self.side_to_move, promo_pc);
+                    self.pst_mg[self.side_to_move] +=
+                        get_weight::<true>(to_idx, self.side_to_move, promo_pc);
+                    self.pst_eg[self.side_to_move] +=
+                        get_weight::<false>(to_idx, self.side_to_move, promo_pc);
                     let cap_pc = ctx.captured_pc as usize;
                     self.mat_mg[self.side_to_move] += MG_PC_VALS[promo_pc];
                     self.mat_mg[self.side_to_move] -= MG_PC_VALS[0];
@@ -220,11 +280,17 @@ impl Position {
                     self.mat_eg[opponent] -= EG_PC_VALS[cap_pc];
                     self.pst_mg[opponent] -= get_weight::<true>(to_idx, opponent, cap_pc);
                     self.pst_eg[opponent] -= get_weight::<false>(to_idx, opponent, cap_pc);
-                    self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, promo_pc);
+                    self.zobrist ^=
+                        self.zobrist_vals
+                            .piece_hash(to_idx, self.side_to_move, promo_pc);
                     self.zobrist ^= self.zobrist_vals.piece_hash(to_idx, opponent, cap_pc);
                     self.phase += PHASE_VALS[promo_pc];
                     self.phase -= PHASE_VALS[cap_pc];
-                    self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
+                    self.pawnhash ^= self.zobrist_vals.piece_hash(
+                        from_idx,
+                        self.side_to_move,
+                        moved_pc as usize,
+                    );
                 }
             }
         }
@@ -235,7 +301,9 @@ impl Position {
         } else {
             self.halfmove_clock = 0
         }
-        if self.castle_rights > CastleRights::NONE && (moved_pc == Piece::KING as u8 || moved_pc == Piece::ROOK as u8) {
+        if self.castle_rights > CastleRights::NONE
+            && (moved_pc == Piece::KING as u8 || moved_pc == Piece::ROOK as u8)
+        {
             self.castle_rights &= CASTLE_RIGHTS[from_idx]
         }
         let mut changed_castle = ctx.castle_rights & !self.castle_rights;
@@ -245,8 +313,12 @@ impl Position {
             changed_castle &= changed_castle - 1
         }
         if moved_pc == 5 {
-            self.pawnhash ^= self.zobrist_vals.piece_hash(from_idx, self.side_to_move, moved_pc as usize);
-            self.pawnhash ^= self.zobrist_vals.piece_hash(to_idx, self.side_to_move, moved_pc as usize);
+            self.pawnhash ^=
+                self.zobrist_vals
+                    .piece_hash(from_idx, self.side_to_move, moved_pc as usize);
+            self.pawnhash ^=
+                self.zobrist_vals
+                    .piece_hash(to_idx, self.side_to_move, moved_pc as usize);
         }
         self.side_to_move ^= 1;
         self.state_stack.push(ctx);
@@ -286,7 +358,9 @@ impl Position {
         }
         // flag specifics
         match flag {
-            MoveFlags::QUIET | MoveFlags::DBL_PUSH => {self.squares[to_idx] = Piece::NONE as u8;}
+            MoveFlags::QUIET | MoveFlags::DBL_PUSH => {
+                self.squares[to_idx] = Piece::NONE as u8;
+            }
             MoveFlags::CAPTURE => {
                 self.pieces[opponent][ctx.captured_pc as usize] ^= to;
                 self.sides[opponent] ^= to;
@@ -308,12 +382,12 @@ impl Position {
                         self.squares[3] = Piece::NONE as u8;
                         self.squares[0] = Piece::ROOK as u8;
                         A1 | D1
-                    },
+                    }
                     Side::BLACK => {
                         self.squares[59] = Piece::NONE as u8;
                         self.squares[56] = Piece::ROOK as u8;
                         A8 | D8
-                    },
+                    }
                     _ => panic!("Invalid side!"),
                 };
                 self.pieces[self.side_to_move][Piece::ROOK] ^= castle;
@@ -326,12 +400,12 @@ impl Position {
                         self.squares[5] = Piece::NONE as u8;
                         self.squares[7] = Piece::ROOK as u8;
                         F1 | H1
-                    },
+                    }
                     Side::BLACK => {
                         self.squares[61] = Piece::NONE as u8;
                         self.squares[63] = Piece::ROOK as u8;
                         F8 | H8
-                    },
+                    }
                     _ => panic!("Invalid side!"),
                 };
                 self.pieces[self.side_to_move][Piece::ROOK] ^= castle;
@@ -390,7 +464,9 @@ impl Position {
         let hash = self.zobrist;
         // update en passant
         if self.en_passant_sq > 0 {
-            self.zobrist ^= self.zobrist_vals.en_passant_hash((self.en_passant_sq & 7) as usize);
+            self.zobrist ^= self
+                .zobrist_vals
+                .en_passant_hash((self.en_passant_sq & 7) as usize);
             self.en_passant_sq = 0;
         }
         // update fullmove counter, side and side hash

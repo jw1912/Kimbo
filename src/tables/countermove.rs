@@ -10,7 +10,7 @@ use super::Move;
 // but testing showed it was not effective
 
 pub struct CounterMoveTable {
-    pub table: [[Move; 64]; 64]
+    pub table: [[Move; 64]; 64],
 }
 impl Default for CounterMoveTable {
     fn default() -> Self {
@@ -18,9 +18,7 @@ impl Default for CounterMoveTable {
         const ENTRY: Move = Move::new();
         #[allow(clippy::declare_interior_mutable_const)]
         const ROW: [Move; 64] = [ENTRY; 64];
-        Self {
-            table: [ROW; 64]
-        }
+        Self { table: [ROW; 64] }
     }
 }
 impl CounterMoveTable {

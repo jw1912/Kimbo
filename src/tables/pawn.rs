@@ -45,7 +45,7 @@ impl PawnHashTable {
         let entry = &self.table[idx];
         let data = entry.load();
         if data.key == key {
-            return Some(data)
+            return Some(data);
         }
         None
     }

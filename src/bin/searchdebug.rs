@@ -1,9 +1,9 @@
-use kimbo::search::Engine;
-use kimbo::tables::search::HashTable;
-use kimbo::tables::pawn::PawnHashTable;
-use kimbo::position::zobrist::ZobristVals;
 use kimbo::io::outputs::display_board;
+use kimbo::position::zobrist::ZobristVals;
 use kimbo::position::Position;
+use kimbo::search::Engine;
+use kimbo::tables::pawn::PawnHashTable;
+use kimbo::tables::search::HashTable;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Instant;
@@ -25,7 +25,7 @@ pub const _POSITIONS: [&str; 12] = [
     "3r2k1/pp3ppp/4p3/8/QP6/P1P5/5KPP/7q w - - 0 27",
     "1q1r3k/3P1pp1/ppBR1n1p/4Q2P/P4P2/8/5PK1/8 w - - 0 1",
     "1n3r2/3k2pp/pp1P4/1p4b1/1q3B2/5Q2/PPP2PP1/R4RK1 w - - 0 1",
-    "7K/8/k1P5/7p/8/8/8/8 w - - 0 1"
+    "7K/8/k1P5/7p/8/8/8/8 w - - 0 1",
 ];
 
 fn _search_all() {
@@ -37,8 +37,8 @@ fn _search_all() {
     let zvals = Arc::new(ZobristVals::default());
     let now = Instant::now();
     for pos in _POSITIONS {
-        let position =  Position::from_fen(pos, zvals.clone()).unwrap();
-        let mut search= Engine::new(
+        let position = Position::from_fen(pos, zvals.clone()).unwrap();
+        let mut search = Engine::new(
             position,
             Arc::new(AtomicBool::new(false)),
             max_time,

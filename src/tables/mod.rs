@@ -1,10 +1,13 @@
-pub mod search;
-pub mod pawn;
 pub mod countermove;
-pub mod killer;
 pub mod history;
+pub mod killer;
+pub mod pawn;
+pub mod search;
 
-use std::{sync::atomic::{AtomicU16, Ordering}, ops::Deref};
+use std::{
+    ops::Deref,
+    sync::atomic::{AtomicU16, Ordering},
+};
 
 // Move struct for counter move and killer move heuristics
 pub struct Move(AtomicU16);

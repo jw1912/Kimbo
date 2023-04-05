@@ -1,3 +1,4 @@
+use super::{is_capture, is_castling, is_promotion, Engine};
 /// This file handles sorting of moves
 /// Moves are sorted as follows:
 /// 1. Hash move (from HashTable)
@@ -7,10 +8,8 @@
 /// 5. Counter move (from-to CounterMoveTable)
 /// 6. Castling
 /// 7. QuietsS
-
 use crate::position::MoveList;
 use crate::tables::killer::KILLERS_PER_PLY;
-use super::{Engine, is_capture, is_castling, is_promotion};
 use std::mem;
 use std::ptr;
 
@@ -18,18 +17,18 @@ use std::ptr;
 const HASH_MOVE: i16 = 30000;
 const KILLERMOVE: i16 = 500;
 const COUNTERMOVE: i16 = 400;
-const PROMOTIONS: [i16;4] = [600, 700, 800, 900];
+const PROMOTIONS: [i16; 4] = [600, 700, 800, 900];
 const CASTLE: i16 = 300;
 pub const HISTORY_MAX: i16 = 200;
 //const QUIET: i16 = 0;
 const MVV_LVA: [[i16; 7]; 7] = [
-    [1500, 1400, 1300, 1200, 1100, 1000,   0], // victim PAWN
-    [2500, 2400, 2300, 2200, 2100, 2000,   0], // victim KNIGHT
-    [3500, 3400, 3300, 3200, 3100, 3000,   0], // victim BISHOP
-    [4500, 4400, 4300, 4200, 4100, 4000,   0], // victim ROOK
-    [5500, 5400, 5300, 5200, 5100, 5000,   0], // victim QUEEN
-    [   0,    0,    0,    0,    0,    0,   0], // victim KING (will not be referenced)
-    [   0,    0,    0,    0,    0,    0,   0], // empty square
+    [1500, 1400, 1300, 1200, 1100, 1000, 0], // victim PAWN
+    [2500, 2400, 2300, 2200, 2100, 2000, 0], // victim KNIGHT
+    [3500, 3400, 3300, 3200, 3100, 3000, 0], // victim BISHOP
+    [4500, 4400, 4300, 4200, 4100, 4000, 0], // victim ROOK
+    [5500, 5400, 5300, 5200, 5100, 5000, 0], // victim QUEEN
+    [0, 0, 0, 0, 0, 0, 0],                   // victim KING (will not be referenced)
+    [0, 0, 0, 0, 0, 0, 0],                   // empty square
 ];
 
 impl Engine {
@@ -41,7 +40,13 @@ impl Engine {
         MVV_LVA[captured_pc][moved_pc]
     }
 
-    pub fn score_move(&self, m: u16, hash_move: u16, counter_move: u16, killer_moves: [u16; KILLERS_PER_PLY]) -> i16 {
+    pub fn score_move(
+        &self,
+        m: u16,
+        hash_move: u16,
+        counter_move: u16,
+        killer_moves: [u16; KILLERS_PER_PLY],
+    ) -> i16 {
         if m == hash_move {
             HASH_MOVE
         } else if is_capture(m) {
@@ -60,7 +65,14 @@ impl Engine {
         }
     }
 
-    pub fn score_moves(&self, moves: &MoveList, move_scores: &mut MoveScores, hash_move: u16, prev_move: u16, ply: i8) {
+    pub fn score_moves(
+        &self,
+        moves: &MoveList,
+        move_scores: &mut MoveScores,
+        hash_move: u16,
+        prev_move: u16,
+        ply: i8,
+    ) {
         let counter_move = self.ctable.get(prev_move);
         let killer_moves = self.ktable.get_ply(ply);
         for i in move_scores.start_idx..moves.len() {
@@ -70,7 +82,9 @@ impl Engine {
     }
 
     pub fn score_captures(&self, moves: &MoveList, move_scores: &mut MoveScores) {
-        if moves.is_empty() { return }
+        if moves.is_empty() {
+            return;
+        }
         for i in move_scores.start_idx..moves.len() {
             let m = moves[i];
             move_scores.push(self.mvv_lva(m));
@@ -87,7 +101,7 @@ impl Default for MoveScores {
     fn default() -> Self {
         Self {
             list: unsafe {
-                #[allow(clippy::uninit_assumed_init)]
+                #[allow(clippy::uninit_assumed_init, invalid_value)]
                 mem::MaybeUninit::uninit().assume_init()
             },
             len: 0,
@@ -113,10 +127,13 @@ impl MoveScores {
 /// Move sort function
 /// O(n^2), however with pruning this is actually marginally faster
 /// because usually <30% of the moves have to be picked
-pub fn get_next_move(moves: &mut MoveList, move_scores: &mut MoveScores) -> Option<(u16, usize, i16)> {
+pub fn get_next_move(
+    moves: &mut MoveList,
+    move_scores: &mut MoveScores,
+) -> Option<(u16, usize, i16)> {
     let m_idx = move_scores.start_idx;
     if m_idx == move_scores.len {
-        return None
+        return None;
     }
     let mut best_idx = 0;
     let mut best_score = i16::MIN;

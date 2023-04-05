@@ -1,5 +1,5 @@
-use std::{fmt, num::ParseIntError};
 use super::fen::FenError;
+use std::{fmt, num::ParseIntError};
 
 #[derive(Debug)]
 pub enum UciError {
@@ -9,7 +9,7 @@ pub enum UciError {
     Go,
     Position,
     Move,
-    Fen
+    Fen,
 }
 impl fmt::Display for UciError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -20,7 +20,7 @@ impl fmt::Display for UciError {
             Self::Go => write!(f, "error parsing 'go' command"),
             Self::Position => write!(f, "error parsing 'position' command"),
             Self::Move => write!(f, "error parsing 'moves' list"),
-            Self::Fen => write!(f, "error parsing 'fen' string")
+            Self::Fen => write!(f, "error parsing 'fen' string"),
         }
     }
 }

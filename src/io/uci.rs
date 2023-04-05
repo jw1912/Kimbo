@@ -1,23 +1,26 @@
 // Tokens enum inspired by Rustic
 // SOURCE: https://github.com/mvanthoor/rustic/blob/master/src/comm/uci.rs
 
-use crate::position::Position;
-use crate::search::Engine;
-use super::inputs::uci_to_u16;
-use crate::position::zobrist::ZobristVals;
-use crate::tables::pawn::PawnHashTable;
 use super::errors::UciError;
-use crate::io::outputs::{display_board, u16_to_uci, report_stats};
-use crate::search::timings::Times;
+use super::info::*;
+use super::inputs::uci_to_u16;
+use crate::io::outputs::{display_board, report_stats, u16_to_uci};
 use crate::position::perft::perft;
+use crate::position::zobrist::ZobristVals;
+use crate::position::Position;
+use crate::search::timings::Times;
+use crate::search::Engine;
+use crate::tables::pawn::PawnHashTable;
 use crate::tables::search::HashTable;
 use std::io;
 use std::process;
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Instant;
-use super::info::*;
 
 struct State {
     pos: Position,
@@ -61,7 +64,7 @@ pub fn uci_run() {
         let commands: Vec<&str> = input.split(' ').map(|v| v.trim()).collect();
         let leave = run_commands(state.clone(), commands);
         if leave {
-            break 'uci
+            break 'uci;
         }
     }
 }
@@ -82,7 +85,7 @@ fn run_commands(state: Arc<Mutex<State>>, commands: Vec<&str>) -> bool {
         _ => return false,
     };
     if result.is_err() {
-        println!("{}",result.unwrap_err())
+        println!("{}", result.unwrap_err())
     }
     false
 }
@@ -126,7 +129,6 @@ fn display(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError
             let state_lock = state.lock().unwrap();
             report_stats(&state_lock.pos);
             drop(state_lock);
-
         }
     }
     Ok(())
@@ -149,7 +151,11 @@ fn position(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciErro
             "position" => (),
             "startpos" => {
                 skip_fen = true;
-                state_lock.pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", state_lock.zvals.clone()).unwrap();
+                state_lock.pos = Position::from_fen(
+                    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                    state_lock.zvals.clone(),
+                )
+                .unwrap();
             }
             "fen" => {
                 if !skip_fen {
@@ -191,7 +197,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
         WInc,
         BInc,
         MovesToGo,
-        Perft
+        Perft,
     }
 
     let state_lock = state.lock().unwrap();
@@ -219,23 +225,23 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             "winc" => token = Tokens::WInc,
             "binc" => token = Tokens::BInc,
             "movestogo" => token = Tokens::MovesToGo,
-            "perft" => token = {
-                do_perft = true;
-                Tokens::Perft
-            },
-            _ => {
-                match token {
-                    Tokens::Ponder => return Err(UciError::Go),
-                    Tokens::Depth => max_depth = command.parse::<i8>()?,
-                    Tokens::Nodes => max_nodes = command.parse::<u64>()?,
-                    Tokens::MoveTime => max_move_time = command.parse::<u64>()?,
-                    Tokens::WTime => times.wtime = std::cmp::max(command.parse::<i64>()?, 0) as u64,
-                    Tokens::BTime => times.btime = std::cmp::max(command.parse::<i64>()?, 0) as u64,
-                    Tokens::WInc => times.winc = command.parse::<u64>()?,
-                    Tokens::BInc => times.binc = command.parse::<u64>()?,
-                    Tokens::MovesToGo => times.moves_to_go = Some(command.parse::<u8>()?),
-                    Tokens::Perft => perft_depth = command.parse::<u8>()?,
+            "perft" => {
+                token = {
+                    do_perft = true;
+                    Tokens::Perft
                 }
+            }
+            _ => match token {
+                Tokens::Ponder => return Err(UciError::Go),
+                Tokens::Depth => max_depth = command.parse::<i8>()?,
+                Tokens::Nodes => max_nodes = command.parse::<u64>()?,
+                Tokens::MoveTime => max_move_time = command.parse::<u64>()?,
+                Tokens::WTime => times.wtime = std::cmp::max(command.parse::<i64>()?, 0) as u64,
+                Tokens::BTime => times.btime = std::cmp::max(command.parse::<i64>()?, 0) as u64,
+                Tokens::WInc => times.winc = command.parse::<u64>()?,
+                Tokens::BInc => times.binc = command.parse::<u64>()?,
+                Tokens::MovesToGo => times.moves_to_go = Some(command.parse::<u8>()?),
+                Tokens::Perft => perft_depth = command.parse::<u8>()?,
             },
         }
     }
@@ -256,7 +262,10 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
             let now = Instant::now();
             let count = perft::<true, false>(&mut position, perft_depth);
             let elapsed = now.elapsed().as_micros();
-            println!("Leaf count: {count} ({:.2} ML/sec)", count as f64 / elapsed as f64);
+            println!(
+                "Leaf count: {count} ({:.2} ML/sec)",
+                count as f64 / elapsed as f64
+            );
         });
         state.lock().unwrap().search_handle = Some(search_thread);
         return Ok(());
@@ -292,7 +301,7 @@ fn go(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     Ok(())
 }
 
-fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError>{
+fn setoption(state: Arc<Mutex<State>>, commands: Vec<&str>) -> Result<(), UciError> {
     let mut reading_name = false;
     let mut reading_value = false;
     let mut name_token = Vec::new();

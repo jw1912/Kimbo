@@ -1,5 +1,9 @@
-use crate::{io::outputs::u16_to_uci, position::zobrist::{initialise_zobrist, initialise_pawnhash}, eval::{calc_pst, calc_material}};
-use super::{MoveType, MoveList, Position};
+use super::{MoveList, MoveType, Position};
+use crate::{
+    eval::{calc_material, calc_pst},
+    io::outputs::u16_to_uci,
+    position::zobrist::{initialise_pawnhash, initialise_zobrist},
+};
 
 pub fn perft<const ROOT: bool, const DEBUG: bool>(position: &mut Position, depth_left: u8) -> u64 {
     if DEBUG {
@@ -27,7 +31,6 @@ pub fn perft<const ROOT: bool, const DEBUG: bool>(position: &mut Position, depth
     // calculate number of positions
     let mut positions: u64 = 0;
     for m_idx in 0..moves.len() {
-
         let m = moves[m_idx];
 
         // make move

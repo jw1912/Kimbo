@@ -2,14 +2,16 @@ pub mod attacks;
 pub mod consts;
 pub mod makemove;
 pub mod movegen;
-pub mod zobrist;
 pub mod perft;
+pub mod zobrist;
 
 use self::zobrist::ZobristVals;
-use std::sync::Arc;
-use std::{mem, ops::{Index, IndexMut}};
 use std::ptr;
-
+use std::sync::Arc;
+use std::{
+    mem,
+    ops::{Index, IndexMut},
+};
 
 /// Position struct
 /// Stores the same info as a fen string in bitboard format, with auxiliary info .squares and .sides
@@ -67,7 +69,11 @@ pub struct MoveList {
 
 impl Default for Position {
     fn default() -> Self {
-        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", Arc::new(ZobristVals::default())).unwrap()
+        Self::from_fen(
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            Arc::new(ZobristVals::default()),
+        )
+        .unwrap()
     }
 }
 
@@ -166,7 +172,7 @@ impl Default for MoveList {
     fn default() -> Self {
         Self {
             list: unsafe {
-                #[allow(clippy::uninit_assumed_init)]
+                #[allow(clippy::uninit_assumed_init, invalid_value)]
                 mem::MaybeUninit::uninit().assume_init()
             },
             len: 0,
@@ -178,23 +184,28 @@ impl MoveList {
     pub const fn new(list: [u16; 255], len: usize) -> Self {
         Self { list, len }
     }
+
     #[inline(always)]
     pub fn push(&mut self, m: u16) {
         self.list[self.len] = m;
         self.len += 1;
     }
+
     #[inline(always)]
     pub fn clear(&mut self) {
         self.len = 0;
     }
+
     #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len
     }
+
     #[inline(always)]
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
+
     #[inline(always)]
     pub fn swap_unchecked(&mut self, i: usize, j: usize) {
         let ptr = self.list.as_mut_ptr();
