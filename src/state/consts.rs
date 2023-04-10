@@ -1,5 +1,17 @@
 use crate::init;
 
+pub struct MoveType;
+impl MoveType {
+    pub const ALL: bool = true;
+    pub const CAPTURES: bool = false;
+}
+
+pub struct Fens;
+impl Fens {
+    pub const STARTPOS: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    pub const KIWIPETE: &str = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+}
+
 pub struct Side;
 impl Side {
     pub const WHITE: usize = 0;
@@ -72,7 +84,7 @@ impl MoveFlag {
 pub struct Rank;
 impl Rank {
     pub const PENULTIMATE: [u64; 2] = [0xFF000000000000, 0xFF00];
-    pub const DOUBLE: [u64; 2] = [0xFF000000000000, 0xFF00];
+    pub const DOUBLE: [u64; 2] = [0xFF000000, 0xFF00000000];
 }
 
 pub struct File;
@@ -82,11 +94,11 @@ impl File {
 }
 
 #[derive(Clone, Copy)]
-pub struct Mask {
-    pub bit: u64,
-    pub right: u64,
-    pub left: u64,
-    pub file: u64,
+struct Mask {
+    bit: u64,
+    right: u64,
+    left: u64,
+    file: u64,
 }
 
 pub struct Attacks;

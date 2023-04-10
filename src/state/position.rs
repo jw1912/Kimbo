@@ -1,7 +1,8 @@
-use super::{consts::*, movegen::*, Move, MoveList};
+use super::{consts::*, movegen::*, MoveList, square_str_to_index};
+use std::str::FromStr;
 
 /// State that is copied for undoing moves.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct State {
     castle_rights: u8,
     en_passant: u8,
@@ -73,6 +74,83 @@ impl Default for ZobristVals {
         }
 
         vals
+    }
+}
+
+impl FromStr for Position {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let split = s.split_whitespace().collect::<Vec<&str>>();
+        let mut pos = Position {
+            pieces: [0; 6],
+            sides: [0; 2],
+            stm: false,
+            state: State::default(),
+            phase: 0,
+            null_counter: 0,
+            stack: Vec::new(),
+            zobrist_vals: ZobristVals::default(),
+            castle_mask: [0; 64],
+        };
+
+        // main part of fen
+        let board_str = split.get(0).ok_or("empty string")?;
+        let mut col = 0;
+        let mut row = 7;
+        for ch in board_str.chars() {
+            if ch == '/' {
+                row -= 1;
+                col = 0;
+            } else if let Ok(clear) = ch.to_string().parse::<i16>() {
+                if !(1..=8).contains(&clear) {
+                    return Err(String::from("invalid number of empty squares"))
+                }
+                col += clear;
+            } else {
+                let idx = ['P','N','B','R','Q','K','p','n','b','r','q','k']
+                    .iter()
+                    .position(|&el| el == ch)
+                    .ok_or("invalid letter in fen")?;
+                let side = usize::from(idx > 5);
+                let piece = idx - 6 * side;
+                let sq = 8 * row + col;
+                pos.toggle(side, piece, 1 << sq);
+                col += 1;
+            }
+
+            // state info
+            let stm_str = split.get(1).ok_or("no side to move provided")?;
+            pos.stm = stm_str == &"b";
+            let en_passant_str = split.get(3).ok_or("no en passant square provided")?;
+            pos.state.en_passant = if en_passant_str == &"-" {
+                0
+            } else {
+                square_str_to_index(en_passant_str)? as u8
+            };
+            let halfmove_str = split.get(4).unwrap_or(&"0");
+            pos.state.halfmove_clock = halfmove_str.parse::<u8>().unwrap();
+
+            // castling
+            let castle_str = split.get(2).ok_or("no castling rights provided")?;
+            for ch in castle_str.chars() {
+                pos.state.castle_rights |= match ch {
+                    'Q' => CastleRights::WHITE_QS,
+                    'K' => CastleRights::WHITE_KS,
+                    'q' => CastleRights::BLACK_QS,
+                    'k' => CastleRights::BLACK_KS,
+                    _ => CastleRights::NONE,
+                }
+            }
+        }
+
+        Ok(pos)
+    }
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Fens::STARTPOS.parse().expect("hard coded")
     }
 }
 
@@ -172,7 +250,7 @@ impl Position {
 
         // checking if legal
         let kidx = self.piece(side, Piece::KING).trailing_zeros() as usize;
-        let invalid = self.is_square_attacked(kidx, side, occ);
+        let invalid = self.is_square_attacked(kidx, side, self.occ());
         if invalid {
             self.undo()
         }
