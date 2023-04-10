@@ -5,6 +5,11 @@ mod position;
 pub use position::Position;
 use std::mem::MaybeUninit;
 
+/// Move Encoding
+/// ```
+/// 0b 0000 000000 000000
+///    flag   to    from
+/// ```
 #[derive(Clone, Copy)]
 pub struct Move {
     r#move: u16,

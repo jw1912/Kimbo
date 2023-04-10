@@ -1,6 +1,5 @@
 use crate::init;
 
-/// For indexing into position.pieces and position.sides
 pub struct Side;
 impl Side {
     pub const WHITE: usize = 0;
@@ -18,6 +17,12 @@ impl Piece {
     pub const NONE: usize = 6;
 }
 
+pub struct Squares;
+impl Squares {
+    pub const LIGHT: u64 = 0x55AA55AA55AA55AA;
+    pub const DARK: u64 = 0xAA55AA55AA55AA55;
+}
+
 // temporary stuff , removed when add FRC support
 pub const B1C1D1: u64 = 0xE;
 pub const F1G1: u64 = 0x60;
@@ -30,7 +35,7 @@ pub const CM: [[(u64, usize, usize); 2]; 2] = [
 
 pub struct CastleRights;
 impl CastleRights {
-    pub const ALL: u8 = 15;
+    pub const NONE: u8 = 0;
     pub const WHITE_QS: u8 = 8;
     pub const WHITE_KS: u8 = 4;
     pub const BLACK_QS: u8 = 2;
@@ -39,14 +44,8 @@ impl CastleRights {
         Self::WHITE_KS | Self::WHITE_QS,
         Self::BLACK_KS | Self::BLACK_QS,
     ];
-    pub const NONE: u8 = 0;
 }
 
-/*  Move Encoding
-    Moves are encoded into a u16, in the following format:
-    MSB <- 0000        000000     000000   -> LSB
-           move flags  to index   from index
-*/
 pub struct MoveFlag;
 impl MoveFlag {
     pub const ALL: u16 = 15 << 12;
@@ -93,14 +92,12 @@ pub struct Mask {
 pub struct Attacks;
 impl Attacks {
     pub const PAWN: [[u64; 64]; 2] = [
-        init!(
-            i,
+        init!(i, {
             (((1 << i) & !File::A) << 7) | (((1 << i) & !File::H) << 9)
-        ),
-        init!(
-            i,
+        }),
+        init!(i, {
             (((1 << i) & !File::A) >> 9) | (((1 << i) & !File::H) >> 7)
-        ),
+        }),
     ];
 
     pub const KNIGHT: [u64; 64] = init!(i, {
@@ -193,10 +190,4 @@ impl Attacks {
 
         (file & mask.file) | (east & mask.right) | (west ^ mask.left)
     }
-}
-
-pub struct Squares;
-impl Squares {
-    pub const LIGHT: u64 = 0x55AA55AA55AA55AA;
-    pub const DARK: u64 = 0xAA55AA55AA55AA55;
 }

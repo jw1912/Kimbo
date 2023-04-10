@@ -1,5 +1,6 @@
 use super::{consts::*, movegen::*, Move, MoveList};
 
+/// State that is copied for undoing moves.
 #[derive(Clone, Copy)]
 pub struct State {
     castle_rights: u8,
@@ -8,6 +9,7 @@ pub struct State {
     zobrist: u64,
 }
 
+/// Required info to undo a move.
 #[derive(Clone, Copy)]
 pub struct MoveContext {
     r#move: u16,
@@ -16,6 +18,7 @@ pub struct MoveContext {
     state: State,
 }
 
+/// Holds all info abut current position.
 pub struct Position {
     pieces: [u64; 6],
     sides: [u64; 2],
@@ -28,6 +31,7 @@ pub struct Position {
     castle_mask: [u8; 64],
 }
 
+/// Holds all random values for hashing.
 pub struct ZobristVals {
     pieces: [[[u64; 64]; 6]; 2],
     castling: [u64; 4],
@@ -257,11 +261,11 @@ impl Position {
         }
 
         pawn_captures(mref, pawns, opps, side);
-        piece_moves::<{Piece::KNIGHT}, QUIET>(mref, occ, opps, self.piece(side, Piece::KNIGHT));
-        piece_moves::<{Piece::BISHOP}, QUIET>(mref, occ, opps, self.piece(side, Piece::BISHOP));
-        piece_moves::<{Piece::ROOK}, QUIET>(mref, occ, opps, self.piece(side, Piece::ROOK));
-        piece_moves::<{Piece::QUEEN}, QUIET>(mref, occ, opps, self.piece(side, Piece::QUEEN));
-        piece_moves::<{Piece::KING}, QUIET>(mref, occ, opps, self.piece(side, Piece::KING));
+        piece_moves::<{ Piece::KNIGHT }, QUIET>(mref, occ, opps, self.piece(side, Piece::KNIGHT));
+        piece_moves::<{ Piece::BISHOP }, QUIET>(mref, occ, opps, self.piece(side, Piece::BISHOP));
+        piece_moves::<{ Piece::ROOK }, QUIET>(mref, occ, opps, self.piece(side, Piece::ROOK));
+        piece_moves::<{ Piece::QUEEN }, QUIET>(mref, occ, opps, self.piece(side, Piece::QUEEN));
+        piece_moves::<{ Piece::KING }, QUIET>(mref, occ, opps, self.piece(side, Piece::KING));
 
         moves
     }
