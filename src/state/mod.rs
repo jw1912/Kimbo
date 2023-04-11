@@ -1,4 +1,4 @@
-mod consts;
+pub mod consts;
 mod movegen;
 mod position;
 
@@ -6,11 +6,11 @@ pub use consts::{Fens, MoveFlag, MoveType};
 pub use position::Position;
 use std::{mem::MaybeUninit, ops::Index};
 
-/// Move Encoding
-/// ```
-/// 0b 0000 000000 000000
-///    flag   to    from
-/// ```
+/*  Move Encoding
+    0b 0000 000000 000000
+       flag   to    from
+*/
+
 #[derive(Clone, Copy)]
 pub struct Move {
     r#move: u16,
@@ -81,7 +81,8 @@ impl MoveList {
 
     /// Scores move list based on given closure.
     pub fn score<F>(&mut self, score_move: F)
-    where F: Fn(u16) -> i16
+    where
+        F: Fn(u16) -> i16,
     {
         for i in 0..self.length {
             self.list[i].score = score_move(self.list[i].r#move);

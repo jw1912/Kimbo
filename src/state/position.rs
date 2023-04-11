@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 /// State that is copied for undoing moves.
 #[derive(Clone, Copy, Default)]
-pub struct State {
+struct State {
     castle_rights: u8,
     en_passant: u8,
     halfmove_clock: u8,
@@ -12,11 +12,25 @@ pub struct State {
 
 /// Required info to undo a move.
 #[derive(Clone, Copy)]
-pub struct MoveContext {
+struct MoveContext {
     r#move: u16,
     moved: u8,
     captured: u8,
     state: State,
+}
+
+struct Castle {
+    mask: [u8; 64],
+    rooks: [u8; 2],
+    chess960: bool,
+}
+
+/// Holds all random values for hashing.
+struct ZobristVals {
+    pieces: [[[u64; 64]; 6]; 2],
+    castling: [u64; 4],
+    en_passant: [u64; 8],
+    side: u64,
 }
 
 /// Holds all info abut current position.
@@ -29,15 +43,7 @@ pub struct Position {
     null_counter: u8,
     stack: Vec<MoveContext>,
     zobrist_vals: ZobristVals,
-    castle_mask: [u8; 64],
-}
-
-/// Holds all random values for hashing.
-pub struct ZobristVals {
-    pieces: [[[u64; 64]; 6]; 2],
-    castling: [u64; 4],
-    en_passant: [u64; 8],
-    side: u64,
+    castle: Castle,
 }
 
 fn random(seed: &mut u64) -> u64 {
@@ -91,7 +97,11 @@ impl FromStr for Position {
             null_counter: 0,
             stack: Vec::new(),
             zobrist_vals: ZobristVals::default(),
-            castle_mask: [15; 64],
+            castle: Castle {
+                mask: [15; 64],
+                rooks: [0, 7],
+                chess960: false,
+            },
         };
 
         // main part of fen
@@ -134,22 +144,50 @@ impl FromStr for Position {
 
         // castling
         let castle_str = split.get(2).ok_or("no castling rights provided")?;
+        let mut rights = 0;
+        let mut king_col = 4;
         for ch in castle_str.chars() {
-            pos.state.castle_rights |= match ch {
-                'Q' => CastleRights::WHITE_QS,
-                'K' => CastleRights::WHITE_KS,
-                'q' => CastleRights::BLACK_QS,
-                'k' => CastleRights::BLACK_KS,
-                _ => CastleRights::NONE,
-            }
+            rights |= match ch as u8 {
+                b'Q' => CastleRights::WHITE_QS,
+                b'K' => CastleRights::WHITE_KS,
+                b'q' => CastleRights::BLACK_QS,
+                b'k' => CastleRights::BLACK_KS,
+                b'A'..=b'H' => {
+                    pos.castle.chess960 = true;
+                    let wkc = pos.piece(Side::WHITE, Piece::KING).trailing_zeros() as u8 & 7;
+                    king_col = wkc as usize;
+                    let rook_col = ch as u8 - b'A';
+                    if rook_col < wkc {
+                        pos.castle.rooks[0] = rook_col;
+                        CastleRights::WHITE_QS
+                    } else {
+                        pos.castle.rooks[1] = rook_col;
+                        CastleRights::WHITE_KS
+                    }
+                }
+                b'a'..=b'h' => {
+                    pos.castle.chess960 = true;
+                    let bkc = pos.piece(Side::BLACK, Piece::KING).trailing_zeros() as u8 & 7;
+                    king_col = bkc as usize;
+                    let rook_col = ch as u8 - b'a';
+                    if rook_col < bkc {
+                        pos.castle.rooks[0] = rook_col;
+                        CastleRights::BLACK_QS
+                    } else {
+                        pos.castle.rooks[1] = rook_col;
+                        CastleRights::BLACK_KS
+                    }
+                }
+                _ => 0,
+            };
         }
-
-        pos.castle_mask[0] = 7;
-        pos.castle_mask[4] = 3;
-        pos.castle_mask[7] = 11;
-        pos.castle_mask[56] = 13;
-        pos.castle_mask[60] = 12;
-        pos.castle_mask[63] = 14;
+        pos.state.castle_rights = rights;
+        pos.castle.mask[usize::from(pos.castle.rooks[0])] = 7;
+        pos.castle.mask[usize::from(pos.castle.rooks[1])] = 11;
+        pos.castle.mask[56 + usize::from(pos.castle.rooks[0])] = 13;
+        pos.castle.mask[56 + usize::from(pos.castle.rooks[1])] = 14;
+        pos.castle.mask[king_col] = 3;
+        pos.castle.mask[56 + king_col] = 12;
 
         Ok(pos)
     }
@@ -179,6 +217,27 @@ impl Position {
     #[inline]
     pub fn piece(&self, side: usize, piece: usize) -> u64 {
         self.sides[side] & self.pieces[piece]
+    }
+
+    /// Returns a bitboard of given side uccupancy.
+    #[inline]
+    pub fn side(&self, side: usize) -> u64 {
+        self.sides[side]
+    }
+
+    /// Getter for if chess960.
+    pub fn chess960(&self) -> bool {
+        self.castle.chess960
+    }
+
+    /// Getter for if chess960.
+    pub fn stm(&self) -> bool {
+        self.stm
+    }
+
+    /// Getter for castling rook files.
+    pub fn castling_rooks(&self) -> [u8; 2] {
+        self.castle.rooks
     }
 
     /// Determines if the side to move is in check.
@@ -241,7 +300,7 @@ impl Position {
             state: self.state,
         });
         self.state.castle_rights &=
-            self.castle_mask[usize::from(to)] & self.castle_mask[usize::from(from)];
+            self.castle.mask[usize::from(to)] & self.castle.mask[usize::from(from)];
         self.state.en_passant = if flag == MoveFlag::DBL_PUSH {
             (if side == Side::WHITE { to - 8 } else { to + 8 }) as u8
         } else {

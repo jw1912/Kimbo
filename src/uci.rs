@@ -1,4 +1,7 @@
-use crate::{state::*, AUTHOR, NAME, VERSION};
+use crate::{
+    state::{consts::Side, *},
+    AUTHOR, NAME, VERSION,
+};
 use std::{io, process, time::Instant};
 
 pub fn run() {
@@ -32,7 +35,22 @@ pub fn run() {
 fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     // basic move info
     let from = square_str_to_index(&m_str[0..2])?;
-    let to = square_str_to_index(&m_str[2..4])?;
+    let mut to = square_str_to_index(&m_str[2..4])?;
+    let stm = usize::from(pos.stm());
+
+    // chess960
+    if pos.chess960() && pos.side(stm) & (1 << to) > 0 {
+        let side = 56 * (from / 56);
+        let castle;
+        (to, castle) = if to == pos.castling_rooks()[Side::WHITE] as u16 + side {
+            (2 + side, MoveFlag::QS_CASTLE)
+        } else {
+            (6 + side, MoveFlag::KS_CASTLE)
+        };
+
+        return Ok(castle | from << 6 | to);
+    }
+
     let r#move = from << 6 | to;
 
     // promotion?
@@ -48,7 +66,11 @@ fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     let possible_moves = pos.generate::<{ MoveType::ALL }>();
     for i in 0..possible_moves.len() {
         let m = possible_moves[i].r#move();
-        if r#move == m & 0xFFF && (m_str.len() < 5 || flag == m & 0xB000) {
+        let mflag = m & 0xF000;
+        if r#move == m & 0xFFF
+            && (m_str.len() < 5 || flag == mflag & 0xB000)
+            && (!pos.chess960() || (mflag != MoveFlag::KS_CASTLE && mflag != MoveFlag::QS_CASTLE))
+        {
             return Ok(m);
         }
     }
@@ -56,20 +78,28 @@ fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     Err(String::from("error parsing {m_str:?}"))
 }
 
-fn u16_to_uci(m: u16) -> String {
+fn u16_to_uci(pos: &Position, m: u16) -> String {
     let index_to_square = |i| format!("{}{}", ((i & 7) as u8 + b'a') as char, (i / 8) + 1);
 
     // extract move info
-    let from = index_to_square((m >> 6) & 63);
+    let from_idx = (m >> 6) & 63;
+    let from = index_to_square(from_idx);
     let to = index_to_square(m & 63);
-    let flag = (m & MoveFlag::ALL) >> 12;
-    let promo = if flag >= 8 {
-        ["n", "b", "r", "q"][usize::from(flag & 0b11)]
-    } else {
-        ""
-    };
+    let flag = m & MoveFlag::ALL;
 
-    format!("{from}{to}{promo} ")
+    // chess960 castle or promotion?
+    if pos.chess960() && (flag == MoveFlag::KS_CASTLE || flag == MoveFlag::QS_CASTLE) {
+        let rook = pos.castling_rooks()[usize::from(flag == MoveFlag::KS_CASTLE)] as u16
+            + 56 * (from_idx / 56);
+        format!("{from}{}", index_to_square(rook))
+    } else {
+        let promo = if flag >= MoveFlag::KNIGHT_PROMO {
+            ["n", "b", "r", "q"][usize::from((flag >> 12) & 0b11)]
+        } else {
+            ""
+        };
+        format!("{from}{to}{promo} ")
+    }
 }
 
 fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String> {
@@ -137,7 +167,7 @@ fn perft<const SPLIT: bool>(pos: &mut Position, depth: u8) -> u64 {
 
         positions += count;
         if SPLIT {
-            println!("{}: {count}", u16_to_uci(m));
+            println!("{}: {count}", u16_to_uci(pos, m));
         }
     }
     positions
