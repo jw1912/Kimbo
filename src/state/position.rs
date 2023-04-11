@@ -118,29 +118,29 @@ impl FromStr for Position {
                 pos.toggle(side, piece, 1 << sq);
                 col += 1;
             }
+        }
 
-            // state info
-            let stm_str = split.get(1).ok_or("no side to move provided")?;
-            pos.stm = stm_str == &"b";
-            let en_passant_str = split.get(3).ok_or("no en passant square provided")?;
-            pos.state.en_passant = if en_passant_str == &"-" {
-                0
-            } else {
-                square_str_to_index(en_passant_str)? as u8
-            };
-            let halfmove_str = split.get(4).unwrap_or(&"0");
-            pos.state.halfmove_clock = halfmove_str.parse::<u8>().unwrap();
+        // state info
+        let stm_str = split.get(1).ok_or("no side to move provided")?;
+        pos.stm = stm_str == &"b";
+        let en_passant_str = split.get(3).ok_or("no en passant square provided")?;
+        pos.state.en_passant = if en_passant_str == &"-" {
+            0
+        } else {
+            square_str_to_index(en_passant_str)? as u8
+        };
+        let halfmove_str = split.get(4).unwrap_or(&"0");
+        pos.state.halfmove_clock = halfmove_str.parse::<u8>().unwrap();
 
-            // castling
-            let castle_str = split.get(2).ok_or("no castling rights provided")?;
-            for ch in castle_str.chars() {
-                pos.state.castle_rights |= match ch {
-                    'Q' => CastleRights::WHITE_QS,
-                    'K' => CastleRights::WHITE_KS,
-                    'q' => CastleRights::BLACK_QS,
-                    'k' => CastleRights::BLACK_KS,
-                    _ => CastleRights::NONE,
-                }
+        // castling
+        let castle_str = split.get(2).ok_or("no castling rights provided")?;
+        for ch in castle_str.chars() {
+            pos.state.castle_rights |= match ch {
+                'Q' => CastleRights::WHITE_QS,
+                'K' => CastleRights::WHITE_KS,
+                'q' => CastleRights::BLACK_QS,
+                'k' => CastleRights::BLACK_KS,
+                _ => CastleRights::NONE,
             }
         }
 

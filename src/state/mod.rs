@@ -80,7 +80,9 @@ impl MoveList {
     }
 
     /// Scores move list based on given closure.
-    pub fn score<F: Fn(u16) -> i16>(&mut self, score_move: F) {
+    pub fn score<F>(&mut self, score_move: F)
+    where F: Fn(u16) -> i16
+    {
         for i in 0..self.length {
             self.list[i].score = score_move(self.list[i].r#move);
         }
