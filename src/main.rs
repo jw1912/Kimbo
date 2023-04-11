@@ -1,5 +1,6 @@
 //! Kimbo, a chess engine writte in Rust.
 
+mod engine;
 mod macros;
 mod state;
 mod uci;

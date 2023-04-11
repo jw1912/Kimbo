@@ -44,7 +44,7 @@ pub struct Position {
     phase: i16,
     null_counter: u8,
     stack: Vec<MoveContext>,
-    zobrist_vals: ZobristVals,
+    zobrist_vals: Box<ZobristVals>,
     castle: Castle,
 }
 
@@ -102,7 +102,7 @@ impl FromStr for Position {
             phase: 0,
             null_counter: 0,
             stack: Vec::new(),
-            zobrist_vals: ZobristVals::default(),
+            zobrist_vals: Default::default(),
             castle: Castle {
                 mask: [15; 64],
                 rooks: [0, 7],
@@ -132,6 +132,8 @@ impl FromStr for Position {
                 let piece = idx - 6 * side;
                 let sq = 8 * row + col;
                 pos.toggle(side, piece, 1 << sq);
+                pos.state.zobrist ^= pos.zobrist_vals.pieces[side][piece][sq as usize];
+                pos.phase += Piece::PHASE[piece];
                 col += 1;
             }
         }
@@ -283,6 +285,33 @@ impl Position {
             + 4 * usize::from((self.pieces[Piece::QUEEN] | self.pieces[Piece::KING]) & bit > 0)
     }
 
+    #[inline]
+    pub fn phase(&self) -> i16 {
+        self.phase
+    }
+
+    #[inline]
+    pub fn hash(&self) -> u64 {
+        let mut hash = self.state.zobrist;
+        let mut rights = self.state.castle_rights;
+
+        if self.stm {
+            hash ^= self.zobrist_vals.side;
+        }
+
+        if self.state.en_passant > 0 {
+            hash ^= self.zobrist_vals.en_passant[self.state.en_passant as usize & 7];
+        }
+
+        bitloop!(
+            rights,
+            right,
+            hash ^= self.zobrist_vals.castling[right as usize]
+        );
+
+        hash
+    }
+
     /// Makes a move, returns if it was legal.
     pub fn r#do(&mut self, r#move: u16) -> bool {
         // determine moved and captured pieces
@@ -317,7 +346,7 @@ impl Position {
         } else {
             0
         };
-        self.r#move(r#move, side, moved, captured);
+        self.r#move::<true>(r#move, side, moved, captured);
 
         // checking if legal
         let kidx = self.piece(side, Piece::KING).trailing_zeros() as usize;
@@ -337,7 +366,7 @@ impl Position {
             state,
         } = self.stack.pop().unwrap();
         self.state = state;
-        self.r#move(
+        self.r#move::<false>(
             r#move,
             usize::from(!self.stm),
             usize::from(moved),
@@ -347,7 +376,9 @@ impl Position {
 
     /// Common do-undo fuctionality.
     #[inline]
-    fn r#move(&mut self, r#move: u16, side: usize, moved: usize, captured: usize) {
+    fn r#move<const DO: bool>(&mut self, r#move: u16, side: usize, moved: usize, captured: usize) {
+        let sign = if DO { 1 } else { -1 };
+
         // extract move info
         let from = (r#move >> 6) & 63;
         let to = r#move & 63;
@@ -358,8 +389,16 @@ impl Position {
         // basic updates
         self.stm = !self.stm;
         self.toggle(side, moved, from_bit ^ to_bit);
+        if DO {
+            self.state.zobrist ^= self.zobrist_vals.pieces[side][moved][usize::from(from)]
+                ^ self.zobrist_vals.pieces[side][moved][usize::from(to)];
+        }
         if captured != Piece::NONE {
-            self.toggle(side ^ 1, captured, to_bit)
+            self.toggle(side ^ 1, captured, to_bit);
+            self.phase -= sign * Piece::PHASE[captured];
+            if DO {
+                self.state.zobrist ^= self.zobrist_vals.pieces[side ^ 1][captured][usize::from(to)];
+            }
         }
 
         // updates for more complex moves
@@ -370,15 +409,29 @@ impl Position {
                 let rook_from = sf + self.castling_rooks()[idx];
                 let rook_to = sf + Castle::ROOK_DESTINATIONS[idx];
                 self.toggle(side, Piece::ROOK, (1 << rook_from) ^ (1 << rook_to));
+                if DO {
+                    self.state.zobrist ^= self.zobrist_vals.pieces[side][Piece::ROOK]
+                        [usize::from(rook_from)]
+                        ^ self.zobrist_vals.pieces[side][Piece::ROOK][usize::from(rook_to)];
+                }
             }
             MoveFlag::EN_PASSANT => {
                 let pawn_idx = usize::from(to.wrapping_add([8u16.wrapping_neg(), 8][side]));
                 self.toggle(side ^ 1, Piece::PAWN, 1 << pawn_idx);
+                if DO {
+                    self.state.zobrist ^= self.zobrist_vals.pieces[side ^ 1][Piece::PAWN][pawn_idx];
+                }
             }
             MoveFlag::KNIGHT_PROMO.. => {
                 let promo = usize::from(((flag >> 12) & 3) + 1);
                 self.pieces[Piece::PAWN] ^= to_bit;
                 self.pieces[promo] ^= to_bit;
+                self.phase += sign * Piece::PHASE[promo];
+                if DO {
+                    self.state.zobrist ^= self.zobrist_vals.pieces[side][Piece::PAWN]
+                        [usize::from(to)]
+                        ^ self.zobrist_vals.pieces[side][promo][usize::from(to)];
+                }
             }
             _ => {}
         }
@@ -475,9 +528,65 @@ impl Position {
             && (occ ^ kbb) & (between(bit, rto) ^ rto) == 0
             && self.path::<SIDE>(between(kbb, kto), occ)
     }
+
+    pub fn r#do_null(&mut self) {
+        self.null_counter += 1;
+        self.stack.push(MoveContext {
+            r#move: 0,
+            moved: 0,
+            captured: 0,
+            state: self.state,
+        });
+        self.state.en_passant = 0;
+        self.stm = !self.stm;
+    }
+
+    pub fn undo_null(&mut self) {
+        self.null_counter -= 1;
+        let ctx = self.stack.pop().unwrap();
+        self.state.en_passant = ctx.state.en_passant;
+        self.stm = !self.stm;
+    }
+
+    fn repetition_draw(&self, ply: i16) -> bool {
+        let mut num = 1 + 2 * u8::from(ply == 0);
+        let l = self.stack.len();
+        if l < 6 || self.null_counter > 0 {
+            return false;
+        }
+        for ctx in self
+            .stack
+            .iter()
+            .rev()
+            .take(self.state.halfmove_clock as usize + 1)
+            .skip(1)
+            .step_by(2)
+        {
+            num -= u8::from(ctx.state.zobrist == self.state.zobrist);
+            if num == 0 {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn material_draw(&self) -> bool {
+        let bishops = self.pieces[Piece::BISHOP];
+        self.phase <= 2
+            && self.pieces[Piece::PAWN] == 0
+            && ((self.phase != 2)
+                || (self.piece(Side::WHITE, Piece::BISHOP) != bishops
+                    && self.piece(Side::BLACK, Piece::BISHOP) != bishops
+                    && (bishops & Squares::LIGHT == bishops || bishops & Squares::DARK == bishops)))
+    }
+
+    pub fn is_draw(&self, ply: i16) -> bool {
+        self.state.halfmove_clock >= 100 || self.repetition_draw(ply) || self.material_draw()
+    }
 }
 
 #[inline]
 fn between(bit1: u64, bit2: u64) -> u64 {
-    (cmp::max(bit1, bit2) - cmp::min(bit1, bit2)) ^ cmp::min(bit1, bit2)
+    let min = cmp::min(bit1, bit2);
+    (cmp::max(bit1, bit2) - min) ^ min
 }

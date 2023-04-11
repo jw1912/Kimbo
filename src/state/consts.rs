@@ -27,6 +27,7 @@ impl Piece {
     pub const QUEEN: usize = 4;
     pub const KING: usize = 5;
     pub const NONE: usize = 6;
+    pub const PHASE: [i16; 6] = [0, 1, 1, 2, 4, 0];
 }
 
 pub struct Squares;
