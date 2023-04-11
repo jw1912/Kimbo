@@ -1,5 +1,7 @@
+use crate::bitloop;
+
 use super::{consts::*, movegen::*, square_str_to_index, MoveList};
-use std::str::FromStr;
+use std::{cmp, str::FromStr};
 
 /// State that is copied for undoing moves.
 #[derive(Clone, Copy, Default)]
@@ -231,8 +233,8 @@ impl Position {
     }
 
     /// Getter for if chess960.
-    pub fn stm(&self) -> bool {
-        self.stm
+    pub fn stm(&self) -> usize {
+        usize::from(self.stm)
     }
 
     /// Getter for castling rook files.
@@ -415,32 +417,60 @@ impl Position {
 
     fn castles(&self, moves: &mut MoveList, occ: u64) {
         let r = self.state.castle_rights;
+        let kbb = self.piece(self.stm(), Piece::KING);
+        let ksq = kbb.trailing_zeros() as u16;
         if self.stm {
             if r & CastleRights::BLACK_QS > 0
-                && occ & B8C8D8 == 0
-                && !self.is_square_attacked(59, Side::BLACK, occ)
+                && self.can_castle::<{ Side::BLACK }, 0>(occ, kbb, 1 << 58, 1 << 59)
             {
-                moves.add(60 << 6 | 58 | MoveFlag::QS_CASTLE);
+                moves.add(MoveFlag::QS_CASTLE | 58 | ksq << 6);
             }
             if r & CastleRights::BLACK_KS > 0
-                && occ & F8G8 == 0
-                && !self.is_square_attacked(61, Side::BLACK, occ)
+                && self.can_castle::<{ Side::BLACK }, 1>(occ, kbb, 1 << 62, 1 << 61)
             {
-                moves.add(60 << 6 | 62 | MoveFlag::KS_CASTLE);
+                moves.add(MoveFlag::KS_CASTLE | 62 | ksq << 6);
             }
         } else {
             if r & CastleRights::WHITE_QS > 0
-                && occ & B1C1D1 == 0
-                && !self.is_square_attacked(3, Side::WHITE, occ)
+                && self.can_castle::<{ Side::WHITE }, 0>(occ, kbb, 1 << 2, 1 << 3)
             {
-                moves.add(4 << 6 | 2 | MoveFlag::QS_CASTLE);
+                moves.add(MoveFlag::QS_CASTLE | 2 | ksq << 6);
             }
             if r & CastleRights::WHITE_KS > 0
-                && occ & F1G1 == 0
-                && !self.is_square_attacked(5, Side::WHITE, occ)
+                && self.can_castle::<{ Side::WHITE }, 1>(occ, kbb, 1 << 6, 1 << 5)
             {
-                moves.add(4 << 6 | 6 | MoveFlag::KS_CASTLE);
+                moves.add(MoveFlag::KS_CASTLE | 6 | ksq << 6);
             }
         }
     }
+
+    fn path<const SIDE: usize>(&self, mut path: u64, occ: u64) -> bool {
+        bitloop!(
+            path,
+            idx,
+            if self.is_square_attacked(idx as usize, SIDE, occ) {
+                return false;
+            }
+        );
+        true
+    }
+
+    #[inline]
+    fn can_castle<const SIDE: usize, const KS: usize>(
+        &self,
+        occ: u64,
+        kbb: u64,
+        kto: u64,
+        rto: u64,
+    ) -> bool {
+        let bit = 1 << (56 * SIDE + usize::from(self.castle.rooks[KS]));
+        (occ ^ bit) & (between(kbb, kto) ^ kto) == 0
+            && (occ ^ kbb) & (between(bit, rto) ^ rto) == 0
+            && self.path::<SIDE>(between(kbb, kto), occ)
+    }
+}
+
+#[inline]
+fn between(bit1: u64, bit2: u64) -> u64 {
+    (cmp::max(bit1, bit2) - cmp::min(bit1, bit2)) ^ cmp::min(bit1, bit2)
 }
