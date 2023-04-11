@@ -48,6 +48,10 @@ pub struct Position {
     castle: Castle,
 }
 
+impl Castle {
+    const ROOK_DESTINATIONS: [u8; 2] = [3, 5];
+}
+
 fn random(seed: &mut u64) -> u64 {
     *seed ^= *seed << 13;
     *seed ^= *seed >> 7;
@@ -361,11 +365,14 @@ impl Position {
         // updates for more complex moves
         match flag {
             MoveFlag::KS_CASTLE | MoveFlag::QS_CASTLE => {
-                let (bits, _, _) = CM[side][usize::from(flag == MoveFlag::KS_CASTLE)];
-                self.toggle(side, Piece::ROOK, bits);
+                let idx = usize::from(flag == MoveFlag::KS_CASTLE);
+                let sf = 56 * side as u8;
+                let rook_from = sf + self.castling_rooks()[idx];
+                let rook_to = sf + Castle::ROOK_DESTINATIONS[idx];
+                self.toggle(side, Piece::ROOK, (1 << rook_from) ^ (1 << rook_to));
             }
             MoveFlag::EN_PASSANT => {
-                let pawn_idx = usize::from(to + [8u16.wrapping_neg(), 8][side]);
+                let pawn_idx = usize::from(to.wrapping_add([8u16.wrapping_neg(), 8][side]));
                 self.toggle(side ^ 1, Piece::PAWN, 1 << pawn_idx);
             }
             MoveFlag::KNIGHT_PROMO.. => {

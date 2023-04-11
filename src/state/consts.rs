@@ -35,16 +35,6 @@ impl Squares {
     pub const DARK: u64 = 0xAA55AA55AA55AA55;
 }
 
-// temporary stuff , removed when add FRC support
-pub const B1C1D1: u64 = 0xE;
-pub const F1G1: u64 = 0x60;
-pub const B8C8D8: u64 = 0xE00000000000000;
-pub const F8G8: u64 = 0x6000000000000000;
-pub const CM: [[(u64, usize, usize); 2]; 2] = [
-    [(9, 0, 3), (160, 7, 5)],
-    [(0x900000000000000, 56, 59), (0xA000000000000000, 63, 61)],
-];
-
 pub struct CastleRights;
 impl CastleRights {
     pub const NONE: u8 = 0;
@@ -196,7 +186,7 @@ impl Attacks {
 
         let mut east = occ & mask.right;
         rev = east & east.wrapping_neg();
-        east = rev ^ (rev - mask.bit);
+        east = rev ^ rev.wrapping_sub(mask.bit);
 
         let west = Self::WEST[(((mask.left & occ) | 1).leading_zeros() ^ 63) as usize];
 

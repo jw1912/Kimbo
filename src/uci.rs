@@ -148,7 +148,7 @@ fn parse_perft<const SPLIT: bool>(pos: &mut Position, commands: &[&str]) {
     );
 }
 
-fn perft<const SPLIT: bool>(pos: &mut Position, depth: u8) -> u64 {
+pub fn perft<const SPLIT: bool>(pos: &mut Position, depth: u8) -> u64 {
     let moves = pos.generate::<{ MoveType::ALL }>();
     let mut positions = 0;
     for i in 0..moves.len() {
