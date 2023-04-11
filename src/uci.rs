@@ -19,7 +19,8 @@ pub fn run() {
         if let Err(err) = match *commands.first().unwrap_or(&"oops") {
             "isready" => Ok(println!("readyok")),
             "position" => parse_position(&mut pos, commands),
-            "perft" => Ok(parse_perft(&mut pos, &commands)),
+            "perft" => Ok(parse_perft::<false>(&mut pos, &commands)),
+            "splitperft" => Ok(parse_perft::<true>(&mut pos, &commands)),
             "quit" => process::exit(0),
             _ => Ok(()),
         } {
@@ -77,13 +78,15 @@ fn u16_to_uci(m: u16) -> String {
 
 fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String> {
     let mut fen = String::new();
-    let mut  move_list = Vec::new();
+    let mut move_list = Vec::new();
     let mut moves = false;
 
     // process string
     for cmd in commands {
         match cmd {
-            "position" | "startpos" | "fen" => {}
+            "position" | "fen" => {}
+            "startpos" => *pos = Fens::STARTPOS.parse()?,
+            "kiwipete" => *pos = Fens::KIWIPETE.parse()?,
             "moves" => moves = true,
             _ => if moves {
                 move_list.push(cmd.to_string())
@@ -94,7 +97,10 @@ fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String>
     }
 
     // set position
-    *pos = (if fen.is_empty() {Fens::STARTPOS} else {&fen}).parse()?;
+    if !fen.is_empty() {
+        *pos = fen.parse()?;
+    }
+
     for m in move_list {
         pos.r#do(uci_to_u16(pos, &m)?);
     }
@@ -102,15 +108,15 @@ fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String>
     Ok(())
 }
 
-fn parse_perft(pos: &mut Position, commands: &[&str]) {
+fn parse_perft<const SPLIT: bool>(pos: &mut Position, commands: &[&str]) {
     let depth = commands[1].parse().unwrap();
     let now = Instant::now();
-    let count = perft::<true>(pos, depth);
+    let count = perft::<SPLIT>(pos, depth);
     let time = now.elapsed();
     println!("perft {depth} time {} nodes {count} ({:.2} Mnps)", time.as_millis(), count as f64 / time.as_micros() as f64);
 }
 
-fn perft<const ROOT: bool>(pos: &mut Position, depth: u8) -> u64 {
+fn perft<const SPLIT: bool>(pos: &mut Position, depth: u8) -> u64 {
     let moves = pos.generate::<{MoveType::ALL}>();
     let mut positions = 0;
     for i in 0..moves.len() {
@@ -128,7 +134,7 @@ fn perft<const ROOT: bool>(pos: &mut Position, depth: u8) -> u64 {
         pos.undo();
 
         positions += count;
-        if ROOT {
+        if SPLIT {
             println!("{}: {count}", u16_to_uci(m));
         }
     }

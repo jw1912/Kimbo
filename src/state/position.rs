@@ -91,7 +91,7 @@ impl FromStr for Position {
             null_counter: 0,
             stack: Vec::new(),
             zobrist_vals: ZobristVals::default(),
-            castle_mask: [0; 64],
+            castle_mask: [15; 64],
         };
 
         // main part of fen
@@ -143,6 +143,13 @@ impl FromStr for Position {
                 }
             }
         }
+
+        pos.castle_mask[0] = 7;
+        pos.castle_mask[4] = 3;
+        pos.castle_mask[7] = 11;
+        pos.castle_mask[56] = 13;
+        pos.castle_mask[60] = 12;
+        pos.castle_mask[63] = 14;
 
         Ok(pos)
     }
@@ -201,10 +208,8 @@ impl Position {
     /// Finds the piece at a given index.
     #[inline]
     pub fn get_piece(&self, bit: u64, occ: u64) -> usize {
-        if occ & bit == 0 {
-            return 6;
-        }
-        usize::from(
+        6 * usize::from(occ & bit == 0)
+        + usize::from(
             (self.pieces[Piece::KNIGHT] | self.pieces[Piece::ROOK] | self.pieces[Piece::KING])
                 & bit
                 > 0,
@@ -302,7 +307,7 @@ impl Position {
                 self.toggle(side ^ 1, Piece::PAWN, 1 << pawn_idx);
             }
             MoveFlag::KNIGHT_PROMO.. => {
-                let promo = usize::from((flag & 3) + 1);
+                let promo = usize::from(((flag >> 12) & 3) + 1);
                 self.pieces[Piece::PAWN] ^= to_bit;
                 self.pieces[promo] ^= to_bit;
             }
