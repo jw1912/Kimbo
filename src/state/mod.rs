@@ -2,8 +2,8 @@ mod consts;
 mod movegen;
 mod position;
 
-pub use position::Position;
 pub use consts::{Fens, MoveFlag, MoveType};
+pub use position::Position;
 use std::{mem::MaybeUninit, ops::Index};
 
 /// Move Encoding

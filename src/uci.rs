@@ -45,11 +45,11 @@ fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     };
 
     // match to move in move list
-    let possible_moves = pos.generate::<{MoveType::ALL}>();
+    let possible_moves = pos.generate::<{ MoveType::ALL }>();
     for i in 0..possible_moves.len() {
         let m = possible_moves[i].r#move();
         if r#move == m & 0xFFF && (m_str.len() < 5 || flag == m & 0xB000) {
-            return Ok(m)
+            return Ok(m);
         }
     }
 
@@ -57,18 +57,14 @@ fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
 }
 
 fn u16_to_uci(m: u16) -> String {
-    let index_to_square = |i| format!(
-        "{}{}",
-        ((i & 7) as u8 + b'a') as char,
-        (i / 8) + 1
-    );
+    let index_to_square = |i| format!("{}{}", ((i & 7) as u8 + b'a') as char, (i / 8) + 1);
 
     // extract move info
     let from = index_to_square((m >> 6) & 63);
     let to = index_to_square(m & 63);
     let flag = (m & MoveFlag::ALL) >> 12;
     let promo = if flag >= 8 {
-        ["n","b","r","q"][usize::from(flag & 0b11)]
+        ["n", "b", "r", "q"][usize::from(flag & 0b11)]
     } else {
         ""
     };
@@ -88,10 +84,12 @@ fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String>
             "startpos" => *pos = Fens::STARTPOS.parse()?,
             "kiwipete" => *pos = Fens::KIWIPETE.parse()?,
             "moves" => moves = true,
-            _ => if moves {
-                move_list.push(cmd.to_string())
-            } else {
-                fen.push_str(format!("{cmd} ").as_str())
+            _ => {
+                if moves {
+                    move_list.push(cmd.to_string())
+                } else {
+                    fen.push_str(format!("{cmd} ").as_str())
+                }
             }
         }
     }
@@ -113,16 +111,20 @@ fn parse_perft<const SPLIT: bool>(pos: &mut Position, commands: &[&str]) {
     let now = Instant::now();
     let count = perft::<SPLIT>(pos, depth);
     let time = now.elapsed();
-    println!("perft {depth} time {} nodes {count} ({:.2} Mnps)", time.as_millis(), count as f64 / time.as_micros() as f64);
+    println!(
+        "perft {depth} time {} nodes {count} ({:.2} Mnps)",
+        time.as_millis(),
+        count as f64 / time.as_micros() as f64
+    );
 }
 
 fn perft<const SPLIT: bool>(pos: &mut Position, depth: u8) -> u64 {
-    let moves = pos.generate::<{MoveType::ALL}>();
+    let moves = pos.generate::<{ MoveType::ALL }>();
     let mut positions = 0;
     for i in 0..moves.len() {
         let m = moves[i].r#move();
         if pos.r#do(m) {
-            continue
+            continue;
         }
 
         let count = if depth > 1 {

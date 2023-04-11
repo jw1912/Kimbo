@@ -1,4 +1,4 @@
-use super::{consts::*, movegen::*, MoveList, square_str_to_index};
+use super::{consts::*, movegen::*, square_str_to_index, MoveList};
 use std::str::FromStr;
 
 /// State that is copied for undoing moves.
@@ -104,11 +104,11 @@ impl FromStr for Position {
                 col = 0;
             } else if let Ok(clear) = ch.to_string().parse::<i16>() {
                 if !(1..=8).contains(&clear) {
-                    return Err(String::from("invalid number of empty squares"))
+                    return Err(String::from("invalid number of empty squares"));
                 }
                 col += clear;
             } else {
-                let idx = ['P','N','B','R','Q','K','p','n','b','r','q','k']
+                let idx = ['P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k']
                     .iter()
                     .position(|&el| el == ch)
                     .ok_or("invalid letter in fen")?;
@@ -209,11 +209,12 @@ impl Position {
     #[inline]
     pub fn get_piece(&self, bit: u64, occ: u64) -> usize {
         6 * usize::from(occ & bit == 0)
-        + usize::from(
-            (self.pieces[Piece::KNIGHT] | self.pieces[Piece::ROOK] | self.pieces[Piece::KING])
-                & bit
-                > 0,
-        ) + 2 * usize::from((self.pieces[Piece::BISHOP] | self.pieces[Piece::ROOK]) & bit > 0)
+            + usize::from(
+                (self.pieces[Piece::KNIGHT] | self.pieces[Piece::ROOK] | self.pieces[Piece::KING])
+                    & bit
+                    > 0,
+            )
+            + 2 * usize::from((self.pieces[Piece::BISHOP] | self.pieces[Piece::ROOK]) & bit > 0)
             + 4 * usize::from((self.pieces[Piece::QUEEN] | self.pieces[Piece::KING]) & bit > 0)
     }
 

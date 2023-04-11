@@ -19,7 +19,7 @@ fn main() {
         match *commands.first().unwrap_or(&"oops") {
             "uci" => uci::run(),
             "quit" => process::exit(0),
-            _ => {},
+            _ => {}
         }
     }
 }
