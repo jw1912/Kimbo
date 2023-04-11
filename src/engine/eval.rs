@@ -1,5 +1,11 @@
-use std::{cmp, ops::{AddAssign, SubAssign}};
-use crate::{bitloop, state::{consts::*, Position}};
+use crate::{
+    bitloop,
+    state::{consts::*, Position},
+};
+use std::{
+    cmp,
+    ops::{AddAssign, SubAssign},
+};
 
 #[derive(Clone, Copy)]
 struct S(i16, i16);
@@ -21,10 +27,7 @@ impl SubAssign<S> for S {
 impl S {
     fn taper(self, phase: i16) -> i16 {
         let p = cmp::min(i32::from(phase), TOTAL_PHASE);
-        let eval = (
-            p * i32::from(self.0) + (TOTAL_PHASE - p) * i32::from(self.0)
-        ) / TOTAL_PHASE;
-        eval as i16
+        ((p * i32::from(self.0) + (TOTAL_PHASE - p) * i32::from(self.0)) / TOTAL_PHASE) as i16
     }
 }
 
@@ -45,6 +48,8 @@ pub fn eval(pos: &Position) -> i16 {
 
 const SIDE: [i16; 2] = [1, -1];
 const TOTAL_PHASE: i32 = 24;
+
+#[rustfmt::skip]
 static PST: [[S; 64]; 8] = [
     [S(0, 0); 64],
     [S(0, 0); 64],
@@ -104,4 +109,3 @@ static PST: [[S; 64]; 8] = [
         S(-44, -38), S( 19, -28), S(  2, -12), S(-72,  -5), S(  4, -33), S(-46,  -5), S( 33, -30), S( 25, -52),
     ],
 ];
-

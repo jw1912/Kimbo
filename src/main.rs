@@ -3,6 +3,7 @@
 mod engine;
 mod macros;
 mod state;
+mod tables;
 mod uci;
 
 #[cfg(test)]
