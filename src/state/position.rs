@@ -531,12 +531,14 @@ impl Position {
 
     pub fn r#do_null(&mut self) {
         self.null_counter += 1;
-        self.stack.push(MoveContext {
-            r#move: 0,
-            moved: 0,
-            captured: 0,
-            state: self.state,
-        });
+        self.stack.push(
+            MoveContext {
+                r#move: 0,
+                moved: 0,
+                captured: 0,
+                state: self.state,
+            }
+        );
         self.state.en_passant = 0;
         self.stm = !self.stm;
     }

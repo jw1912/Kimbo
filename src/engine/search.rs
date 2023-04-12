@@ -25,8 +25,8 @@ pub fn search(
     in_check: bool,
     pv_line: &mut PvLine,
 ) -> i16 {
-    // check if need to end the search,
-    // or if search is already ending
+    // check if need to end the search, or if search
+    // is already ending
     if engine.limits.aborting() || engine.limits.should_abort(engine.nodes) {
         return Score::ABORT;
     }
@@ -61,7 +61,7 @@ pub fn search(
 
         // hash score pruning
         if !pv_node
-            && entry.depth >= depth
+            && !write_to_hash
             && match entry.bound {
                 Bound::LOWER => entry.score >= beta,
                 Bound::UPPER => entry.score <= alpha,
@@ -82,6 +82,8 @@ pub fn search(
     let mut bound = Bound::UPPER;
     let mut legal_moves = 0;
     let sub_pv = &mut PvLine::default();
+
+    // threshold for late move reduction satisfied?
     let do_lmr = depth > 1 && engine.ply > 0 && !in_check;
 
     // increment ply for next depth
@@ -93,18 +95,27 @@ pub fn search(
         if engine.position.r#do(r#move.r#move()) {
             continue;
         }
-
         legal_moves += 1;
+
+        // move gives check?
         let check = engine.position.in_check();
+
+        // late move reduction?
         let reduce = i8::from(do_lmr && !check && r#move.score() == MoveScore::QUIET);
 
         // principle variation search of move
         #[rustfmt::skip]
         let score = if legal_moves == 1 {
+            // full search for first move, as expected to be the best due
+            // to move ordering
             -search(engine, -beta, -alpha, depth - 1, check, sub_pv)
         } else {
+            // search with null window, to try and prove quickly that this
+            // move is worse than the current best move
             let null_window_score =
                 -search(engine, -alpha - 1, -alpha, depth - 1 - reduce, check, sub_pv);
+
+            // if the null window search failed high, need to do a re-search
             if (pv_node || reduce > 0) && null_window_score > alpha {
                 -search(engine, -beta, -alpha, depth - 1, check, sub_pv)
             } else {
@@ -140,7 +151,7 @@ pub fn search(
     // restore ply
     engine.ply -= 1;
 
-    // no legal moves? (stale)mate
+    // no legal moves? (stale/check)mate
     if legal_moves == 0 {
         return i16::from(in_check) * (engine.ply - Score::MAX);
     }
