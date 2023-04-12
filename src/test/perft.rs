@@ -1,4 +1,4 @@
-use crate::{state::Fens, uci::perft};
+use crate::{state::Fens, engine::util::perft};
 
 /// Mix of FRC and normal fens.
 const FENS: [(&str, u8, u64); 10] = [

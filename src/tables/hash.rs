@@ -3,7 +3,14 @@ use std::{
     sync::atomic::{AtomicU64, AtomicUsize, Ordering::Relaxed},
 };
 
-use crate::engine::Score;
+use crate::engine::consts::Score;
+
+pub struct Bound;
+impl Bound {
+    pub const LOWER: u8 = 0;
+    pub const UPPER: u8 = 1;
+    pub const EXACT: u8 = 2;
+}
 
 /// Public facing.
 pub struct HashResult {
@@ -29,14 +36,12 @@ impl Clone for HashEntry {
 
 impl HashEntry {
     #[inline]
-    fn new(key: u16, m: u16, score: i16, depth: i8, bound: u8) -> Self {
-        Self(AtomicU64::new(
-            (key as u64)
-                | ((m as u64) << 16)
-                | ((score as u64) << 32)
-                | ((depth as u64) << 48)
-                | ((bound as u64) << 56),
-        ))
+    fn new(key: u16, m: u16, score: i16, depth: i8, bound: u8) -> u64 {
+        (key as u64)
+            | ((m as u64) << 16)
+            | ((score as u64) << 32)
+            | ((depth as u64) << 48)
+            | ((bound as u64) << 56)
     }
 
     #[inline]
@@ -99,7 +104,7 @@ impl HashTable {
             .for_each(|bucket| *bucket = Default::default());
     }
 
-    pub fn push(&mut self, hash: u64, m: u16, depth: i8, bound: u8, mut score: i16, ply: i16) {
+    pub fn push(&self, hash: u64, m: u16, depth: i8, bound: u8, mut score: i16, ply: i16) {
         let key = (hash >> 48) as u16;
         let idx = (hash as usize) & (self.capacity() - 1);
         let old = HashResult::from(&self.table[idx]);
@@ -109,7 +114,7 @@ impl HashTable {
             if self.table[idx].load() == 0 {
                 self.filled.fetch_add(1, Relaxed);
             }
-            self.table[idx] = HashEntry::new(key, m, score, depth, bound);
+            self.table[idx].0.store(HashEntry::new(key, m, score, depth, bound), Relaxed);
         }
     }
 

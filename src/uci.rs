@@ -1,8 +1,9 @@
 use crate::{
     state::{consts::Side, *},
+    engine::{util::perft, Engine},
     AUTHOR, NAME, VERSION,
 };
-use std::{io, process, time::Instant};
+use std::{cmp::max, io, process, sync::{Arc, atomic::AtomicBool}, time::Instant};
 
 pub fn run() {
     // uci preamble
@@ -12,7 +13,9 @@ pub fn run() {
     println!("uciok");
 
     // set up engine
-    let mut pos = Position::default();
+    let abort_signal = Arc::new(AtomicBool::new(false));
+    let mut engine = Engine::new(abort_signal);
+    engine.hash_table.resize(1);
 
     // command loop
     loop {
@@ -20,16 +23,26 @@ pub fn run() {
         io::stdin().read_line(&mut input).unwrap();
         let commands = input.split_whitespace().collect::<Vec<&str>>();
         if let Err(err) = match *commands.first().unwrap_or(&"oops") {
+            // core UCI commands
             "isready" => Ok(println!("readyok")),
-            "position" => parse_position(&mut pos, commands),
-            "perft" => Ok(parse_perft::<false>(&mut pos, &commands)),
-            "splitperft" => Ok(parse_perft::<true>(&mut pos, &commands)),
+            "ucinewgame" => Ok(ucinewgame(&mut engine)),
+            "position" => parse_position(&mut engine.position, commands),
+            "go" => Ok(parse_go(&mut engine, commands)),
+
+            // other commands
+            "perft" => Ok(parse_perft::<false>(&mut engine.position, &commands)),
+            "splitperft" => Ok(parse_perft::<true>(&mut engine.position, &commands)),
             "quit" => process::exit(0),
             _ => Ok(()),
         } {
             println!("{err}");
         }
     }
+}
+
+fn ucinewgame(engine: &mut Engine) {
+    engine.position = Position::default();
+    engine.hash_table.clear();
 }
 
 fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
@@ -78,30 +91,6 @@ fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     Err(String::from("error parsing {m_str:?}"))
 }
 
-fn u16_to_uci(pos: &Position, m: u16) -> String {
-    let index_to_square = |i| format!("{}{}", ((i & 7) as u8 + b'a') as char, (i / 8) + 1);
-
-    // extract move info
-    let from_idx = (m >> 6) & 63;
-    let from = index_to_square(from_idx);
-    let to = index_to_square(m & 63);
-    let flag = m & MoveFlag::ALL;
-
-    // chess960 castle or promotion?
-    if pos.chess960() && (flag == MoveFlag::KS_CASTLE || flag == MoveFlag::QS_CASTLE) {
-        let rook = pos.castling_rooks()[usize::from(flag == MoveFlag::KS_CASTLE)] as u16
-            + 56 * (from_idx / 56);
-        format!("{from}{}", index_to_square(rook))
-    } else {
-        let promo = if flag >= MoveFlag::KNIGHT_PROMO {
-            ["n", "b", "r", "q"][usize::from((flag >> 12) & 0b11)]
-        } else {
-            ""
-        };
-        format!("{from}{to}{promo} ")
-    }
-}
-
 fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String> {
     let mut fen = String::new();
     let mut move_list = Vec::new();
@@ -148,27 +137,31 @@ fn parse_perft<const SPLIT: bool>(pos: &mut Position, commands: &[&str]) {
     );
 }
 
-pub fn perft<const SPLIT: bool>(pos: &mut Position, depth: u8) -> u64 {
-    let moves = pos.generate::<{ MoveType::ALL }>();
-    let mut positions = 0;
-    for i in 0..moves.len() {
-        let m = moves[i].r#move();
-        if pos.r#do(m) {
-            continue;
-        }
-
-        let count = if depth > 1 {
-            perft::<false>(pos, depth - 1)
-        } else {
-            1
-        };
-
-        pos.undo();
-
-        positions += count;
-        if SPLIT {
-            println!("{}: {count}", u16_to_uci(pos, m));
+fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
+    let mut token = 0;
+    let mut times = [0, 0];
+    let mut mtg = None;
+    let mut alloc = 1000;
+    let mut incs = [0, 0];
+    const COMMANDS: [&str; 7] = ["go", "movetime", "wtime", "btime", "movestogo", "winc", "binc"];
+    for cmd in commands {
+        if let Some(x) = COMMANDS.iter().position(|&y| y == cmd) { token = x }
+        else {
+            match token {
+                1 => alloc = cmd.parse::<i64>().unwrap(),
+                2 => times[0] = max(cmd.parse::<i64>().unwrap(), 0),
+                3 => times[1] = max(cmd.parse::<i64>().unwrap(), 0),
+                4 => mtg = Some(cmd.parse::<i64>().unwrap()),
+                5 => incs[0] = max(cmd.parse::<i64>().unwrap(), 0),
+                6 => incs[1] = max(cmd.parse::<i64>().unwrap(), 0),
+                _ => {},
+            }
         }
     }
-    positions
+    let side = engine.position.stm();
+    let mytime = times[side];
+    let myinc = incs[side];
+    if mytime != 0 { alloc = mytime / mtg.unwrap_or(25) + 3 * myinc / 4 }
+    engine.limits.set_time(max(10, alloc - 10) as u128);
+    engine.go();
 }

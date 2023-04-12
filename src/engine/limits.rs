@@ -3,13 +3,13 @@ use std::{
         atomic::{AtomicBool, Ordering::Relaxed},
         Arc,
     },
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 pub struct Limits {
     time: Instant,
     abort_signal: Arc<AtomicBool>,
-    max_time: u64,
+    max_time: u128,
     max_depth: i8,
     max_nodes: u64,
 }
@@ -25,6 +25,14 @@ impl Limits {
         }
     }
 
+    pub fn depth(&self) -> i8 {
+        self.max_depth
+    }
+
+    pub fn elapsed(&self) -> Duration {
+        self.time.elapsed()
+    }
+
     pub fn set_depth(&mut self, depth: i8) {
         self.max_depth = depth;
     }
@@ -33,7 +41,7 @@ impl Limits {
         self.max_nodes = nodes;
     }
 
-    pub fn set_time(&mut self, time: u64) {
+    pub fn set_time(&mut self, time: u128) {
         self.max_time = time;
     }
 
@@ -47,14 +55,16 @@ impl Limits {
     }
 
     pub fn should_abort(&mut self, nodes: u64) -> bool {
-        if self.time.elapsed().as_millis() as u64 > self.max_time || nodes >= self.max_nodes {
+        if nodes & 1023 == 0
+        && (self.elapsed().as_millis() > self.max_time || nodes >= self.max_nodes)
+        {
             self.abort_signal.store(true, Relaxed);
             return true;
         }
         false
     }
 
-    pub fn allocate_time(&mut self, remaining: u64, increment: u64, moves_to_go: Option<u64>) {
+    pub fn allocate_time(&mut self, remaining: u128, increment: u128, moves_to_go: Option<u128>) {
         self.max_time = remaining / moves_to_go.unwrap_or(25) + 3 * increment / 4 - 10;
     }
 }
