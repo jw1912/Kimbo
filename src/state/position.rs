@@ -186,7 +186,7 @@ impl FromStr for Position {
                         CastleRights::BLACK_KS
                     }
                 }
-                _ => 0,
+                _ => CastleRights::NONE,
             };
         }
         pos.state.castle_rights = rights;

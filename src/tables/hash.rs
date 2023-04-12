@@ -48,16 +48,6 @@ impl HashEntry {
     fn load(&self) -> u64 {
         self.0.load(Relaxed)
     }
-
-    #[inline]
-    fn key(&self) -> u16 {
-        self.load() as u16
-    }
-
-    #[inline]
-    fn depth(&self) -> i8 {
-        ((self.load() >> 16) as u8) as i8
-    }
 }
 
 impl From<&HashEntry> for HashResult {

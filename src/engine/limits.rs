@@ -20,8 +20,8 @@ impl Limits {
             time: Instant::now(),
             abort_signal,
             max_time: 1000,
-            max_depth: 0,
-            max_nodes: 0,
+            max_depth: 64,
+            max_nodes: u64::MAX,
         }
     }
 
@@ -62,9 +62,5 @@ impl Limits {
             return true;
         }
         false
-    }
-
-    pub fn allocate_time(&mut self, remaining: u128, increment: u128, moves_to_go: Option<u128>) {
-        self.max_time = remaining / moves_to_go.unwrap_or(25) + 3 * increment / 4 - 10;
     }
 }

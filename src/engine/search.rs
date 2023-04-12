@@ -1,10 +1,14 @@
-use crate::{state::MoveType, tables::Bound};
-
-use super::{consts::*, Engine, eval::eval, MAX_PLY, PvLine, Score};
+use crate::{state::{MoveType, MoveFlag}, tables::Bound};
+use super::{consts::*, Engine, MAX_PLY, PvLine, Score, qsearch::qsearch};
 
 fn score_move(engine: &Engine, r#move: u16, hash_move: u16) -> i16 {
     if r#move == hash_move {
         MoveScore::HASH
+    } else if r#move & MoveFlag::CAPTURE > 0 {
+        let occ = engine.position.occ();
+        let victim = engine.position.get_piece(1 << (r#move & 63), occ);
+        let attacker = engine.position.get_piece(1 << ((r#move >> 6) & 63), occ);
+        MoveScore::MVV_LVA[victim][attacker]
     } else {
         MoveScore::QUIET
     }
@@ -39,7 +43,7 @@ pub fn search(
     // drop into quiescence search if depth is 0
     // or if maximum ply is reached
     if depth <= 0 || engine.ply == MAX_PLY {
-        return eval(&engine.position)
+        return qsearch(engine, alpha, beta);
     }
 
     // count node as this node is not a quiescent node

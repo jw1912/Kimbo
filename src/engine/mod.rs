@@ -13,6 +13,7 @@ pub mod consts;
 pub mod util;
 mod eval;
 mod limits;
+mod qsearch;
 mod search;
 
 use limits::Limits;
@@ -77,9 +78,10 @@ impl Engine {
                 ("cp", score)
             };
             println!(
-                "info depth {depth} score {score_type} {score_value} time {} nodes {nodes} nps {} pv {pv_str}",
+                "info depth {depth} score {score_type} {score_value} time {} nodes {nodes} nps {:.0} hashfull {} pv {pv_str}",
                 time.as_millis(),
                 nodes as f64 / time.as_secs_f64(),
+                1000 * self.hash_table.filled() / self.hash_table.capacity()
             );
         }
 

@@ -158,10 +158,15 @@ fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
             }
         }
     }
+
+    // timing
     let side = engine.position.stm();
     let mytime = times[side];
     let myinc = incs[side];
-    if mytime != 0 { alloc = mytime / mtg.unwrap_or(25) + 3 * myinc / 4 }
+    if mytime != 0 {
+        alloc = mytime / mtg.unwrap_or(25) + 3 * myinc / 4
+    }
+
     engine.limits.set_time(max(10, alloc - 10) as u128);
     engine.go();
 }
