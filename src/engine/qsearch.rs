@@ -1,5 +1,5 @@
+use super::{consts::*, eval::eval, Engine};
 use crate::state::MoveType;
-use super::{consts::*, Engine, eval::eval};
 
 fn score_move(engine: &Engine, r#move: u16) -> i16 {
     let occ = engine.position.occ();
@@ -24,7 +24,7 @@ pub fn qsearch(engine: &mut Engine, mut alpha: i16, beta: i16) -> i16 {
     alpha = alpha.max(eval);
 
     // generate and score captures only
-    let mut captures = engine.position.generate::<{MoveType::CAPTURES}>();
+    let mut captures = engine.position.generate::<{ MoveType::CAPTURES }>();
     captures.score(|r#move| score_move(engine, r#move));
 
     // go through moves

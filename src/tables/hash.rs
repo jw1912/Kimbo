@@ -104,7 +104,9 @@ impl HashTable {
             if self.table[idx].load() == 0 {
                 self.filled.fetch_add(1, Relaxed);
             }
-            self.table[idx].0.store(HashEntry::new(key, m, score, depth, bound), Relaxed);
+            self.table[idx]
+                .0
+                .store(HashEntry::new(key, m, score, depth, bound), Relaxed);
         }
     }
 

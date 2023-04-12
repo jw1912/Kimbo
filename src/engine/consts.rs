@@ -12,6 +12,7 @@ pub struct MoveScore;
 impl MoveScore {
     pub const HASH: i16 = Score::MAX;
     pub const QUIET: i16 = 0;
+    #[rustfmt::skip]
     pub const MVV_LVA: [[i16; 6]; 7] = [
         [1500, 1400, 1300, 1200, 1100, 1000],
         [2500, 2400, 2300, 2200, 2100, 2000],

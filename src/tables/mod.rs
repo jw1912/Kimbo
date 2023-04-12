@@ -1,3 +1,3 @@
 mod hash;
 
-pub use hash::{Bound, HashTable, HashResult};
+pub use hash::{Bound, HashResult, HashTable};

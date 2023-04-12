@@ -56,7 +56,7 @@ impl Limits {
 
     pub fn should_abort(&mut self, nodes: u64) -> bool {
         if nodes & 1023 == 0
-        && (self.elapsed().as_millis() > self.max_time || nodes >= self.max_nodes)
+            && (self.elapsed().as_millis() > self.max_time || nodes >= self.max_nodes)
         {
             self.abort_signal.store(true, Relaxed);
             return true;

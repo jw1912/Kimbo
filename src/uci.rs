@@ -1,9 +1,14 @@
 use crate::{
-    state::{consts::Side, *},
     engine::{util::perft, Engine},
+    state::{consts::Side, *},
     AUTHOR, NAME, VERSION,
 };
-use std::{cmp::max, io, process, sync::{Arc, atomic::AtomicBool}, time::Instant};
+use std::{
+    cmp::max,
+    io, process,
+    sync::{atomic::AtomicBool, Arc},
+    time::Instant,
+};
 
 pub fn run() {
     // uci preamble
@@ -143,10 +148,19 @@ fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
     let mut mtg = None;
     let mut alloc = 1000;
     let mut incs = [0, 0];
-    const COMMANDS: [&str; 7] = ["go", "movetime", "wtime", "btime", "movestogo", "winc", "binc"];
+    const COMMANDS: [&str; 7] = [
+        "go",
+        "movetime",
+        "wtime",
+        "btime",
+        "movestogo",
+        "winc",
+        "binc",
+    ];
     for cmd in commands {
-        if let Some(x) = COMMANDS.iter().position(|&y| y == cmd) { token = x }
-        else {
+        if let Some(x) = COMMANDS.iter().position(|&y| y == cmd) {
+            token = x
+        } else {
             match token {
                 1 => alloc = cmd.parse::<i64>().unwrap(),
                 2 => times[0] = max(cmd.parse::<i64>().unwrap(), 0),
@@ -154,7 +168,7 @@ fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
                 4 => mtg = Some(cmd.parse::<i64>().unwrap()),
                 5 => incs[0] = max(cmd.parse::<i64>().unwrap(), 0),
                 6 => incs[1] = max(cmd.parse::<i64>().unwrap(), 0),
-                _ => {},
+                _ => {}
             }
         }
     }

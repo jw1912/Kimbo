@@ -1,5 +1,8 @@
-use crate::{state::{MoveType, MoveFlag}, tables::Bound};
-use super::{consts::*, Engine, MAX_PLY, PvLine, Score, qsearch::qsearch};
+use super::{consts::*, qsearch::qsearch, Engine, PvLine, Score, MAX_PLY};
+use crate::{
+    state::{MoveFlag, MoveType},
+    tables::Bound,
+};
 
 fn score_move(engine: &Engine, r#move: u16, hash_move: u16) -> i16 {
     if r#move == hash_move {
@@ -20,15 +23,11 @@ pub fn search(
     beta: i16,
     depth: i8,
     in_check: bool,
-    pv_line: &mut PvLine
+    pv_line: &mut PvLine,
 ) -> i16 {
-    // if search is already in the process of ending
-    if engine.limits.aborting() {
-        return Score::ABORT;
-    }
-
-    // check if need to end the search
-    if engine.limits.should_abort(engine.nodes) {
+    // check if need to end the search,
+    // or if search is already ending
+    if engine.limits.aborting() || engine.limits.should_abort(engine.nodes) {
         return Score::ABORT;
     }
 
@@ -50,7 +49,7 @@ pub fn search(
     engine.nodes += 1;
 
     // necessary information to track for this node
-    //let pv_node = beta > alpha + 1;
+    let pv_node = beta > alpha + 1;
     let zobrist = engine.position.hash();
     let mut hash_move = 0;
     let mut write_to_hash = true;
@@ -59,6 +58,18 @@ pub fn search(
     if let Some(entry) = engine.hash_table.probe(zobrist, engine.ply) {
         write_to_hash = depth > entry.depth;
         hash_move = entry.r#move;
+
+        // hash score pruning
+        if !pv_node
+            && entry.depth >= depth
+            && match entry.bound {
+                Bound::LOWER => entry.score >= beta,
+                Bound::UPPER => entry.score <= alpha,
+                _ => true,
+            }
+        {
+            return entry.score;
+        }
     }
 
     // generate and score moves
@@ -70,7 +81,8 @@ pub fn search(
     let mut best_score = -Score::MAX;
     let mut bound = Bound::UPPER;
     let mut legal_moves = 0;
-    let mut sub_pv_line = PvLine::default();
+    let sub_pv = &mut PvLine::default();
+    let do_lmr = depth > 1 && engine.ply > 0 && !in_check;
 
     // increment ply for next depth
     engine.ply += 1;
@@ -83,10 +95,22 @@ pub fn search(
         }
 
         legal_moves += 1;
-        let gives_check = engine.position.in_check();
+        let check = engine.position.in_check();
+        let reduce = i8::from(do_lmr && !check && r#move.score() == MoveScore::QUIET);
 
-        // search move
-        let score = -search(engine, -beta, -alpha, depth - 1, gives_check, &mut sub_pv_line);
+        // principle variation search of move
+        #[rustfmt::skip]
+        let score = if legal_moves == 1 {
+            -search(engine, -beta, -alpha, depth - 1, check, sub_pv)
+        } else {
+            let null_window_score =
+                -search(engine, -alpha - 1, -alpha, depth - 1 - reduce, check, sub_pv);
+            if pv_node && null_window_score > alpha {
+                -search(engine, -beta, -alpha, depth - 1, check, sub_pv)
+            } else {
+                null_window_score
+            }
+        };
 
         // undo move
         engine.position.undo();
@@ -102,7 +126,7 @@ pub fn search(
                 bound = Bound::EXACT;
 
                 // update pv
-                pv_line.update(best_move, &mut sub_pv_line);
+                pv_line.update(best_move, sub_pv);
 
                 // beta pruning?
                 if score >= beta {
@@ -123,14 +147,9 @@ pub fn search(
 
     // writing to hash table
     if write_to_hash && !engine.limits.aborting() {
-        engine.hash_table.push(
-            zobrist,
-            best_move,
-            depth,
-            bound,
-            best_score,
-            engine.ply
-        );
+        engine
+            .hash_table
+            .push(zobrist, best_move, depth, bound, best_score, engine.ply);
     }
 
     best_score

@@ -27,7 +27,7 @@ impl SubAssign<S> for S {
 impl S {
     fn taper(self, phase: i16) -> i16 {
         let p = cmp::min(i32::from(phase), TOTAL_PHASE);
-        ((p * i32::from(self.0) + (TOTAL_PHASE - p) * i32::from(self.0)) / TOTAL_PHASE) as i16
+        ((p * i32::from(self.0) + (TOTAL_PHASE - p) * i32::from(self.1)) / TOTAL_PHASE) as i16
     }
 }
 
@@ -50,9 +50,7 @@ const SIDE: [i16; 2] = [1, -1];
 const TOTAL_PHASE: i32 = 24;
 
 #[rustfmt::skip]
-static PST: [[S; 64]; 8] = [
-    [S(0, 0); 64],
-    [S(0, 0); 64],
+static PST: [[S; 64]; 6] = [
     [
         S(100, 100), S(100, 100), S(100, 100), S(100, 100), S(100, 100), S(100, 100), S(100, 100), S(100, 100),
         S(234, 248), S(247, 246), S(208, 224), S(212, 207), S(213, 211), S(217, 217), S(147, 256), S( 92, 273),

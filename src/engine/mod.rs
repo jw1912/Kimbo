@@ -1,20 +1,20 @@
-use std::sync::{Arc, atomic::AtomicBool};
 use crate::{
-    state::Position,
-    tables::HashTable,
     engine::{
         consts::*,
-        util::{PvLine, u16_to_uci},
         search::search,
-    }
+        util::{u16_to_uci, PvLine},
+    },
+    state::Position,
+    tables::HashTable,
 };
+use std::sync::{atomic::AtomicBool, Arc};
 
 pub mod consts;
-pub mod util;
 mod eval;
 mod limits;
 mod qsearch;
 mod search;
+pub mod util;
 
 use limits::Limits;
 
@@ -39,7 +39,7 @@ impl Engine {
             },
             ply: 0,
             nodes: 0,
-            qnodes: 0
+            qnodes: 0,
         }
     }
 

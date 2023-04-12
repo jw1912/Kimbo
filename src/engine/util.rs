@@ -1,4 +1,4 @@
-use crate::state::{Position, MoveFlag, MoveType};
+use crate::state::{MoveFlag, MoveType, Position};
 
 pub fn u16_to_uci(pos: &Position, m: u16) -> String {
     let index_to_square = |i| format!("{}{}", ((i & 7) as u8 + b'a') as char, (i / 8) + 1);
@@ -38,10 +38,7 @@ impl PvLine {
     }
 
     pub fn to_string(&self, pos: &Position) -> String {
-        self.0
-            .iter()
-            .map(|&m| u16_to_uci(pos, m))
-            .collect()
+        self.0.iter().map(|&m| u16_to_uci(pos, m)).collect()
     }
 
     #[inline]
