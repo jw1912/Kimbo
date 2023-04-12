@@ -6,9 +6,6 @@ mod state;
 mod tables;
 mod uci;
 
-#[cfg(test)]
-mod test;
-
 use std::{io::stdin, process};
 
 const NAME: &str = env!("CARGO_PKG_NAME");

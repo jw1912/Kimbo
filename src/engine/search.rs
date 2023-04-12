@@ -105,7 +105,7 @@ pub fn search(
         } else {
             let null_window_score =
                 -search(engine, -alpha - 1, -alpha, depth - 1 - reduce, check, sub_pv);
-            if pv_node && null_window_score > alpha {
+            if (pv_node || reduce > 0) && null_window_score > alpha {
                 -search(engine, -beta, -alpha, depth - 1, check, sub_pv)
             } else {
                 null_window_score
