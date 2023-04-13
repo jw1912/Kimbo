@@ -33,13 +33,13 @@ impl Limits {
         self.time.elapsed()
     }
 
-    pub fn set_depth(&mut self, depth: i8) {
-        self.max_depth = depth;
-    }
+    //pub fn set_depth(&mut self, depth: i8) {
+    //    self.max_depth = depth;
+    //}
 
-    pub fn set_nodes(&mut self, nodes: u64) {
-        self.max_nodes = nodes;
-    }
+    //pub fn set_nodes(&mut self, nodes: u64) {
+    //    self.max_nodes = nodes;
+    //}
 
     pub fn set_time(&mut self, time: u128) {
         self.max_time = time;

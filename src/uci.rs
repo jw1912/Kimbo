@@ -9,7 +9,6 @@ use std::{
     sync::{atomic::{AtomicBool, Ordering}, Arc},
     thread,
     time::Instant,
-    error::Error,
 };
 
 pub fn run() {

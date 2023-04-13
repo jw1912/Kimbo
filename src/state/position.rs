@@ -529,26 +529,26 @@ impl Position {
             && self.path::<SIDE>(between(kbb, kto), occ)
     }
 
-    pub fn r#do_null(&mut self) {
-        self.null_counter += 1;
-        self.stack.push(
-            MoveContext {
-                r#move: 0,
-                moved: 0,
-                captured: 0,
-                state: self.state,
-            }
-        );
-        self.state.en_passant = 0;
-        self.stm = !self.stm;
-    }
+    //pub fn r#do_null(&mut self) {
+    //    self.null_counter += 1;
+    //    self.stack.push(
+    //        MoveContext {
+    //            r#move: 0,
+    //            moved: 0,
+    //            captured: 0,
+    //            state: self.state,
+    //        }
+    //    );
+    //    self.state.en_passant = 0;
+    //    self.stm = !self.stm;
+    //}
 
-    pub fn undo_null(&mut self) {
-        self.null_counter -= 1;
-        let ctx = self.stack.pop().unwrap();
-        self.state.en_passant = ctx.state.en_passant;
-        self.stm = !self.stm;
-    }
+    //pub fn undo_null(&mut self) {
+    //    self.null_counter -= 1;
+    //    let ctx = self.stack.pop().unwrap();
+    //    self.state.en_passant = ctx.state.en_passant;
+    //    self.stm = !self.stm;
+    //}
 
     fn repetition_draw(&self, ply: i16) -> bool {
         let mut num = 1 + 2 * u8::from(ply == 0);
