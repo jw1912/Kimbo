@@ -6,20 +6,24 @@ use crate::{
 use std::{
     cmp::max,
     io, process,
-    sync::{atomic::AtomicBool, Arc},
+    sync::{atomic::{AtomicBool, Ordering}, Arc},
+    thread,
     time::Instant,
+    error::Error,
 };
 
 pub fn run() {
     // uci preamble
     println!("id name {NAME} {VERSION}");
     println!("id author {AUTHOR}");
-    println!("option name Hash type spin default 128 min 1 max 512");
+    println!("option name Hash type spin default 1 min 1 max 512");
+    println!("option name Clear Hash type button");
+    println!("option name UCI_Chess960 type check default false");
     println!("uciok");
 
     // set up engine
     let abort_signal = Arc::new(AtomicBool::new(false));
-    let mut engine = Engine::new(abort_signal);
+    let mut engine = Engine::new(abort_signal.clone());
     engine.hash_table.resize(1);
 
     // command loop
@@ -33,6 +37,7 @@ pub fn run() {
             "ucinewgame" => Ok(ucinewgame(&mut engine)),
             "position" => parse_position(&mut engine.position, commands),
             "go" => Ok(parse_go(&mut engine, commands)),
+            "setoption" => Ok(parse_setoption(&mut engine, commands)),
 
             // other commands
             "perft" => Ok(parse_perft::<false>(&mut engine.position, &commands)),
@@ -182,5 +187,36 @@ fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
     }
 
     engine.limits.set_time(max(10, alloc - 10) as u128);
+
+    let abort_handle = engine.limits.abort_handle();
+
+    // allow manual stoppage
+    let thread_handle = thread::spawn(move || {
+        while !abort_handle.load(Ordering::Relaxed) {
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).unwrap();
+            match input.trim() {
+                "stop" => {
+                    abort_handle.store(true, Ordering::Relaxed);
+                },
+                _ => {}
+            }
+        }
+    });
+
     engine.go();
+    thread_handle.join().unwrap_or_default();
+}
+
+fn parse_setoption(engine: &mut Engine, commands: Vec<&str>) {
+    match &commands[1..] {
+        ["name", "Hash", "value", x] => {
+            engine.hash_table.resize(x.parse().unwrap());
+        }
+        ["name", "Clear", "Hash"] => {
+            engine.hash_table.clear();
+        }
+        ["name", "UCI_Chess960", "value", _] => {}
+        _ => println!("unrecognised option"),
+    }
 }
