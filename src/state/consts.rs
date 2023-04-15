@@ -117,6 +117,47 @@ impl Attacks {
         k ^ (1 << i)
     });
 
+    pub const fn bishop(idx: usize, occ: u64) -> u64 {
+        let mask = Self::BISHOP_MASK[idx];
+
+        // hyperbola quintessence gets automatically vectorised
+
+        let mut diag = occ & mask.right;
+        let mut rev = diag.swap_bytes();
+        diag = diag.wrapping_sub(mask.bit);
+        rev = rev.wrapping_sub(mask.file);
+        diag ^= rev.swap_bytes();
+        diag &= mask.right;
+
+        let mut anti = occ & mask.left;
+        let mut rev = anti.swap_bytes();
+        anti = anti.wrapping_sub(mask.bit);
+        rev = rev.wrapping_sub(mask.file);
+        anti ^= rev.swap_bytes();
+        anti &= mask.left;
+
+        diag | anti
+    }
+
+    pub const fn rook(idx: usize, occ: u64) -> u64 {
+        let mask = Self::ROOK_MASK[idx];
+
+        // hyperbola quintessence
+        let mut file = occ & mask.file;
+        let mut rev = file.swap_bytes();
+        file = file.wrapping_sub(mask.bit);
+        rev = rev.wrapping_sub(mask.bit.swap_bytes());
+        file ^= rev.swap_bytes();
+        file &= mask.file;
+
+        // shift-lookup
+        let file_idx = idx & 7;
+        let shift = idx - file_idx;
+        let rank = Self::RANKS[file_idx][((occ >> (shift + 1)) & 0x3F) as usize] << shift;
+
+        file | rank
+    }
+
     const DIAGS: [u64; 15] = [
         0x0100000000000000,
         0x0201000000000000,
@@ -165,51 +206,18 @@ impl Attacks {
             let mut occ_idx = 0;
             while occ_idx < 64 {
                 let occ = (occ_idx << 1) as u64;
-                let m = Self::ROOK_MASK[file];
-                let mut e = m.right & occ;
-                let r = e & e.wrapping_neg();
-                e = (r ^ (r.wrapping_sub(m.bit))) & m.right;
-                let w = m.left ^ Self::WEST[(((m.left & occ)| 1).leading_zeros() ^ 63) as usize];
-                ret[file][occ_idx] = e | w;
+                let mask = Self::ROOK_MASK[file];
+
+                let mut east = mask.right & occ;
+                let r = east & east.wrapping_neg();
+                east = (r ^ (r.wrapping_sub(mask.bit))) & mask.right;
+                let west = mask.left ^ Self::WEST[(((mask.left & occ)| 1).leading_zeros() ^ 63) as usize];
+
+                ret[file][occ_idx] = east | west;
                 occ_idx += 1;
             }
             file += 1;
         }
         ret
     };
-
-    pub const fn bishop(idx: usize, occ: u64) -> u64 {
-        let mask = Self::BISHOP_MASK[idx];
-
-        let mut diag = occ & mask.right;
-        let mut rev = diag.swap_bytes();
-        diag = diag.wrapping_sub(mask.bit);
-        rev = rev.wrapping_sub(mask.file);
-        diag ^= rev.swap_bytes();
-
-        let mut anti = occ & mask.left;
-        rev = anti.swap_bytes();
-        anti = anti.wrapping_sub(mask.bit);
-        rev = rev.wrapping_sub(mask.file);
-        anti ^= rev.swap_bytes();
-
-        (diag & mask.right) | (anti & mask.left)
-    }
-
-    pub const fn rook(idx: usize, occ: u64) -> u64 {
-        let mask = Self::ROOK_MASK[idx];
-
-        let mut file = occ & mask.file;
-        let mut rev = file.swap_bytes();
-        file = file.wrapping_sub(mask.bit);
-        rev = rev.wrapping_sub(mask.bit.swap_bytes());
-        file ^= rev.swap_bytes();
-
-        // shift-lookup
-        let file_idx = idx & 7;
-        let shift = idx - file_idx;
-        let rank = Self::RANKS[file_idx][((occ >> (shift + 1)) & 0x3F) as usize] << shift;
-
-        (file & mask.file) | rank
-    }
 }
