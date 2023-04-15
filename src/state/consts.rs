@@ -158,6 +158,26 @@ impl Attacks {
         }
     );
 
+    const RANKS: [[u64; 64]; 8] = {
+        let mut ret = [[0; 64]; 8];
+        let mut file = 0;
+        while file < 8 {
+            let mut occ_idx = 0;
+            while occ_idx < 64 {
+                let occ = (occ_idx << 1) as u64;
+                let m = Self::ROOK_MASK[file];
+                let mut e = m.right & occ;
+                let r = e & e.wrapping_neg();
+                e = (r ^ (r.wrapping_sub(m.bit))) & m.right;
+                let w = m.left ^ Self::WEST[(((m.left & occ)| 1).leading_zeros() ^ 63) as usize];
+                ret[file][occ_idx] = e | w;
+                occ_idx += 1;
+            }
+            file += 1;
+        }
+        ret
+    };
+
     pub const fn bishop(idx: usize, occ: u64) -> u64 {
         let mask = Self::BISHOP_MASK[idx];
 
@@ -185,12 +205,11 @@ impl Attacks {
         rev = rev.wrapping_sub(mask.bit.swap_bytes());
         file ^= rev.swap_bytes();
 
-        let mut east = occ & mask.right;
-        rev = east & east.wrapping_neg();
-        east = rev ^ rev.wrapping_sub(mask.bit);
+        // shift-lookup
+        let file_idx = idx & 7;
+        let shift = idx - file_idx;
+        let rank = Self::RANKS[file_idx][((occ >> (shift + 1)) & 0x3F) as usize] << shift;
 
-        let west = Self::WEST[(((mask.left & occ) | 1).leading_zeros() ^ 63) as usize];
-
-        (file & mask.file) | (east & mask.right) | (west ^ mask.left)
+        (file & mask.file) | rank
     }
 }
