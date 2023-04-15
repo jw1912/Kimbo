@@ -141,8 +141,8 @@ impl Attacks {
         let bit = 1 << i;
         Mask {
             bit,
-            right: bit ^ Self::DIAGS[(7 + (i & 7) - i / 8)],
-            left: bit ^ Self::DIAGS[((i & 7) + i / 8)].swap_bytes(),
+            right: bit ^ Self::DIAGS[7 + (i & 7) - i / 8],
+            left: bit ^ Self::DIAGS[(i & 7) + i / 8].swap_bytes(),
             file: bit.swap_bytes(),
         }
     );
