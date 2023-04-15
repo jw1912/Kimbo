@@ -36,7 +36,7 @@ impl Clone for HashEntry {
 
 impl HashEntry {
     #[inline]
-    fn new(key: u16, m: u16, score: i16, depth: i8, bound: u8) -> u64 {
+    fn make(key: u16, m: u16, score: i16, depth: i8, bound: u8) -> u64 {
         (key as u64)
             | ((m as u64) << 16)
             | ((score as u64) << 32)
@@ -71,6 +71,16 @@ pub struct HashTable {
 }
 
 impl HashTable {
+    pub fn new(mut size: usize) -> Self {
+        let mut res = Self::default();
+        size = 2usize.pow((size as f64).log2().floor() as u32);
+        res.capacity
+            .store(size * 1024 * 1024 / size_of::<AtomicU64>(), Relaxed);
+        res.filled.store(0, Relaxed);
+        res.table = vec![Default::default(); res.capacity()];
+        res
+    }
+
     pub fn capacity(&self) -> usize {
         self.capacity.load(Relaxed)
     }
@@ -79,19 +89,11 @@ impl HashTable {
         self.filled.load(Relaxed)
     }
 
-    pub fn resize(&mut self, mut size: usize) {
-        size = 2usize.pow((size as f64).log2().floor() as u32);
-        self.capacity
-            .store(size * 1024 * 1024 / size_of::<AtomicU64>(), Relaxed);
-        self.filled.store(0, Relaxed);
-        self.table = vec![Default::default(); self.capacity()];
-    }
-
-    pub fn clear(&mut self) {
+    pub fn clear(&self) {
         self.filled.store(0, Relaxed);
         self.table
-            .iter_mut()
-            .for_each(|bucket| *bucket = Default::default());
+            .iter()
+            .for_each(|bucket| bucket.0.store(0, Relaxed));
     }
 
     pub fn push(&self, hash: u64, m: u16, depth: i8, bound: u8, mut score: i16, ply: i16) {
@@ -106,7 +108,7 @@ impl HashTable {
             }
             self.table[idx]
                 .0
-                .store(HashEntry::new(key, m, score, depth, bound), Relaxed);
+                .store(HashEntry::make(key, m, score, depth, bound), Relaxed);
         }
     }
 

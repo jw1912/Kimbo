@@ -1,5 +1,5 @@
 use crate::bitloop;
-
+use std::sync::Arc;
 use super::{consts::*, movegen::*, square_str_to_index, MoveList};
 use std::{cmp, str::FromStr};
 
@@ -21,6 +21,7 @@ struct MoveContext {
     state: State,
 }
 
+#[derive(Clone, Copy)]
 struct Castle {
     mask: [u8; 64],
     rooks: [u8; 2],
@@ -35,6 +36,7 @@ struct ZobristVals {
     side: u64,
 }
 
+#[derive(Clone)]
 /// Holds all info abut current position.
 pub struct Position {
     pieces: [u64; 6],
@@ -44,7 +46,7 @@ pub struct Position {
     phase: i16,
     null_counter: u8,
     stack: Vec<MoveContext>,
-    zobrist_vals: Box<ZobristVals>,
+    zobrist_vals: Arc<ZobristVals>,
     castle: Castle,
 }
 
@@ -111,7 +113,7 @@ impl FromStr for Position {
         };
 
         // main part of fen
-        let board_str = split.get(0).ok_or("empty string")?;
+        let board_str = split.first().ok_or("empty string")?;
         let mut col = 0;
         let mut row = 7;
         for ch in board_str.chars() {

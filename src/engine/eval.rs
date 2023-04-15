@@ -35,11 +35,11 @@ pub fn eval(pos: &Position) -> i16 {
     let mut eval = S(0, 0);
 
     // piece-square tables
-    for piece in Piece::PAWN..=Piece::KING {
+    for (piece, pst) in PST.iter().enumerate() {
         let mut bitboard = pos.piece(Side::WHITE, piece);
-        bitloop!(bitboard, idx, eval += PST[piece][usize::from(idx ^ 56)]);
+        bitloop!(bitboard, idx, eval += pst[usize::from(idx ^ 56)]);
         bitboard = pos.piece(Side::BLACK, piece);
-        bitloop!(bitboard, idx, eval -= PST[piece][usize::from(idx)]);
+        bitloop!(bitboard, idx, eval -= pst[usize::from(idx)]);
     }
 
     // tapered score

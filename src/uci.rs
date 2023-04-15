@@ -1,15 +1,20 @@
 use crate::{
     engine::{util::perft, Engine},
     state::{consts::Side, *},
-    AUTHOR, NAME, VERSION,
+    AUTHOR, NAME, VERSION, tables::HashTable,
 };
 use std::{
     cmp::max,
     io, process,
-    sync::{atomic::{AtomicBool, Ordering}, Arc},
-    thread,
+    sync::{atomic::{AtomicBool, Ordering},  Arc, Mutex},
     time::Instant,
 };
+
+struct UciState {
+    position: Position,
+    abort_signal: Arc<AtomicBool>,
+    hash_table: Arc<HashTable>,
+}
 
 pub fn run() {
     // uci preamble
@@ -20,45 +25,62 @@ pub fn run() {
     println!("option name UCI_Chess960 type check default false");
     println!("uciok");
 
-    // set up engine
-    let abort_signal = Arc::new(AtomicBool::new(false));
-    let mut engine = Engine::new(abort_signal.clone());
-    engine.hash_table.resize(1);
+    // set up state
+    let state = Arc::new(Mutex::new(UciState {
+        position: Position::default(),
+        abort_signal: Arc::new(AtomicBool::new(false)),
+        hash_table: Arc::new(HashTable::new(1)),
+    }));
 
     // command loop
     loop {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        let commands = input.split_whitespace().collect::<Vec<&str>>();
-        if let Err(err) = match *commands.first().unwrap_or(&"oops") {
-            // core UCI commands
-            "isready" => Ok(println!("readyok")),
-            "ucinewgame" => Ok(ucinewgame(&mut engine)),
-            "position" => parse_position(&mut engine.position, commands),
-            "go" => Ok(parse_go(&mut engine, commands)),
-            "setoption" => Ok(parse_setoption(&mut engine, commands)),
 
-            // other commands
-            "perft" => Ok(parse_perft::<false>(&mut engine.position, &commands)),
-            "splitperft" => Ok(parse_perft::<true>(&mut engine.position, &commands)),
-            "quit" => process::exit(0),
-            _ => Ok(()),
-        } {
+        let commands = input.split_whitespace().collect::<Vec<&str>>();
+        if let Err(err) = parse_commands(state.clone(), commands) {
             println!("{err}");
         }
     }
 }
 
-fn ucinewgame(engine: &mut Engine) {
-    engine.position = Position::default();
-    engine.hash_table.clear();
+fn parse_commands(state: Arc<Mutex<UciState>>, commands: Vec<&str>) -> Result<(), String> {
+    match *commands.first().unwrap_or(&"oops") {
+        // core UCI commands
+        "isready" => println!("readyok"),
+        "ucinewgame" => ucinewgame(state),
+        "position" => return parse_position(state, commands),
+        "go" => parse_go(state, commands),
+        "setoption" => parse_setoption(state, commands),
+
+        // commands during search
+        "stop" => handle_stop(state),
+    
+        // other commands
+        "perft" => parse_perft::<false>(state, &commands),
+        "splitperft" => parse_perft::<true>(state, &commands),
+        "quit" => process::exit(0),
+        _ => {},
+    }
+    Ok(())
+}
+
+fn ucinewgame(state: Arc<Mutex<UciState>>) {
+    let mut stateref = state.lock().unwrap();
+    stateref.position = Position::default();
+    stateref.hash_table.clear();
+}
+
+fn handle_stop(state: Arc<Mutex<UciState>>) {
+    let stateref = state.lock().unwrap();
+    stateref.abort_signal.store(true, Ordering::Relaxed)
 }
 
 fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     // basic move info
     let from = square_str_to_index(&m_str[0..2])?;
     let mut to = square_str_to_index(&m_str[2..4])?;
-    let stm = usize::from(pos.stm());
+    let stm = pos.stm();
 
     // chess960
     if pos.chess960() && pos.side(stm) & (1 << to) > 0 {
@@ -100,7 +122,9 @@ fn uci_to_u16(pos: &Position, m_str: &str) -> Result<u16, String> {
     Err(String::from("error parsing {m_str:?}"))
 }
 
-fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String> {
+fn parse_position(state: Arc<Mutex<UciState>>, commands: Vec<&str>) -> Result<(), String> {
+    let mut stateref = state.lock().unwrap();
+
     let mut fen = String::new();
     let mut move_list = Vec::new();
     let mut moves = false;
@@ -109,8 +133,8 @@ fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String>
     for cmd in commands {
         match cmd {
             "position" | "fen" => {}
-            "startpos" => *pos = Fens::STARTPOS.parse()?,
-            "kiwipete" => *pos = Fens::KIWIPETE.parse()?,
+            "startpos" => stateref.position = Fens::STARTPOS.parse()?,
+            "kiwipete" => stateref.position = Fens::KIWIPETE.parse()?,
             "moves" => moves = true,
             _ => {
                 if moves {
@@ -124,20 +148,22 @@ fn parse_position(pos: &mut Position, commands: Vec<&str>) -> Result<(), String>
 
     // set position
     if !fen.is_empty() {
-        *pos = fen.parse()?;
+        stateref.position = fen.parse()?;
     }
 
-    for m in move_list {
-        pos.r#do(uci_to_u16(pos, &m)?);
+    for m_str in move_list {
+        let m = uci_to_u16(&stateref.position, &m_str)?;
+        stateref.position.r#do(m);
     }
 
     Ok(())
 }
 
-fn parse_perft<const SPLIT: bool>(pos: &mut Position, commands: &[&str]) {
+fn parse_perft<const SPLIT: bool>(state: Arc<Mutex<UciState>>, commands: &[&str]) {
+    let mut stateref = state.lock().unwrap();
     let depth = commands[1].parse().unwrap();
     let now = Instant::now();
-    let count = perft::<SPLIT>(pos, depth);
+    let count = perft::<SPLIT>(&mut stateref.position, depth);
     let time = now.elapsed();
     println!(
         "perft {depth} time {} nodes {count} ({:.2} Mnps)",
@@ -146,7 +172,8 @@ fn parse_perft<const SPLIT: bool>(pos: &mut Position, commands: &[&str]) {
     );
 }
 
-fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
+fn parse_go(state: Arc<Mutex<UciState>>, commands: Vec<&str>) {
+    let stateref = state.lock().unwrap();
     let mut token = 0;
     let mut times = [0, 0];
     let mut mtg = None;
@@ -177,6 +204,12 @@ fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
         }
     }
 
+    let mut engine = Engine::new(
+        stateref.position.clone(),
+        stateref.hash_table.clone(),
+        stateref.abort_signal.clone(),
+    );
+
     // timing
     let side = engine.position.stm();
     let mytime = times[side];
@@ -187,33 +220,19 @@ fn parse_go(engine: &mut Engine, commands: Vec<&str>) {
 
     engine.limits.set_time(max(10, alloc - 10) as u128);
 
-    let abort_handle = engine.limits.abort_handle();
-
-    // allow manual stoppage
-    let thread_handle = thread::spawn(move || {
-        while !abort_handle.load(Ordering::Relaxed) {
-            let mut input = String::new();
-            io::stdin().read_line(&mut input).unwrap();
-            match input.trim() {
-                "stop" => {
-                    abort_handle.store(true, Ordering::Relaxed);
-                },
-                _ => {}
-            }
-        }
+    std::thread::spawn(move || {
+        engine.go();
     });
-
-    engine.go();
-    thread_handle.join().unwrap_or_default();
 }
 
-fn parse_setoption(engine: &mut Engine, commands: Vec<&str>) {
+fn parse_setoption(state: Arc<Mutex<UciState>>, commands: Vec<&str>) {
+    let mut stateref = state.lock().unwrap();
     match &commands[1..] {
         ["name", "Hash", "value", x] => {
-            engine.hash_table.resize(x.parse().unwrap());
+            stateref.hash_table = Arc::new(HashTable::new(x.parse().unwrap()));
         }
         ["name", "Clear", "Hash"] => {
-            engine.hash_table.clear();
+            stateref.hash_table.clear();
         }
         ["name", "UCI_Chess960", "value", _] => {}
         _ => println!("unrecognised option"),

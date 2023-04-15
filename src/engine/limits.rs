@@ -49,10 +49,6 @@ impl Limits {
         self.abort_signal.load(Relaxed)
     }
 
-    pub fn abort_handle(&self) -> Arc<AtomicBool> {
-        self.abort_signal.clone()
-    }
-
     pub fn reset(&mut self) {
         self.abort_signal.store(false, Relaxed);
         self.time = Instant::now();

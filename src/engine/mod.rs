@@ -21,22 +21,18 @@ use limits::Limits;
 pub struct Engine {
     pub position: Position,
     pub limits: Limits,
-    pub hash_table: Box<HashTable>,
+    pub hash_table: Arc<HashTable>,
     ply: i16,
     nodes: u64,
     qnodes: u64,
 }
 
 impl Engine {
-    pub fn new(abort_signal: Arc<AtomicBool>) -> Self {
+    pub fn new(position: Position, hash_table: Arc<HashTable>, abort_signal: Arc<AtomicBool>) -> Self {
         Self {
-            position: Position::default(),
+            position,
             limits: Limits::new(abort_signal),
-            hash_table: {
-                let mut table = HashTable::default();
-                table.resize(1);
-                Box::new(table)
-            },
+            hash_table,
             ply: 0,
             nodes: 0,
             qnodes: 0,
